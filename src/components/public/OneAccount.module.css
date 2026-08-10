@@ -1,0 +1,176 @@
+.section {
+  background: #020202;
+  padding: 72px 0;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.heading {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.heading h2 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 600;
+  color: #f9f9f9;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.heading p {
+  font-size: 1rem;
+  color: #f9f9f9;
+  opacity: 0.65;
+}
+
+/* ---- Org card: same recipe as Products' cardReady ---- */
+.orgCard {
+  background: #0a0a0a;
+  border: 0.6px solid rgba(249, 249, 249, 0.12);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow:
+    0 1px 0 rgba(249, 249, 249, 0.06) inset,
+    0 -20px 40px -28px rgba(249, 249, 249, 0.14),
+    0 20px 40px -22px rgba(0, 0, 0, 0.75);
+}
+
+.orgCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.orgLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f9f9f9;
+  opacity: 0.5;
+}
+
+.orgName {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  margin: 0 0 20px 0;
+}
+
+.productList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.productRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(249, 249, 249, 0.05);
+  border: 0.6px solid rgba(249, 249, 249, 0.1);
+  border-radius: 10px;
+}
+
+.productDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d95b2d;
+  flex-shrink: 0;
+}
+
+.productDotMuted {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(249, 249, 249, 0.25);
+  flex-shrink: 0;
+}
+
+.productName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  flex-grow: 1;
+}
+
+.liveBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  background: rgba(249, 249, 249, 0.08);
+  border: 0.6px solid rgba(249, 249, 249, 0.18);
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.soonBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  opacity: 0.5;
+  background: rgba(249, 249, 249, 0.05);
+  border: 0.6px solid rgba(249, 249, 249, 0.12);
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ---- Capability cards: same recipe as Products' cardSoon ---- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.capabilityCard {
+  background: #060606;
+  border: 0.6px solid rgba(249, 249, 249, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.capabilityCard h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  margin: 0 0 6px 0;
+}
+
+.capabilityCard p {
+  font-size: 0.85rem;
+  color: #f9f9f9;
+  opacity: 0.55;
+  margin: 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 780px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section {
+    padding: 48px 0;
+  }
+
+  .container {
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

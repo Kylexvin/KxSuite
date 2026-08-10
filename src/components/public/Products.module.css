@@ -1,0 +1,238 @@
+/* ---- Section wrapper (full width) ---- */
+.section {
+  background: #020202;
+  padding: 72px 0;
+}
+
+/* ---- Inner container (centered, max-width) ---- */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.heading {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.heading h2 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 600;
+  color: #f9f9f9;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.heading p {
+  font-size: 1rem;
+  color: #f9f9f9;
+  opacity: 0.65;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* ---- Card top row: logo + name + badge ---- */
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.identity h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  margin: 0;
+}
+
+.productLogo {
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.productLogoMuted {
+  border-radius: 8px;
+  object-fit: contain;
+  opacity: 0.5;
+}
+
+/* ---- Ready card (KxTill) ---- */
+.cardReady {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  border: 0.6px solid rgba(249, 249, 249, 0.12);
+  border-radius: 16px;
+  padding: 24px;
+  color: #f9f9f9;
+  box-shadow:
+    0 1px 0 rgba(249, 249, 249, 0.06) inset,
+    0 -20px 40px -28px rgba(249, 249, 249, 0.14),
+    0 20px 40px -22px rgba(0, 0, 0, 0.75);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cardReady:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 0 rgba(249, 249, 249, 0.08) inset,
+    0 -24px 46px -26px rgba(249, 249, 249, 0.2),
+    0 24px 46px -20px rgba(0, 0, 0, 0.8);
+}
+
+.liveBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  background: rgba(249, 249, 249, 0.08);
+  border: 0.6px solid rgba(249, 249, 249, 0.18);
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tagline {
+  font-size: 0.88rem;
+  color: #f9f9f9;
+  opacity: 0.65;
+  margin-bottom: 8px;
+}
+
+.description {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #f9f9f9;
+  opacity: 0.55;
+  margin-bottom: 16px;
+}
+
+.featureList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.featurePill {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #f9f9f9;
+  opacity: 0.75;
+  background: rgba(249, 249, 249, 0.05);
+  border: 0.6px solid rgba(249, 249, 249, 0.14);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.featurePillMuted {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #f9f9f9;
+  opacity: 0.35;
+  background: rgba(249, 249, 249, 0.03);
+  border: 0.6px solid rgba(249, 249, 249, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* ---- CTA: only accent element in the card ---- */
+.ctaButton {
+  margin-top: auto;
+  width: 100%;
+  text-align: center;
+  background: #d95b2d;
+  color: #f9f9f9;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 11px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.ctaButton:hover,
+.ctaButton:focus {
+  opacity: 0.9;
+  text-decoration: none;
+}
+
+.ctaButtonSoon {
+  margin-top: auto;
+  width: 100%;
+  text-align: center;
+  background: rgba(249, 249, 249, 0.05);
+  color: #f9f9f9;
+  opacity: 0.5;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 11px;
+  border-radius: 10px;
+  cursor: default;
+}
+
+/* ---- Soon card ---- */
+.cardSoon {
+  display: flex;
+  flex-direction: column;
+  background: #060606;
+  border: 0.6px solid rgba(249, 249, 249, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  opacity: 0.75;
+}
+
+.soonBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  background: rgba(249, 249, 249, 0.05);
+  border: 0.6px solid rgba(249, 249, 249, 0.12);
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.exploreAll {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #d95b2d;
+  text-decoration: none;
+}
+
+.exploreAll:hover,
+.exploreAll:focus {
+  text-decoration: none;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 780px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: 48px 0;
+  }
+
+  .container {
+    padding: 0 20px;
+  }
+}

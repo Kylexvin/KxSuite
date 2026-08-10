@@ -1,0 +1,239 @@
+/* ---- Footer ---- */
+.footer {
+  background: #060606;
+  border-top: 0.6px solid rgba(249, 249, 249, 0.06);
+  padding: 48px 0 32px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---- Top section ---- */
+.top {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 48px;
+  padding-bottom: 40px;
+  border-bottom: 0.6px solid rgba(249, 249, 249, 0.06);
+}
+
+/* ---- Brand ---- */
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.brandName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  font-size: 0.88rem;
+  color: #f9f9f9;
+  opacity: 0.4;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ---- Links ---- */
+.links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.linkGroup h4 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.linkGroup ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linkGroup li {
+  font-size: 0.88rem;
+}
+
+.linkGroup a {
+  color: #f9f9f9;
+  opacity: 0.6;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.linkGroup a:hover,
+.linkGroup a:focus {
+  opacity: 0.9;
+  text-decoration: none;
+}
+
+.comingSoon {
+  color: #f9f9f9;
+  opacity: 0.3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  opacity: 0.3;
+  background: rgba(249, 249, 249, 0.05);
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  padding: 1px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ---- Bottom section ---- */
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* ---- Social ---- */
+.social {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #f9f9f9;
+  opacity: 0.3;
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.socialLink:hover,
+.socialLink:focus {
+  opacity: 0.7;
+  background: rgba(249, 249, 249, 0.04);
+  transform: translateY(-2px);
+}
+
+/* ---- Legal ---- */
+.legal {
+  font-size: 0.78rem;
+  color: #f9f9f9;
+  opacity: 0.25;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.divider {
+  opacity: 0.3;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 780px) {
+  .footer {
+    padding: 40px 0 24px;
+  }
+
+  .container {
+    padding: 0 20px;
+  }
+
+  .top {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding-bottom: 32px;
+  }
+
+  .brand {
+    align-items: center;
+    text-align: center;
+  }
+
+  .links {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .bottom {
+    flex-direction: column;
+    text-align: center;
+    padding-top: 20px;
+    gap: 12px;
+  }
+
+  .legal {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .divider {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .links {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .linkGroup:last-child {
+    grid-column: span 2;
+  }
+
+  .social {
+    gap: 8px;
+  }
+
+  .socialLink {
+    width: 32px;
+    height: 32px;
+  }
+
+  .socialLink svg {
+    width: 16px;
+    height: 16px;
+  }
+}
