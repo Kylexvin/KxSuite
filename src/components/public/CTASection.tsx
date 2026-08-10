@@ -3,22 +3,20 @@
 import Link from "next/link";
 import styles from "./CTASection.module.css";
 
-export default function CTASection() {
+export default function Cta() {
   return (
     <section className={styles.section}>
       <div className={styles.container}>
-        <div className={styles.content}>
-          <h2>Ready when you are.</h2>
-          <p>Explore the KXBYTE Suite.</p>
+        <h2>Run your business on one Suite.</h2>
+        <p>Start with KxTill today. Add more tools as you grow.</p>
 
-          <div className={styles.actions}>
-            <Link href="/products" className={styles.primary}>
-              Explore Products
-            </Link>
-            <Link href="/contact" className={styles.secondary}>
-              Get Started
-            </Link>
-          </div>
+        <div className={styles.actions}>
+          <Link href="/signup" className={styles.primary}>
+            Create your account →
+          </Link>
+          <Link href="/products" className={styles.secondary}>
+            Explore products
+          </Link>
         </div>
       </div>
     </section>

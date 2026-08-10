@@ -1,216 +1,620 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
+
+import {
+  Zap, Boxes, TrendingUp, PieChart, Search, ShoppingCart, CreditCard,
+  CheckCircle2, Package, Store, Users, Wallet, UserCircle, BarChart3,
+  Calculator, Cpu, RefreshCw, ShieldCheck, Sparkles, Receipt, Sparkle,
+  X,
+} from "lucide-react";
 import styles from "./page.module.css";
 
-export default function KxTillPage() {
+const products = [
+  { name: "KxTill", href: "/products/kxtill", ready: true },
+  { name: "KxInvoice", href: "/products/kxinvoice", ready: false },
+  { name: "KxCRM", href: "/products/kxcrm", ready: false },
+];
+
+const highlights = [
+  { icon: Zap, title: "Sell faster", desc: "Complete transactions in seconds with an intuitive POS interface." },
+  { icon: Boxes, title: "Know your stock", desc: "Real-time inventory tracking with low-stock alerts." },
+  { icon: TrendingUp, title: "Track your business", desc: "Every sale, every payment, every product — all in one place." },
+  { icon: PieChart, title: "Understand your numbers", desc: "Sales reports, revenue insights, and business analytics." },
+];
+
+const features = [
+  { icon: ShoppingCart, title: "POS / Sales", desc: "Fast, reliable point of sale for retail businesses." },
+  { icon: Boxes, title: "Inventory Management", desc: "Track products, stock levels, and get low-stock alerts." },
+  { icon: Package, title: "Flexible Units & Pricing", desc: "Sell by piece, gram, kilogram, carton, or any unit." },
+  { icon: Wallet, title: "Multi Payment Tracking", desc: "Cash, M-Pesa, card, bank — track everything." },
+  { icon: BarChart3, title: "Sales Reports & Dashboard", desc: "Real-time insights into your business performance." },
+  { icon: Receipt, title: "Receipts", desc: "Professional receipts for every transaction." },
+  { icon: Users, title: "Staff Access", desc: "Multiple attendants with role-based access control." },
+  { icon: ShieldCheck, title: "Audit Trail", desc: "Complete history of every transaction and change." },
+  { icon: RefreshCw, title: "Offline Friendly", desc: "Works even without internet — syncs when you're back online." },
+];
+
+const steps = [
+  { icon: Search, n: "1", title: "Search products", desc: "Find products instantly by name, category, or barcode." },
+  { icon: ShoppingCart, n: "2", title: "Add to cart", desc: "Select quantity and unit — piece, gram, carton, etc." },
+  { icon: CreditCard, n: "3", title: "Choose payment", desc: "Cash, M-Pesa, card, bank — or split payments." },
+  { icon: CheckCircle2, n: "4", title: "Complete sale", desc: "One click to finalize. Receipt generated instantly." },
+];
+
+const units = ["1 piece", "½ piece", "500g", "1kg", "Carton", "5L"];
+const paymentMethods = ["Cash", "M-Pesa", "Card", "Bank"];
+
+const stats = [
+  { label: "Today's sales", value: "KSh 12,450" },
+  { label: "Revenue", value: "KSh 348,200" },
+  { label: "Best seller", value: "Product A" },
+  { label: "Low stock", value: "5 items" },
+];
+
+const trendData = [40, 55, 48, 62, 58, 74, 68, 82, 76, 90, 85, 96];
+
+const industries = [
+  "Retail shops", "Mini supermarkets", "Pharmacies", "Groceries", "Hardware shops", "Wholesalers",
+];
+
+const pricingTiers = [
+  {
+    name: "Professional",
+    price: "KSh 2,500/mo",
+    popular: false,
+    features: ["Full POS", "Inventory management", "Sales reports", "Receipts", "1 user"],
+  },
+  {
+    name: "Business",
+    price: "KSh 5,000/mo",
+    popular: true,
+    features: [
+      "Everything in Professional", "Multi-store support", "Staff access (5 users)",
+      "Advanced reports", "Audit trail",
+    ],
+  },
+];
+
+const faqs = [
+  { q: "Can I sell different units?", a: "Yes — sell by piece, weight, volume, or any custom unit, with different prices per unit." },
+  { q: "Can I track M-Pesa and cash?", a: "Yes — KxTill tracks cash, M-Pesa, card, and bank payments, including partial payments." },
+  { q: "Can I manage multiple products?", a: "Yes — full product catalog with categories, SKUs, and stock tracking." },
+  { q: "Can I use KxTill for a pharmacy or retail shop?", a: "Yes — KxTill works for retail shops, pharmacies, groceries, hardware shops, and more." },
+  { q: "Can I upgrade my plan?", a: "Yes — upgrade anytime as your business grows." },
+  { q: "How does the trial work?", a: "Start using KxTill immediately — no card required to try it out." },
+];
+
+const featureCategories = [
+  {
+    icon: Receipt,
+    title: "POS & Sales",
+    items: [
+      "Fast POS / checkout", "Product search", "Barcode scanning", "Multiple selling units",
+      "Fractional quantities — e.g. ½ piece", "Measured products — kg, litres, metres, etc.",
+      "Packaged products — 500g, carton, box, jerrican", "Different prices per selling unit",
+      "Discounts", "Tax/VAT calculation", "Hold/suspend sale", "Void/cancel sale",
+      "Returns/refunds", "Receipt generation", "Reprint receipts",
+    ],
+  },
+  {
+    icon: Package,
+    title: "Products & Inventory",
+    items: [
+      "Product catalog", "Categories", "SKU/barcodes", "Product variants where needed",
+      "Base units + UOM conversions", "Branch-level stock", "Low-stock alerts",
+      "Stock adjustments", "Stock movement history", "Stock valuation", "Purchase recording",
+      "Supplier management", "Purchase orders", "Stock receiving", "Damaged/lost stock",
+      "Inter-branch transfers", "Centralized inventory view",
+    ],
+  },
+  {
+    icon: Store,
+    title: "Multi-Branch",
+    items: [
+      "Organization-wide branch management", "All-branches view", "Individual branch view",
+      "Branch-specific inventory", "Branch-specific sales", "Branch-specific pricing",
+      "Branch transfers", "Branch-level reports", "Consolidated organization reports",
+      "Branch operating information", "Branch-specific receipt details",
+    ],
+  },
+  {
+    icon: Users,
+    title: "Staff & Access",
+    items: [
+      "Cashiers", "Branch managers", "Inventory managers", "Auditors", "Custom roles",
+      "Branch-specific access", "Permission-based actions", "Staff activity tracking",
+      "Shift management", "Cashier accountability",
+    ],
+  },
+  {
+    icon: Wallet,
+    title: "Payments",
+    items: [
+      "Cash", "M-Pesa", "Card", "Bank", "Other payment methods", "Partial payments",
+      "Payment references", "Payment history", "Daily payment reconciliation",
+      "Branch-level payment reporting",
+    ],
+  },
+  {
+    icon: UserCircle,
+    title: "Customers",
+    items: [
+      "Customer profiles", "Purchase history", "Customer search", "Credit/customer debt",
+      "Credit limits", "Customer statements", "Customer balances",
+      "Cross-branch customer history", "Loyalty/rewards — later",
+    ],
+  },
+  {
+    icon: BarChart3,
+    title: "Reports & Analytics",
+    items: [
+      "Sales dashboard", "Revenue", "Profit", "Sales by product", "Sales by category",
+      "Sales by branch", "Sales by cashier", "Payment-method breakdown", "Best-selling products",
+      "Slow-moving products", "Stock reports", "Low-stock reports", "Purchase reports",
+      "Tax reports", "Expense reports", "Daily/weekly/monthly reports",
+      "Consolidated organization reporting", "Real-time analytics",
+    ],
+  },
+  {
+    icon: Calculator,
+    title: "Expenses",
+    subtitle: "KXBYTE Expenses add-on",
+    items: [
+      "Record expenses", "Expense categories", "Branch-specific expenses",
+      "Recurring expenses", "Expense approval", "Expense reports", "Profit after expenses",
+    ],
+  },
+  {
+    icon: Cpu,
+    title: "Hardware",
+    items: [
+      "ESC/POS printers", "Barcode scanners", "Cash drawers", "Customer displays",
+      "Receipt printers", "Hardware configuration",
+    ],
+  },
+  {
+    icon: RefreshCw,
+    title: "Reliability",
+    items: [
+      "Cloud-based operation", "Automatic backups", "Offline POS", "Local transaction queue",
+      "Automatic synchronization", "Conflict handling", "Connection status",
+    ],
+  },
+  {
+    icon: ShieldCheck,
+    title: "Security & Audit",
+    items: [
+      "KXBYTE Identity", "Organization isolation", "Branch isolation", "Role-based permissions",
+      "Audit logs", "Staff activity history", "Transaction history", "Secure payment records",
+    ],
+  },
+  {
+    icon: Sparkles,
+    title: "AI",
+    subtitle: "Later — via Reports & Dashboard",
+    items: [
+      "Ask questions about sales", "Compare branches", "Explain revenue/profit changes",
+      "Identify slow-moving stock", "Identify fast-moving products", "Suggest reorder priorities",
+      "Summarize daily business performance", "Natural-language report queries",
+      "Business insights", "Anomaly detection",
+    ],
+  },
+];
+
+const quickQuestions = [
+  "Can I sell half a piece?",
+  "How does inventory work?",
+  "What does KxTill cost?",
+  "Can I track M-Pesa and cash?",
+  "How does the trial work?",
+];
+
+// ===== AI ASSISTANT COMPONENT — Client-only =====
+function AiAssistant() {
+  const [isMounted, setIsMounted] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
+    { role: "assistant", content: "Hi! Ask me anything about KxTill." },
+  ]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Fix hydration: only render on client after mount
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setIsMounted(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  const getResponse = (question: string): string => {
+    const q = question.toLowerCase();
+    if (q.includes("half") || q.includes("piece") || q.includes("unit")) {
+      return "Yes! KxTill lets you sell fractional quantities like ½ piece, 500g, 1kg, cartons, and more. Each unit can have its own price.";
+    }
+    if (q.includes("inventory") || q.includes("stock")) {
+      return "KxTill tracks inventory in real-time. You get low-stock alerts, can adjust stock, view movement history, and manage products across multiple branches.";
+    }
+    if (q.includes("cost") || q.includes("price") || q.includes("pricing")) {
+      return "KxTill plans start at KSh 2,500/month for Professional and KSh 5,000/month for Business. Both come with a free trial.";
+    }
+    if (q.includes("mpesa") || q.includes("cash") || q.includes("payment")) {
+      return "KxTill tracks all payment methods — cash, M-Pesa, card, and bank. You can also take partial payments and add payment references.";
+    }
+    if (q.includes("trial")) {
+      return "You can start using KxTill immediately. No credit card required to try it out.";
+    }
+    if (q.includes("pharmacy") || q.includes("retail") || q.includes("shop")) {
+      return "Yes! KxTill works for retail shops, pharmacies, groceries, hardware shops, mini-supermarkets, and wholesalers.";
+    }
+    if (q.includes("upgrade")) {
+      return "Yes — you can upgrade from Professional to Business anytime as your business grows.";
+    }
+    if (q.includes("staff") || q.includes("attendant")) {
+      return "KxTill supports multiple staff with role-based access. You can have cashiers, managers, inventory managers, and more.";
+    }
+    return "That's a great question about KxTill. I'd recommend checking our features section above, or you can start a free trial to explore everything!";
+  };
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+    const userMsg = { role: "user" as const, content: input };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const response = getResponse(input);
+      setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+      setIsTyping(false);
+    }, 600);
+  };
+
+  // Don't render anything on the server
+  if (!isMounted) return null;
+
   return (
-    <div className={styles.page}>
-      {/* ===== NAV ===== */}
-      <nav className={styles.nav}>
-        <div className={styles.navContainer}>
-          <div className={styles.navBrand}>
-            <Image src="/assets/logo.png" alt="KXBYTE" width={32} height={32} />
-            <span className={styles.navBrandName}>KXBYTE Suite</span>
+    <>
+      <button
+        className={styles.fab}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Ask KxTill AI Assistant"
+      >
+        {isOpen ? <X size={24} /> : <Sparkle size={24} />}
+        {!isOpen && <span className={styles.fabLabel}>Ask KxTill</span>}
+      </button>
+
+      {isOpen && (
+        <div className={styles.chatPanel}>
+          <div className={styles.chatHeader}>
+            <span className={styles.chatIcon}>✦</span>
+            <span className={styles.chatTitle}>Ask KxTill</span>
+            <button className={styles.chatClose} onClick={() => setIsOpen(false)}>
+              <X size={18} />
+            </button>
           </div>
-          <div className={styles.navLinks}>
-            <Link href="/products" className={styles.navLink}>Products</Link>
-            <Link href="/pricing" className={styles.navLink}>Pricing</Link>
-            <Link href="/login" className={styles.navLink}>Login</Link>
-            <Link href="/contact" className={styles.navCta}>Get Started</Link>
+
+          <div className={styles.chatMessages}>
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={msg.role === "assistant" ? styles.chatAssistant : styles.chatUser}
+              >
+                {msg.content}
+              </div>
+            ))}
+            {isTyping && (
+              <div className={styles.chatTyping}>
+                <span>.</span><span>.</span><span>.</span>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.chatQuick}>
+            {quickQuestions.map((q) => (
+              <button
+                key={q}
+                className={styles.chatQuickBtn}
+                onClick={() => {
+                  setInput(q);
+                  setTimeout(handleSend, 100);
+                }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.chatInput}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder="Ask about KxTill..."
+              className={styles.chatInputField}
+            />
+            <button
+              onClick={handleSend}
+              className={styles.chatSend}
+              disabled={!input.trim()}
+            >
+              ➤
+            </button>
           </div>
         </div>
-      </nav>
+      )}
+    </>
+  );
+}
 
+
+function TrendChart({ data }: { data: number[] }) {
+  const max = Math.max(...data);
+  const w = 320;
+  const h = 100;
+  const step = w / (data.length - 1);
+  const points = data.map((v, i) => `${i * step},${h - (v / max) * h}`).join(" ");
+  const areaPoints = `0,${h} ${points} ${w},${h}`;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className={styles.trendSvg} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(217,91,45,0.35)" />
+          <stop offset="100%" stopColor="rgba(217,91,45,0)" />
+        </linearGradient>
+      </defs>
+      <polygon points={areaPoints} fill="url(#trendFill)" />
+      <polyline
+        points={points}
+        fill="none"
+        stroke="#d95b2d"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PaymentDonut() {
+  const segments = [
+    { pct: 45, color: "#d95b2d" },
+    { pct: 30, color: "rgba(249,249,249,0.5)" },
+    { pct: 15, color: "rgba(249,249,249,0.28)" },
+    { pct: 10, color: "rgba(249,249,249,0.14)" },
+  ];
+  const r = 40;
+  const c = 2 * Math.PI * r;
+  let offset = 0;
+
+  return (
+    <svg viewBox="0 0 100 100" className={styles.donutSvg}>
+      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(249,249,249,0.06)" strokeWidth="14" />
+      {segments.map((s, i) => {
+        const dash = (s.pct / 100) * c;
+        const el = (
+          <circle
+            key={i}
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            stroke={s.color}
+            strokeWidth="14"
+            strokeDasharray={`${dash} ${c - dash}`}
+            strokeDashoffset={-offset}
+            transform="rotate(-90 50 50)"
+          />
+        );
+        offset += dash;
+        return el;
+      })}
+    </svg>
+  );
+}
+
+export default function KxTillPage() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <main className={styles.page}>
       {/* ===== HERO ===== */}
       <section className={styles.hero}>
-        <div className={styles.container}>
-          <div className={styles.heroGrid}>
-            <div className={styles.heroContent}>
-              <div className={styles.heroProductBadge}>
-                <Image src="/assets/logo.png" alt="KxTill" width={40} height={40} />
-                <span>KxTill</span>
-                <span className={styles.liveBadge}>Live</span>
+        <div className={styles.dotGrid} aria-hidden="true" />
+        <div className={styles.orbitRings} aria-hidden="true">
+          <span />
+          <span />
+        </div>
+        <div className={styles.orbitRingsLeft} aria-hidden="true">
+          <span />
+          <span />
+        </div>
+
+{/* ===== NAV ===== */}
+<nav className={styles.nav}>
+  <Link href="/" className={styles.logo}>
+    <Image
+      src="/assets/logo.png"
+      alt="KXBYTE"
+      width={28}
+      height={28}
+      className={styles.logoImg}
+    />
+    KXBYTE <span className={styles.logoSuite}>Suite</span>
+  </Link>
+
+  <div className={styles.navLinks}>
+    <Link href="/" className={styles.navLink}>Home</Link>
+  </div>
+
+  <div className={styles.navActions}>
+    <Link href="/login" className={styles.navLogin}>Login</Link>
+    <Link href="/signup" className={styles.navCta}>Get Started</Link>
+  </div>
+
+  <button
+    className={styles.menuToggle}
+    aria-label="Toggle menu"
+    onClick={() => setMenuOpen((v) => !v)}
+  >
+    <span />
+    <span />
+  </button>
+</nav>
+
+{/* Mobile menu - only Home, Login, Get Started */}
+{menuOpen && (
+  <div className={styles.mobileMenu}>
+    <Link href="/" className={styles.mobileLink}>Home</Link>
+    <Link href="/login" className={styles.mobileLink}>Login</Link>
+    <Link href="/signup" className={styles.mobileCta}>Get Started</Link>
+  </div>
+)}
+
+
+
+        <div className={styles.heroContent}>
+          <div className={styles.heroIdentity}>
+            <Image src="/assets/logo.png" alt="KxTill" width={40} height={40} className={styles.heroLogo} />
+          </div>
+          <h1>KxTill</h1>
+          <p className={styles.heroTagline}>Point of Sale &amp; Inventory Management</p>
+          <p className={styles.heroDesc}>
+            Sell faster, know your stock, and track your business — all in one place.
+          </p>
+          <div className={styles.heroButtons}>
+            <Link href="/contact" className={styles.primaryBtn}>Start using KxTill</Link>
+            <Link href="/products/kxtill#pricing" className={styles.secondaryBtn}>View pricing</Link>
+          </div>
+        </div>
+
+        <div className={styles.assetWrap}>
+          <Image
+            src="/assets/dashboard3.jpg"
+            alt="KxTill dashboard"
+            width={1400}
+            height={560}
+            priority
+            className={styles.assetImage}
+          />
+          <div className={styles.assetFade} />
+        </div>
+
+        <div className={styles.highlightGrid}>
+          {highlights.map((h) => (
+            <div key={h.title} className={styles.highlightCard}>
+              <div className={styles.cardRow}>
+                <h.icon size={20} className={styles.cardIcon} />
+                <h3>{h.title}</h3>
               </div>
-              <h1 className={styles.heroTitle}>Point of Sale & Inventory Management</h1>
-              <p className={styles.heroDescription}>
-                Sell faster, know your stock, and track your business — all in one place.
+              <p>{h.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== FEATURE GRID ===== */}
+      <section className={styles.section}>
+        <div className={styles.heading}>
+          <h2>Everything you need to run your business</h2>
+        </div>
+        <div className={styles.sectionBlock}>
+          <div className={styles.featureGrid}>
+            {features.map((f) => (
+              <div key={f.title} className={styles.featureCard}>
+                <div className={styles.cardRow}>
+                  <f.icon size={20} className={styles.cardIcon} />
+                  <h3>{f.title}</h3>
+                </div>
+                <p>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== HOW SELLING WORKS ===== */}
+      <section className={styles.sectionAlt}>
+        <div className={styles.heading}>
+          <h2>How selling works</h2>
+          <p>Fast, intuitive, and built for business.</p>
+        </div>
+        <div className={styles.sectionBlock}>
+          <div className={styles.stepsGrid}>
+            {steps.map((s, i) => (
+              <div key={s.n} className={styles.stepCard}>
+                <span className={styles.stepNumber}>
+                  <s.icon size={18} />
+                </span>
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
+                {i < steps.length - 1 && <span className={styles.stepConnector} aria-hidden="true" />}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FLEXIBLE UNITS ===== */}
+      <section className={styles.section}>
+        <div className={styles.sectionBlock}>
+          <div className={styles.splitBlock}>
+            <div>
+              <h2>Flexible products. Powerful inventory.</h2>
+              <p className={styles.splitDesc}>
+                KxTill lets you sell products in any way your customers need.
               </p>
-              <div className={styles.heroActions}>
-                <Link href="/contact" className={styles.heroPrimary}>Start using KxTill</Link>
-                <Link href="#pricing" className={styles.heroSecondary}>View pricing</Link>
+              <ul className={styles.bulletList}>
+                <li>Different prices per selling unit</li>
+                <li>Automatic base-unit stock conversion</li>
+              </ul>
+            </div>
+            <div className={styles.pillCluster}>
+              {units.map((u) => (
+                <span key={u} className={styles.unitPill}>{u}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PAYMENTS ===== */}
+      <section className={styles.sectionAlt}>
+        <div className={styles.sectionBlock}>
+          <div className={styles.splitBlock}>
+            <div className={styles.donutBlock}>
+              <PaymentDonut />
+              <div className={styles.pillCluster}>
+                {paymentMethods.map((m) => (
+                  <span key={m} className={styles.unitPill}>{m}</span>
+                ))}
               </div>
             </div>
-            <div className={styles.heroVisual}>
-              <div className={styles.mockup}>
-                <div className={styles.mockupHeader}>
-                  <span>POS</span>
-                  <span>KxTill</span>
-                </div>
-                <div className={styles.mockupBody}>
-                  <div className={styles.mockupProduct}>Product 1 — KSh 500</div>
-                  <div className={styles.mockupProduct}>Product 2 — KSh 750</div>
-                  <div className={styles.mockupProduct}>Product 3 — KSh 1,200</div>
-                  <div className={styles.mockupCart}>
-                    <span>Total: KSh 2,450</span>
-                    <span className={styles.mockupPay}>Pay</span>
-                  </div>
-                </div>
-              </div>
+            <div>
+              <h2>Payments, simplified</h2>
+              <ul className={styles.bulletList}>
+                <li>Partial payments</li>
+                <li>Payment references</li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ===== VALUE PROPS ===== */}
-      <section className={styles.values}>
-        <div className={styles.container}>
-          <div className={styles.valuesGrid}>
-            <div className={styles.valueCard}>
-              <h3>Sell faster</h3>
-              <p>Complete transactions in seconds with an intuitive POS interface.</p>
-            </div>
-            <div className={styles.valueCard}>
-              <h3>Know your stock</h3>
-              <p>Real-time inventory tracking with low-stock alerts.</p>
-            </div>
-            <div className={styles.valueCard}>
-              <h3>Track your business</h3>
-              <p>Every sale, every payment, every product — all in one place.</p>
-            </div>
-            <div className={styles.valueCard}>
-              <h3>Understand your numbers</h3>
-              <p>Sales reports, revenue insights, and business analytics.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FEATURES ===== */}
-      <section className={styles.features}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Everything you need to run your business</h2>
-          <div className={styles.featuresGrid}>
-            <div className={styles.featureItem}>
-              <h3>POS / Sales</h3>
-              <p>Fast, reliable point of sale for retail businesses.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Inventory Management</h3>
-              <p>Track products, stock levels, and get low-stock alerts.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Flexible Units & Pricing</h3>
-              <p>Sell by piece, gram, kilogram, carton, or any unit.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Multi Payment Tracking</h3>
-              <p>Cash, M-Pesa, card, bank — track everything.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Sales Reports & Dashboard</h3>
-              <p>Real-time insights into your business performance.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Receipts</h3>
-              <p>Professional receipts for every transaction.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Staff Access</h3>
-              <p>Multiple attendants with role-based access control.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Audit Trail</h3>
-              <p>Complete history of every transaction and change.</p>
-            </div>
-            <div className={styles.featureItem}>
-              <h3>Offline Friendly</h3>
-              <p>Works even without internet — syncs when you re back online.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== POS SECTION ===== */}
-      <section className={styles.posSection}>
-        <div className={styles.container}>
-          <div className={styles.sectionHeader}>
-            <h2>How selling works</h2>
-            <p>Fast, intuitive, and built for business.</p>
-          </div>
-          <div className={styles.posGrid}>
-            <div className={styles.posStep}>
-              <span className={styles.stepNumber}>1</span>
-              <h3>Search products</h3>
-              <p>Find products instantly by name, category, or barcode.</p>
-            </div>
-            <div className={styles.posStep}>
-              <span className={styles.stepNumber}>2</span>
-              <h3>Add to cart</h3>
-              <p>Select quantity and unit — piece, gram, carton, etc.</p>
-            </div>
-            <div className={styles.posStep}>
-              <span className={styles.stepNumber}>3</span>
-              <h3>Choose payment</h3>
-              <p>Cash, M-Pesa, card, bank — or split payments.</p>
-            </div>
-            <div className={styles.posStep}>
-              <span className={styles.stepNumber}>4</span>
-              <h3>Complete sale</h3>
-              <p>One click to finalize. Receipt generated instantly.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FLEXIBLE PRODUCTS ===== */}
-      <section className={styles.flexible}>
-        <div className={styles.container}>
-          <div className={styles.flexibleContent}>
-            <h2>Flexible products. Powerful inventory.</h2>
-            <p>KxTill lets you sell products in any way your customers need.</p>
-            <div className={styles.unitExamples}>
-              <span className={styles.unitPill}>1 piece</span>
-              <span className={styles.unitPill}>½ piece</span>
-              <span className={styles.unitPill}>500g</span>
-              <span className={styles.unitPill}>1kg</span>
-              <span className={styles.unitPill}>Carton</span>
-              <span className={styles.unitPill}>5L</span>
-            </div>
-            <div className={styles.unitDetails}>
-              <div className={styles.unitDetail}>
-                <span>Different prices per selling unit</span>
-              </div>
-              <div className={styles.unitDetail}>
-                <span>Automatic base-unit stock conversion</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== PAYMENTS SECTION ===== */}
-      <section className={styles.payments}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Payments, simplified</h2>
-          <div className={styles.paymentsGrid}>
-            <div className={styles.paymentItem}>Cash</div>
-            <div className={styles.paymentItem}>M-Pesa</div>
-            <div className={styles.paymentItem}>Card</div>
-            <div className={styles.paymentItem}>Bank</div>
-            <div className={styles.paymentItem}>Partial payments</div>
-            <div className={styles.paymentItem}>Payment references</div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== BUSINESS INSIGHTS ===== */}
-      <section className={styles.insights}>
-        <div className={styles.container}>
-          <div className={styles.insightsGrid}>
-            <div className={styles.insightsContent}>
+      {/* ===== ANALYTICS ===== */}
+      <section className={styles.section}>
+        <div className={styles.sectionBlock}>
+          <div className={styles.splitBlock}>
+            <div>
               <h2>Know your business</h2>
-              <p>Real-time insights to help you make better decisions.</p>
-              <ul className={styles.insightsList}>
+              <p className={styles.splitDesc}>Real-time insights to help you make better decisions.</p>
+              <ul className={styles.bulletList}>
                 <li>Sales overview</li>
                 <li>Revenue tracking</li>
                 <li>Best-selling products</li>
@@ -219,159 +623,125 @@ export default function KxTillPage() {
                 <li>Sales trends</li>
               </ul>
             </div>
-            <div className={styles.insightsVisual}>
-              <div className={styles.dashboardMockup}>
-                <div className={styles.dashboardRow}>
-                  <span className={styles.dashboardLabel}>Today s sales</span>
-                  <span className={styles.dashboardValue}>KSh 12,450</span>
-                </div>
-                <div className={styles.dashboardRow}>
-                  <span className={styles.dashboardLabel}>Revenue</span>
-                  <span className={styles.dashboardValue}>KSh 348,200</span>
-                </div>
-                <div className={styles.dashboardRow}>
-                  <span className={styles.dashboardLabel}>Best seller</span>
-                  <span className={styles.dashboardValue}>Product A</span>
-                </div>
-                <div className={styles.dashboardRow}>
-                  <span className={styles.dashboardLabel}>Low stock</span>
-                  <span className={styles.dashboardValue}>5 items</span>
-                </div>
+            <div className={styles.analyticsCard}>
+              <TrendChart data={trendData} />
+              <div className={styles.statsGrid}>
+                {stats.map((s) => (
+                  <div key={s.label} className={styles.statCard}>
+                    <span className={styles.statLabel}>{s.label}</span>
+                    <span className={styles.statValue}>{s.value}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ===== WHO IT'S FOR ===== */}
-      <section className={styles.audience}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Built for growing businesses</h2>
-          <div className={styles.audienceGrid}>
-            <span className={styles.audiencePill}>Retail shops</span>
-            <span className={styles.audiencePill}>Mini supermarkets</span>
-            <span className={styles.audiencePill}>Pharmacies</span>
-            <span className={styles.audiencePill}>Groceries</span>
-            <span className={styles.audiencePill}>Hardware shops</span>
-            <span className={styles.audiencePill}>Wholesalers</span>
-          </div>
+      {/* ===== INDUSTRIES ===== */}
+      <section className={styles.industriesSection}>
+        <p className={styles.industriesHeading}>Built for growing businesses</p>
+        <div className={styles.industriesStrip}>
+          {industries.map((i) => (
+            <span key={i} className={styles.industryPill}>{i}</span>
+          ))}
         </div>
       </section>
 
       {/* ===== PRICING ===== */}
-      <section id="pricing" className={styles.pricing}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Simple, transparent pricing</h2>
+      <section className={styles.section} id="pricing">
+        <div className={styles.heading}>
+          <h2>Simple, transparent pricing</h2>
+        </div>
+        <div className={styles.sectionBlock}>
           <div className={styles.pricingGrid}>
-            <div className={styles.pricingCard}>
-              <h3>Professional</h3>
-              <p className={styles.pricingPrice}>KSh 2,500<span>/mo</span></p>
-              <ul className={styles.pricingFeatures}>
-                <li>✓ Full POS</li>
-                <li>✓ Inventory management</li>
-                <li>✓ Sales reports</li>
-                <li>✓ Receipts</li>
-                <li>✓ 1 user</li>
-              </ul>
-              <Link href="/contact" className={styles.pricingCta}>Start trial</Link>
-            </div>
-            <div className={`${styles.pricingCard} ${styles.pricingPopular}`}>
-              <span className={styles.popularBadge}>Popular</span>
-              <h3>Business</h3>
-              <p className={styles.pricingPrice}>KSh 5,000<span>/mo</span></p>
-              <ul className={styles.pricingFeatures}>
-                <li>✓ Everything in Professional</li>
-                <li>✓ Multi-store support</li>
-                <li>✓ Staff access (5 users)</li>
-                <li>✓ Advanced reports</li>
-                <li>✓ Audit trail</li>
-              </ul>
-              <Link href="/contact" className={styles.pricingCta}>Start trial</Link>
-            </div>
+            {pricingTiers.map((tier) => (
+              <div key={tier.name} className={tier.popular ? styles.priceCardPopular : styles.priceCard}>
+                {tier.popular && <span className={styles.popularBadge}>Popular</span>}
+                <h3>{tier.name}</h3>
+                <p className={styles.priceValue}>{tier.price}</p>
+                <ul className={styles.priceFeatureList}>
+                  {tier.features.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+                <Link href="/contact" className={styles.ctaButton}>Start trial</Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ===== FAQ ===== */}
-      <section className={styles.faq}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Frequently asked questions</h2>
-          <div className={styles.faqGrid}>
-            <details className={styles.faqItem}>
-              <summary>Can I sell different units?</summary>
-              <p>Yes. KxTill supports multiple selling units per product — piece, gram, kilogram, carton, and more.</p>
-            </details>
-            <details className={styles.faqItem}>
-              <summary>Can I track M-Pesa and cash?</summary>
-              <p>Yes. KxTill tracks all payment methods including cash, M-Pesa, card, and bank.</p>
-            </details>
-            <details className={styles.faqItem}>
-              <summary>Can I manage multiple products?</summary>
-              <p>Yes. KxTill supports unlimited products with categories, units, and pricing.</p>
-            </details>
-            <details className={styles.faqItem}>
-              <summary>Can I use KxTill for a pharmacy or retail shop?</summary>
-              <p>Yes. KxTill is built for retail businesses of all types — pharmacies, supermarkets, hardware, and more.</p>
-            </details>
-            <details className={styles.faqItem}>
-              <summary>Can I upgrade my plan?</summary>
-              <p>Yes. You can upgrade from Professional to Business at any time.</p>
-            </details>
-            <details className={styles.faqItem}>
-              <summary>How does the trial work?</summary>
-              <p>Start with a 14-day free trial. No credit card required.</p>
-            </details>
+      <section className={styles.sectionAlt}>
+        <div className={styles.heading}>
+          <h2>Frequently asked questions</h2>
+        </div>
+        <div className={styles.sectionBlock}>
+          <div className={styles.faqList}>
+            {faqs.map((item, i) => {
+              const isOpen = openFaq === i;
+              return (
+                <div key={item.q} className={styles.faqItem}>
+                  <button
+                    className={styles.faqQuestion}
+                    onClick={() => setOpenFaq(isOpen ? null : i)}
+                    aria-expanded={isOpen}
+                  >
+                    {item.q}
+                    <span className={isOpen ? styles.faqIconOpen : styles.faqIcon}>+</span>
+                  </button>
+                  {isOpen && <p className={styles.faqAnswer}>{item.a}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FULL FEATURE SET ===== */}
+      <section className={styles.section}>
+        <div className={styles.heading}>
+          <h2>Everything KxTill can do</h2>
+          <p>The complete feature set behind the product.</p>
+        </div>
+        <div className={styles.sectionBlock}>
+          <div className={styles.categoryGrid}>
+            {featureCategories.map((cat) => (
+              <div key={cat.title} className={styles.categoryCard}>
+                <div className={styles.categoryHeader}>
+                  <span className={styles.categoryIconWrap}>
+                    <cat.icon size={18} />
+                  </span>
+                  <div>
+                    <h3>{cat.title}</h3>
+                    {cat.subtitle && <span className={styles.categorySubtitle}>{cat.subtitle}</span>}
+                  </div>
+                </div>
+                <ul className={styles.categoryList}>
+                  {cat.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ===== FINAL CTA ===== */}
-      <section className={styles.cta}>
-        <div className={styles.container}>
-          <div className={styles.ctaContent}>
-            <h2>Ready to take control of your business?</h2>
-            <p>Join thousands of businesses using KxTill to sell faster and grow smarter.</p>
-            <div className={styles.ctaActions}>
-              <Link href="/contact" className={styles.ctaPrimary}>Start using KxTill</Link>
-              <Link href="#pricing" className={styles.ctaSecondary}>Explore pricing</Link>
-            </div>
-          </div>
+      <section className={styles.finalCta}>
+        <div className={styles.finalCtaGlow} aria-hidden="true" />
+        <h2>Ready to take control of your business?</h2>
+        <p>Join thousands of businesses using KxTill to sell faster and grow smarter.</p>
+        <div className={styles.heroButtons}>
+          <Link href="/contact" className={styles.primaryBtn}>Start using KxTill</Link>
+          <Link href="/products/kxtill#pricing" className={styles.secondaryBtn}>Explore pricing</Link>
         </div>
       </section>
 
-      {/* ===== FOOTER ===== */}
-      <footer className={styles.footer}>
-        <div className={styles.container}>
-          <div className={styles.footerGrid}>
-            <div className={styles.footerBrand}>
-              <Image src="/assets/logo.png" alt="KXBYTE" width={32} height={32} />
-              <span>KXBYTE Suite</span>
-            </div>
-            <div className={styles.footerLinks}>
-              <div>
-                <h4>Products</h4>
-                <Link href="/products/kxtill">KxTill</Link>
-                <Link href="/products/kxinvoice" className={styles.comingSoon}>KxInvoice</Link>
-                <Link href="/products/kxcrm" className={styles.comingSoon}>KxCRM</Link>
-              </div>
-              <div>
-                <h4>Company</h4>
-                <Link href="/about">About</Link>
-                <Link href="/contact">Contact</Link>
-              </div>
-              <div>
-                <h4>Support</h4>
-                <Link href="/help">Help Center</Link>
-                <Link href="/terms">Terms</Link>
-                <Link href="/privacy">Privacy</Link>
-              </div>
-            </div>
-          </div>
-          <div className={styles.footerBottom}>
-            <span>&copy; 2026 KXBYTE. All rights reserved.</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+      {/* ===== AI ASSISTANT FAB ===== */}
+      <AiAssistant />
+    </main>
   );
 }
