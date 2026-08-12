@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import axios from "axios";
-import { useAuth, Organization, Branch } from "@/contexts/AuthContext";
+import { useAuth, Organization } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import styles from "./page.module.css";
 
@@ -64,7 +64,6 @@ export default function SelectOrganizationPage() {
     setAuth, 
     setActiveOrganization, 
     loadBranches, 
-    setActiveBranch,
     isLoading 
   } = useAuth();
 
@@ -123,39 +122,23 @@ export default function SelectOrganizationPage() {
   }, []);
 
   // Auto-select if only one organization
-useEffect(() => {
-  if (!checking && organizations.length === 1 && pendingInvites.length === 0) {
-    const org = organizations[0];
-    setActiveOrganization(org.id).then(() => {
-      loadBranches(org.id).then((branches) => {
-        if (branches.length <= 1) {
-          if (branches.length === 1) {
-            setActiveBranch(branches[0]);
-          }
+  useEffect(() => {
+    if (!checking && organizations.length === 1 && pendingInvites.length === 0) {
+      const org = organizations[0];
+      setActiveOrganization(org.id).then(() => {
+        loadBranches(org.id).then(() => {
           router.push("/dashboard");
-        } else {
-          router.push("/onboarding/select-branch");
-        }
+        });
       });
-    });
-  }
-}, [checking, organizations, pendingInvites]);
+    }
+  }, [checking, organizations, pendingInvites, setActiveOrganization, loadBranches, router]);
 
   const handleSelect = async (orgId: string) => {
     setError("");
     try {
       await setActiveOrganization(orgId);
-      
-      const branches = await loadBranches(orgId);
-      
-      if (branches.length === 0) {
-        router.push("/dashboard");
-      } else if (branches.length === 1) {
-        setActiveBranch(branches[0]);
-        router.push("/dashboard");
-      } else {
-        router.push("/onboarding/select-branch");
-      }
+      await loadBranches(orgId);
+      router.push("/dashboard");
     } catch (err) {
       setError("Failed to select organization. Please try again.");
       console.error(err);
@@ -183,15 +166,8 @@ useEffect(() => {
       if (updatedOrgs.length === 1 && remainingInvites.length === 0) {
         const org = updatedOrgs[0];
         await setActiveOrganization(org.id);
-        const branches = await loadBranches(org.id);
-        if (branches.length <= 1) {
-          if (branches.length === 1) {
-            setActiveBranch(branches[0]);
-          }
-          router.push("/dashboard");
-        } else {
-          router.push("/onboarding/select-branch");
-        }
+        await loadBranches(org.id);
+        router.push("/dashboard");
       }
     } catch (err) {
       setError("Failed to accept invitation. Please try again.");
@@ -252,15 +228,8 @@ useEffect(() => {
       localStorage.setItem("defaultBranch", JSON.stringify(defaultBranch));
 
       await setActiveOrganization(newOrg.id);
-      const branches = await loadBranches(newOrg.id);
-      if (branches.length <= 1) {
-        if (branches.length === 1) {
-          setActiveBranch(branches[0]);
-        }
-        router.push("/dashboard");
-      } else {
-        router.push("/onboarding/select-branch");
-      }
+      await loadBranches(newOrg.id);
+      router.push("/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || "Failed to create organization");

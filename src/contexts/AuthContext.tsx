@@ -1,3 +1,5 @@
+// src/contexts/AuthContext.tsx
+
 "use client";
 
 import {
@@ -31,15 +33,14 @@ export type Organization = {
   branchIds?: string[];
 };
 
+// Reduced org shape returned inline by /me/dashboard — no ownerId,
+// no country. Keep this separate from the fuller org list shape above.
 export type OrganizationDetail = {
   id: string;
   name: string;
   slug: string;
-  ownerId: string;
-  country: string;
   currency: string;
   timezone: string;
-  isActive: boolean;
 };
 
 export type Branch = {
@@ -53,6 +54,36 @@ export type Branch = {
 
 export type BranchesResponse = {
   branches: Branch[];
+};
+
+export type Membership = {
+  id: string;
+  roleId: string | null;
+  hasAllBranches: boolean;
+  isActive: boolean;
+};
+
+export type SuiteProduct = {
+  key: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  subscriptionStatus: string;
+  subscriptionIsActive: boolean;
+};
+
+// The full payload from GET /auth/me/dashboard?organizationId=...
+// This is the single source of truth for "what can this user see/do
+// in this org" — role, branches, products, and permissions all come
+// from here instead of being separately fetched/guessed on the client.
+export type SuiteContext = {
+  user: User;
+  organization: OrganizationDetail;
+  membership: Membership;
+  permissions: string[];
+  branches: Branch[];
+  products: SuiteProduct[];
+  lowStockCount: number;
 };
 
 type LoginResponse = {
@@ -71,12 +102,15 @@ type AuthContextType = {
   activeOrganizationDetail: OrganizationDetail | null;
   branches: Branch[];
   activeBranch: Branch | null;
+  suiteContext: SuiteContext | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ hasOrganizations: boolean }>;
   logout: () => void;
   setAuth: (user: User, accessToken: string, refreshToken: string, organizations: Organization[]) => void;
   setActiveOrganization: (orgId: string) => Promise<void>;
   loadBranches: (orgId: string) => Promise<Branch[]>;
+  loadSuiteContext: (organizationId: string) => Promise<SuiteContext>;
+  hasPermission: (permission: string) => boolean;
   setActiveBranch: (branch: Branch | null) => void;
   switchBranch: (branchId: string) => Promise<void>;
   isAuthenticated: boolean;
@@ -112,12 +146,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeOrganization, setActiveOrganizationState] = useState<Organization | null>(() =>
     safeLocalStorageGet<Organization | null>("activeOrganization", null)
   );
-  const [activeOrganizationDetail, setActiveOrganizationDetail] = useState<OrganizationDetail | null>(null);
+  const [activeOrganizationDetail, setActiveOrganizationDetail] = useState<OrganizationDetail | null>(
+    () => safeLocalStorageGet<OrganizationDetail | null>("activeOrganizationDetail", null)
+  );
   const [branches, setBranches] = useState<Branch[]>(() =>
     safeLocalStorageGet<Branch[]>("branches", [])
   );
   const [activeBranch, setActiveBranchState] = useState<Branch | null>(() =>
     safeLocalStorageGet<Branch | null>("activeBranch", null)
+  );
+  const [suiteContext, setSuiteContext] = useState<SuiteContext | null>(() =>
+    safeLocalStorageGet<SuiteContext | null>("suiteContext", null)
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -165,13 +204,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveOrganizationDetail(null);
     setBranches([]);
     setActiveBranchState(null);
+    setSuiteContext(null);
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("organizations");
     localStorage.removeItem("activeOrganization");
+    localStorage.removeItem("activeOrganizationDetail");
     localStorage.removeItem("branches");
     localStorage.removeItem("activeBranch");
+    localStorage.removeItem("suiteContext");
+  };
+
+  // The single call that replaces separate org-detail + branches +
+  // subscriptions fetches. Everything the UI needs to render this org
+  // (branches, permissions, active products, low-stock count) comes
+  // back in one response.
+  const loadSuiteContext = async (organizationId: string): Promise<SuiteContext> => {
+    const response = await api.get<SuiteContext>(
+      `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
+    );
+    const context = response.data;
+
+    setSuiteContext(context);
+    localStorage.setItem("suiteContext", JSON.stringify(context));
+
+    setActiveOrganizationDetail(context.organization);
+    localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
+
+    setBranches(context.branches);
+    localStorage.setItem("branches", JSON.stringify(context.branches));
+
+    return context;
   };
 
   const setAuth = (user: User, accessToken: string, refreshToken: string, organizations: Organization[]) => {
@@ -193,25 +257,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       (async () => {
         try {
-          const detailResponse = await api.get<{ organization: OrganizationDetail }>(
-            `/api/v1/organizations/${org.id}`
-          );
-          setActiveOrganizationDetail(detailResponse.data.organization);
+          const context = await loadSuiteContext(org.id);
 
-          const branchesResponse = await api.get<BranchesResponse>(
-            `/api/v1/organizations/${org.id}/branches/my`
-          );
-          const items = branchesResponse.data.branches || [];
-          setBranches(items);
-          localStorage.setItem("branches", JSON.stringify(items));
-
-          // Auto-select if only one branch
-          if (items.length === 1) {
-            setActiveBranchState(items[0]);
-            localStorage.setItem("activeBranch", JSON.stringify(items[0]));
+          if (context.branches.length === 1) {
+            setActiveBranchState(context.branches[0]);
+            localStorage.setItem("activeBranch", JSON.stringify(context.branches[0]));
           }
         } catch (err) {
-          console.error("Failed to fetch org details:", err);
+          console.error("Failed to load suite context:", err);
         }
       })();
     }
@@ -228,19 +281,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveOrganizationState(org);
       localStorage.setItem("activeOrganization", JSON.stringify(org));
 
-      const detailResponse = await api.get<{ organization: OrganizationDetail }>(
-        `/api/v1/organizations/${orgId}`
-      );
-      setActiveOrganizationDetail(detailResponse.data.organization);
+      const context = await loadSuiteContext(orgId);
 
-      const items = await loadBranches(orgId);
-
-      // Auto-select if only one branch
-      if (items.length === 1) {
-        setActiveBranchState(items[0]);
-        localStorage.setItem("activeBranch", JSON.stringify(items[0]));
+      // Auto-select if only one branch, clear if multiple (matches the
+      // select-branch screen's own 0/1/many skip rule).
+      if (context.branches.length === 1) {
+        setActiveBranchState(context.branches[0]);
+        localStorage.setItem("activeBranch", JSON.stringify(context.branches[0]));
       } else {
-        // Clear branch selection if multiple
         setActiveBranchState(null);
         localStorage.removeItem("activeBranch");
       }
@@ -252,6 +300,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Standalone branch refresh — used e.g. after adding a new branch,
+  // where refetching the whole suite context would be overkill.
   const loadBranches = async (orgId: string): Promise<Branch[]> => {
     try {
       const response = await api.get<BranchesResponse>(
@@ -265,6 +315,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to load branches:", err);
       throw err;
     }
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    return suiteContext?.permissions.includes(permission) ?? false;
   };
 
   const setActiveBranch = (branch: Branch | null) => {
@@ -295,12 +349,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeOrganizationDetail,
         branches,
         activeBranch,
+        suiteContext,
         isLoading,
         login,
         logout,
         setAuth,
         setActiveOrganization,
         loadBranches,
+        loadSuiteContext,
+        hasPermission,
         setActiveBranch,
         switchBranch,
         isAuthenticated: !!user && !!accessToken,
