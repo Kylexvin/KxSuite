@@ -1,0 +1,389 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(249, 249, 249, 0.06);
+  border-top-color: #d95b2d;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error {
+  padding: 20px;
+  background: rgba(217, 91, 45, 0.1);
+  border: 0.6px solid rgba(217, 91, 45, 0.15);
+  border-radius: 10px;
+  color: #d95b2d;
+  text-align: center;
+}
+
+/* Organization Selector */
+.orgSelector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.orgSelector h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  margin-bottom: 24px;
+}
+
+.orgGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.orgCard {
+  background: #0a0a0a;
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #f9f9f9;
+}
+
+.orgCard:hover {
+  border-color: rgba(217, 91, 45, 0.3);
+  transform: translateY(-2px);
+}
+
+.orgCard h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.orgRole {
+  font-size: 0.8rem;
+  opacity: 0.4;
+}
+
+/* Branch Selector */
+.branchSelector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #0a0a0a;
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 10px;
+}
+
+.branchSelector label {
+  font-size: 0.85rem;
+  opacity: 0.5;
+  font-weight: 500;
+}
+
+.branchSelect {
+  background: rgba(249, 249, 249, 0.04);
+  border: 0.6px solid rgba(249, 249, 249, 0.08);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: #f9f9f9;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.branchSelect:focus {
+  border-color: rgba(217, 91, 45, 0.3);
+}
+
+.branchSelect option {
+  background: #0a0a0a;
+  color: #f9f9f9;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.statCard {
+  background: #0a0a0a;
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: 0.4;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 4px 0 2px;
+}
+
+.statSub {
+  font-size: 0.78rem;
+  opacity: 0.4;
+}
+
+.statGrowth {
+  color: #4caf50;
+  margin-left: 8px;
+}
+
+/* Two Column Layout */
+.twoColumn {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+.card {
+  background: #0a0a0a;
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+}
+
+.empty {
+  color: #f9f9f9;
+  opacity: 0.25;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* Sales List */
+.salesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.saleItem {
+  padding: 12px 0;
+  border-bottom: 0.6px solid rgba(249, 249, 249, 0.04);
+}
+
+.saleItem:last-child {
+  border-bottom: none;
+}
+
+.saleInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.saleAmount {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.saleBranch {
+  font-size: 0.78rem;
+  opacity: 0.4;
+}
+
+.saleMeta {
+  display: flex;
+  gap: 12px;
+  margin: 4px 0 8px;
+  font-size: 0.78rem;
+  opacity: 0.3;
+}
+
+.saleItems {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.saleItemTag {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  background: rgba(249, 249, 249, 0.04);
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 999px;
+  opacity: 0.5;
+}
+
+/* Right Column */
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Subscriptions */
+.subscriptionList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subscriptionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 0.6px solid rgba(249, 249, 249, 0.04);
+}
+
+.subscriptionItem:last-child {
+  border-bottom: none;
+}
+
+.subProduct {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.subStatus {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.statusTrial {
+  background: rgba(217, 91, 45, 0.12);
+  color: #d95b2d;
+}
+
+.statusActive {
+  background: rgba(76, 175, 80, 0.12);
+  color: #4caf50;
+}
+
+.subPlan {
+  font-size: 0.78rem;
+  opacity: 0.4;
+}
+
+.subDays {
+  font-size: 0.72rem;
+  opacity: 0.3;
+}
+
+/* Members */
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.memberItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 0.6px solid rgba(249, 249, 249, 0.04);
+}
+
+.memberItem:last-child {
+  border-bottom: none;
+}
+
+.memberName {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.memberRole {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  background: rgba(249, 249, 249, 0.04);
+  border-radius: 999px;
+  opacity: 0.4;
+}
+
+.memberEmail {
+  font-size: 0.72rem;
+  opacity: 0.3;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .twoColumn {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .statValue {
+    font-size: 1.2rem;
+  }
+
+  .orgGrid {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+  }
+
+  .branchSelector {
+    flex-wrap: wrap;
+  }
+
+  .saleInfo {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .subscriptionItem {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .memberItem {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,231 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: #020202;
+  color: #f9f9f9;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #020202;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(249, 249, 249, 0.06);
+  border-top-color: #d95b2d;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: #0a0a0a;
+  border-right: 0.6px solid rgba(249, 249, 249, 0.06);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  padding: 24px 0;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.sidebarBrand {
+  padding: 0 20px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f9f9f9;
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding: 0 12px;
+}
+
+.sidebarLink {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #f9f9f9;
+  opacity: 0.5;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.sidebarLink:hover {
+  opacity: 0.8;
+  background: rgba(249, 249, 249, 0.04);
+}
+
+.sidebarLinkActive {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #f9f9f9;
+  text-decoration: none;
+  font-size: 0.9rem;
+  background: rgba(217, 91, 45, 0.08);
+  color: #d95b2d;
+  font-weight: 500;
+}
+
+.sidebarFooter {
+  padding: 16px 12px 0;
+  border-top: 0.6px solid rgba(249, 249, 249, 0.06);
+  margin: 0 12px;
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 8px;
+  color: #f9f9f9;
+  opacity: 0.4;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutBtn:hover {
+  opacity: 0.8;
+  background: rgba(249, 249, 249, 0.04);
+}
+
+/* Main */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 0 32px 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0 24px;
+  border-bottom: 0.6px solid rgba(249, 249, 249, 0.06);
+  margin-bottom: 24px;
+}
+
+.headerLeft h1 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.orgBadge {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  background: rgba(249, 249, 249, 0.04);
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 999px;
+  color: #f9f9f9;
+  opacity: 0.6;
+}
+
+.content {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 64px;
+    padding: 16px 0;
+  }
+
+  .sidebarBrand {
+    padding: 0 12px 24px;
+    font-size: 0;
+  }
+
+  .sidebarBrand span {
+    font-size: 0;
+  }
+
+  .sidebarLink {
+    padding: 10px;
+    font-size: 0;
+    text-align: center;
+  }
+
+  .sidebarLinkActive {
+    padding: 10px;
+    font-size: 0;
+    text-align: center;
+  }
+
+  .sidebarLink::before {
+    content: "•";
+    font-size: 1.2rem;
+  }
+
+  .sidebarLinkActive::before {
+    content: "•";
+    font-size: 1.2rem;
+  }
+
+  .sidebarFooter {
+    padding: 12px 8px 0;
+    margin: 0 8px;
+  }
+
+  .logoutBtn {
+    font-size: 0;
+    padding: 10px;
+  }
+
+  .logoutBtn::before {
+    content: "✕";
+    font-size: 1rem;
+  }
+
+  .main {
+    padding: 0 16px 16px;
+  }
+
+  .header {
+    padding: 16px 0 20px;
+  }
+}
+
+/* Add this to the existing file */
+.userName {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  background: rgba(249, 249, 249, 0.04);
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 999px;
+  color: #f9f9f9;
+  opacity: 0.6;
+}
+
+/* Update headerRight to handle wrapping */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
