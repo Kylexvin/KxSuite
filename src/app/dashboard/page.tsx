@@ -12,7 +12,6 @@ import {
   PieChart as PieChartIcon,
   RefreshCw,
   Bot,
-  Zap,
   X,
   ChevronRight,
   CheckCircle2,
@@ -28,8 +27,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -288,7 +285,7 @@ export default function DashboardPage() {
     { name: "Expired", value: statusCounts.expired || 0, color: "#ef5350" },
   ].filter(d => d.value > 0);
 
-  // Activity chart — last 7 days (heat line graph)
+  // Activity chart — last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -304,7 +301,6 @@ export default function DashboardPage() {
   const chartData = last7Days.map((date) => ({
     date: new Date(date).toLocaleDateString("en-KE", { day: "2-digit", month: "short" }),
     count: activityCounts[date] || 0,
-    fullDate: date,
   }));
 
   // Sales chart
@@ -376,20 +372,21 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      {/* ===== TOP ROW: Org Header + AI Chat ===== */}
+      {/* ===== TOP ROW: Org Header + Stats + AI ===== */}
       <div className={styles.topRow}>
         <div className={styles.orgHeader}>
           <div className={styles.orgHeaderGrid}>
+            {/* Left: Avatar + Name */}
             <div className={styles.orgHeaderMain}>
               <div className={styles.orgAvatar}>
                 {activeOrganization?.name?.charAt(0) || "O"}
               </div>
-              <div className={styles.orgHeaderInfo}>
-                <h1 className={styles.orgHeaderName}>
-                  {activeOrganization?.name || "Organization"}
-                </h1>
-              </div>
+              <h1 className={styles.orgHeaderName}>
+                {activeOrganization?.name || "Organization"}
+              </h1>
             </div>
+
+            {/* Right: Compact Stats */}
             <div className={styles.orgHeaderStats}>
               <div className={styles.headerStatItem}>
                 <span className={styles.headerStatValue}>{totalBranches}</span>
@@ -407,6 +404,34 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Bottom: Stats Strip */}
+          <div className={styles.orgStatsStrip}>
+            <div className={styles.orgStatItem}>
+              <span className={styles.orgStatValue}>{totalProducts}</span>
+              <span className={styles.orgStatLabel}>Products</span>
+            </div>
+            <div className={styles.orgStatDivider} />
+            <div className={styles.orgStatItem}>
+              <span className={styles.orgStatValue}>{activeProducts}</span>
+              <span className={styles.orgStatLabel}>Active</span>
+            </div>
+            <div className={styles.orgStatDivider} />
+            <div className={styles.orgStatItem}>
+              <span className={styles.orgStatValue}>{totalBranches}</span>
+              <span className={styles.orgStatLabel}>Branches</span>
+            </div>
+            <div className={styles.orgStatDivider} />
+            <div className={styles.orgStatItem}>
+              <span className={styles.orgStatValue}>{totalMembers}</span>
+              <span className={styles.orgStatLabel}>Members</span>
+            </div>
+            <div className={styles.orgStatDivider} />
+            <div className={styles.orgStatItem}>
+              <span className={styles.orgStatValue}>{pendingMembers}</span>
+              <span className={styles.orgStatLabel}>Pending</span>
+            </div>
+          </div>
         </div>
 
         {/* AI Chat — desktop always visible */}
@@ -415,35 +440,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ===== STATS STRIP ===== */}
-      <div className={styles.statsStrip}>
-        <div className={styles.statItem}>
-          <span className={styles.statValue}>{totalProducts}</span>
-          <span className={styles.statLabel}>Products</span>
-        </div>
-        <div className={styles.statDivider} />
-        <div className={styles.statItem}>
-          <span className={styles.statValue}>{activeProducts}</span>
-          <span className={styles.statLabel}>Active</span>
-        </div>
-        <div className={styles.statDivider} />
-        <div className={styles.statItem}>
-          <span className={styles.statValue}>{totalBranches}</span>
-          <span className={styles.statLabel}>Branches</span>
-        </div>
-        <div className={styles.statDivider} />
-        <div className={styles.statItem}>
-          <span className={styles.statValue}>{totalMembers}</span>
-          <span className={styles.statLabel}>Members</span>
-        </div>
-        <div className={styles.statDivider} />
-        <div className={styles.statItem}>
-          <span className={styles.statValue}>{pendingMembers}</span>
-          <span className={styles.statLabel}>Pending</span>
-        </div>
-      </div>
-
-      {/* ===== TWO COLUMN: Donut + Heat Line Chart ===== */}
+      {/* ===== TWO COLUMN: Donut + Activity Chart ===== */}
       <div className={styles.twoCol}>
         {/* Left: Product Distribution */}
         <div className={styles.chartCard}>
@@ -490,7 +487,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right: Heat Line Chart */}
+        {/* Right: Activity Chart (Heat Line) */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitle}>

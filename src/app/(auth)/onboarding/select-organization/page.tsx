@@ -17,6 +17,7 @@ import {
   Crown,
   Mail,
   Rocket,
+  CheckCircle,
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -75,16 +76,19 @@ export default function SelectOrganizationPage() {
     setActiveOrganization,
     loadBranches,
     isLoading,
+    setActiveOrganizationState,
   } = useAuth();
 
   const [pendingInvites, setPendingInvites] = useState<PendingInvitation[]>([]);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({ name: "", country: "KE" });
   
   const hasLoaded = useRef(false);
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadEverything = useCallback(async () => {
     if (hasLoaded.current) return;
@@ -141,6 +145,15 @@ export default function SelectOrganizationPage() {
   useEffect(() => {
     loadEverything();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
   }, []);
 
   const handleSelect = async (orgId: string) => {
@@ -209,6 +222,7 @@ export default function SelectOrganizationPage() {
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
     setCreating(true);
 
     try {
@@ -223,7 +237,7 @@ export default function SelectOrganizationPage() {
         id: organization.id,
         name: organization.name,
         slug: organization.slug,
-        role: membership.role?.name || "MEMBER",
+        role: membership.role?.name || "OWNER",
         hasAllBranches: membership.hasAllBranches,
         membershipId: membership.id,
       };
@@ -232,14 +246,28 @@ export default function SelectOrganizationPage() {
 
       const accessToken = localStorage.getItem("accessToken") || "";
       const refreshToken = localStorage.getItem("refreshToken") || "";
+      
+      // Update auth context with new orgs list
       if (user) {
         setAuth(user, accessToken, refreshToken, updatedOrgs);
       }
+      
+      // Store default branch
       localStorage.setItem("defaultBranch", JSON.stringify(defaultBranch));
 
-      await setActiveOrganization(newOrg.id);
+      // Load branches for the new org
       await loadBranches(newOrg.id);
-      router.push("/dashboard");
+
+      // Set active organization directly (bypass state lookup)
+      setActiveOrganizationState(newOrg);
+      localStorage.setItem("activeOrganization", JSON.stringify(newOrg));
+
+      setSuccessMessage(`🎉 "${organization.name}" created successfully!`);
+
+      // Redirect after delay
+      successTimeoutRef.current = setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || "Failed to create organization");
@@ -306,6 +334,14 @@ export default function SelectOrganizationPage() {
             </div>
           </div>
 
+          {/* Success Message */}
+          {successMessage && (
+            <div className={styles.successBanner}>
+              <CheckCircle size={20} />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {showCreateForm ? (
             // ===== CREATE ORGANIZATION FORM =====
             <div className={styles.createSection}>
@@ -332,7 +368,7 @@ export default function SelectOrganizationPage() {
                       onChange={handleCreateChange}
                       placeholder="e.g. Kamau Supermarket"
                       required
-                      disabled={creating}
+                      disabled={creating || !!successMessage}
                     />
                   </div>
 
@@ -343,7 +379,7 @@ export default function SelectOrganizationPage() {
                       name="country"
                       value={formData.country}
                       onChange={handleCreateChange}
-                      disabled={creating}
+                      disabled={creating || !!successMessage}
                     >
                       <option value="KE">🇰🇪 Kenya</option>
                       <option value="UG">🇺🇬 Uganda</option>
@@ -355,11 +391,20 @@ export default function SelectOrganizationPage() {
                   </div>
                 </div>
 
-                <button type="submit" className={styles.submitBtn} disabled={creating}>
+                <button 
+                  type="submit" 
+                  className={styles.submitBtn} 
+                  disabled={creating || !!successMessage}
+                >
                   {creating ? (
                     <>
                       <span className={styles.spinnerSmall} />
                       Creating...
+                    </>
+                  ) : successMessage ? (
+                    <>
+                      <CheckCircle size={16} />
+                      Created!
                     </>
                   ) : (
                     <>
@@ -374,7 +419,7 @@ export default function SelectOrganizationPage() {
                 <button
                   className={styles.backBtn}
                   onClick={() => setShowCreateForm(false)}
-                  disabled={creating}
+                  disabled={creating || !!successMessage}
                 >
                   ← Back to your organizations
                 </button>
