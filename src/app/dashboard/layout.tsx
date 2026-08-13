@@ -1,4 +1,4 @@
-// src/app/dashboard/layout.tsx
+// dashboard/layout.tsx
 
 "use client";
 
@@ -15,17 +15,27 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, organizations, activeOrganization } = useAuth();
+  const { isAuthenticated, isLoading, organizations, activeOrganization, user, accessToken } = useAuth();
+
+  // Debug
+  console.log('DashboardLayout - isAuthenticated:', isAuthenticated);
+  console.log('DashboardLayout - isLoading:', isLoading);
+  console.log('DashboardLayout - user:', user);
+  console.log('DashboardLayout - accessToken:', accessToken);
+  console.log('DashboardLayout - organizations:', organizations);
+  console.log('DashboardLayout - activeOrganization:', activeOrganization);
 
   useEffect(() => {
     if (isLoading) return;
 
     if (!isAuthenticated) {
+      console.log('Redirecting to login - not authenticated');
       router.push("/login");
       return;
     }
 
     if (organizations.length === 0 || !activeOrganization) {
+      console.log('Redirecting to select organization - no orgs or active org');
       router.push("/onboarding/select-organization");
       return;
     }

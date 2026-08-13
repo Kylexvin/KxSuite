@@ -47,12 +47,7 @@ const NAV_LINKS: NavLink[] = [
     icon: Users,
     permission: "organizations.members.view",
   },
-  {
-    href: "/dashboard/branches",
-    label: "Branches",
-    icon: Building2,
-    permission: "branches.view",
-  },
+  // ❌ Removed Branches nav link
   {
     href: "/dashboard/billing",
     label: "Billing",
@@ -74,22 +69,17 @@ export default function Sidebar() {
     activeOrganization,
     organizations,
     setActiveOrganization,
-    branches,
-    activeBranch,
-    setActiveBranch,
     suiteContext,
     logout,
     loadBranches,
   } = useAuth();
 
-  const [branchMenuOpen, setBranchMenuOpen] = useState(false);
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [switchingOrg, setSwitchingOrg] = useState(false);
 
   const orgMenuRef = useRef<HTMLDivElement>(null);
-  const branchMenuRef = useRef<HTMLDivElement>(null);
 
   const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 1024;
 
@@ -148,12 +138,6 @@ export default function Sidebar() {
           setTimeout(() => setCollapsed(true), 300);
         }
       }
-      if (branchMenuRef.current && !branchMenuRef.current.contains(event.target as Node)) {
-        setBranchMenuOpen(false);
-        if (isSmallScreen && !collapsed) {
-          setTimeout(() => setCollapsed(true), 300);
-        }
-      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -193,19 +177,6 @@ export default function Sidebar() {
     }
   };
 
-  const handleSelectBranch = (branchId: string | "ALL") => {
-    if (branchId === "ALL") {
-      setActiveBranch(null);
-    } else {
-      const branch = branches.find((b) => b.id === branchId);
-      if (branch) setActiveBranch(branch);
-    }
-    setBranchMenuOpen(false);
-    if (isSmallScreen) {
-      setTimeout(() => setCollapsed(true), 300);
-    }
-  };
-
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -220,10 +191,6 @@ export default function Sidebar() {
     } else {
       setOrgMenuOpen((v) => !v);
     }
-  };
-
-  const handleBranchToggle = () => {
-    setBranchMenuOpen((v) => !v);
   };
 
   const handleProductsToggle = () => {
@@ -339,47 +306,7 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Branch Switcher — only show if more than 1 branch */}
-      {branches.length > 1 && (
-        <div className={styles.branchWrap} ref={branchMenuRef}>
-          <button
-            className={styles.contextRow}
-            onClick={handleBranchToggle}
-            title={activeBranch ? activeBranch.name : "All Branches"}
-          >
-            <span className={styles.contextIconMuted}>
-              <Store size={16} color="currentColor" />
-            </span>
-            <span className={styles.contextText}>
-              <span className={styles.contextLabel}>Branch</span>
-              <span className={styles.contextValue}>
-                {activeBranch ? activeBranch.name : "All Branches"}
-              </span>
-            </span>
-            <ArrowUpDown size={13} color="currentColor" className={styles.toggleIcon} />
-          </button>
-
-          {branchMenuOpen && (
-            <div className={styles.branchPopover}>
-              <button
-                className={!activeBranch ? styles.branchOptionActive : styles.branchOption}
-                onClick={() => handleSelectBranch("ALL")}
-              >
-                All Branches
-              </button>
-              {branches.map((b) => (
-                <button
-                  key={b.id}
-                  className={activeBranch?.id === b.id ? styles.branchOptionActive : styles.branchOption}
-                  onClick={() => handleSelectBranch(b.id)}
-                >
-                  {b.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ❌ Removed Branch Switcher */}
 
       <div className={styles.divider} />
 
@@ -468,11 +395,11 @@ export default function Sidebar() {
         </button>
       )}
 
-      {/* <button className={styles.logoutRow} onClick={handleLogout} title="Logout">
+      <button className={styles.logoutRow} onClick={handleLogout} title="Logout">
         <LogOut size={15} color="currentColor" />
         <span className={styles.navLabel}>Logout</span>
       </button>
-      <span className={styles.version}>{APP_VERSION}</span> */}
+      <span className={styles.version}>{APP_VERSION}</span>
     </aside>
   );
 }

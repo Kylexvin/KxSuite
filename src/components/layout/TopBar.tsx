@@ -14,7 +14,6 @@ import {
   Building2,
   AlertTriangle,
   Check,
-  Store,
 } from "lucide-react";
 import styles from "./TopBar.module.css";
 
@@ -24,9 +23,6 @@ export default function TopBar() {
     user,
     organizations,
     activeOrganization,
-    branches,
-    activeBranch,
-    setActiveBranch,
     suiteContext,
     logout,
     setActiveOrganization,
@@ -34,13 +30,11 @@ export default function TopBar() {
   } = useAuth();
 
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
-  const [branchMenuOpen, setBranchMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [switchingOrg, setSwitchingOrg] = useState(false);
 
   const orgMenuRef = useRef<HTMLDivElement>(null);
-  const branchMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
 
@@ -64,9 +58,6 @@ export default function TopBar() {
     const handleClickOutside = (event: MouseEvent) => {
       if (orgMenuRef.current && !orgMenuRef.current.contains(event.target as Node)) {
         setOrgMenuOpen(false);
-      }
-      if (branchMenuRef.current && !branchMenuRef.current.contains(event.target as Node)) {
-        setBranchMenuOpen(false);
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
@@ -105,16 +96,6 @@ export default function TopBar() {
     }
   };
 
-  const handleSelectBranch = (branchId: string | null) => {
-    if (branchId === null) {
-      setActiveBranch(null);
-    } else {
-      const branch = branches.find((b) => b.id === branchId);
-      if (branch) setActiveBranch(branch);
-    }
-    setBranchMenuOpen(false);
-  };
-
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -122,9 +103,8 @@ export default function TopBar() {
 
   return (
     <header className={styles.topBar}>
-      {/* Left: org + branch context */}
+      {/* Left: Organization context */}
       <div className={styles.leftGroup}>
-        {/* Organization Switcher */}
         <div className={styles.dropdownWrap} ref={orgMenuRef}>
           <button
             className={styles.orgSwitcher}
@@ -161,49 +141,6 @@ export default function TopBar() {
             </div>
           )}
         </div>
-
-        {/* Branch Switcher */}
-        {branches.length > 1 && (
-          <div className={styles.dropdownWrap} ref={branchMenuRef}>
-            <button
-              className={styles.branchSwitcher}
-              onClick={() => setBranchMenuOpen((v) => !v)}
-            >
-              <Store size={15} className={styles.branchIcon} />
-              <span className={styles.branchName}>
-                {activeBranch ? activeBranch.name : "All Branches"}
-              </span>
-              <ChevronDown size={13} className={styles.chevronSmall} data-open={branchMenuOpen} />
-            </button>
-
-            {branchMenuOpen && (
-              <div className={styles.dropdownMenu}>
-                <div className={styles.dropdownHeader}>
-                  <span>Switch Branch</span>
-                </div>
-                <button
-                  className={!activeBranch ? styles.menuOptionActive : styles.menuOption}
-                  onClick={() => handleSelectBranch(null)}
-                >
-                  <span>All Branches</span>
-                  {!activeBranch && <Check size={14} className={styles.menuOptionCheck} />}
-                </button>
-                {branches.map((branch) => (
-                  <button
-                    key={branch.id}
-                    className={
-                      activeBranch?.id === branch.id ? styles.menuOptionActive : styles.menuOption
-                    }
-                    onClick={() => handleSelectBranch(branch.id)}
-                  >
-                    <span>{branch.name}</span>
-                    {activeBranch?.id === branch.id && <Check size={14} className={styles.menuOptionCheck} />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Right: Notifications + User */}

@@ -1210,3 +1210,120 @@
     justify-content: center;
   }
 }
+/* Add to page.module.css */
+
+/* ===== LOADING ===== */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 16px;
+  color: var(--text-muted);
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+.spinnerSmall {
+  animation: spin 0.8s linear infinite;
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 1000;
+  min-width: 280px;
+  max-width: 420px;
+  animation: slideIn 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.toastSuccess {
+  background: var(--panel);
+  border: 1px solid rgba(76, 175, 130, 0.3);
+  color: #4caf82;
+}
+
+.toastError {
+  background: var(--panel);
+  border: 1px solid rgba(239, 83, 80, 0.3);
+  color: #ef5350;
+}
+
+.toastInfo {
+  background: var(--panel);
+  border: 1px solid rgba(100, 100, 255, 0.3);
+  color: #6b8cff;
+}
+
+.toastClose {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 2px;
+  margin-left: auto;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== PRIMARY BUTTON ===== */
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #17181d;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.primaryButton:hover {
+  background: var(--accent-glow);
+}
+
+/* ===== TOAST RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .toast {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    min-width: unset;
+    font-size: 12px;
+    padding: 10px 14px;
+  }
+}

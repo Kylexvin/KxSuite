@@ -41,6 +41,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  
 }
 
 @media (min-width: 768px) {
@@ -67,6 +68,7 @@
   flex-direction: column;
   gap: 10px;
   height: 100%;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .orgHeaderGrid {
@@ -76,6 +78,7 @@
   gap: 12px;
   width: 100%;
   flex-wrap: wrap;
+  
 }
 
 .orgHeaderMain {
@@ -96,6 +99,7 @@
   font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .orgHeaderName {
@@ -151,6 +155,7 @@
   padding-top: 10px;
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
+  
 }
 
 .orgStatItem {
@@ -195,6 +200,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 120px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .aiCardDesktop {
@@ -213,6 +219,7 @@
   background: var(--panel);
   border: none;
   animation: slideUp 0.3s ease;
+  
 }
 
 @keyframes slideUp {
@@ -451,6 +458,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  
 }
 
 @media (min-width: 640px) {
@@ -464,6 +472,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .chartHeader {
@@ -601,6 +610,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
+  
 }
 
 .sectionHeader {
@@ -652,6 +662,7 @@
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .productCardTop {
@@ -720,7 +731,7 @@
   padding: 4px 0;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: transparent;
+  background: #ef5350;
   color: var(--text-muted);
   font-size: 9px;
   font-weight: 500;

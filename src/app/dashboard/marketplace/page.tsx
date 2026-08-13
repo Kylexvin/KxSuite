@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
@@ -10,7 +10,6 @@ import {
   ShoppingBag,
   Package,
   Search,
-  Filter,
   Check,
   Clock,
   AlertTriangle,
@@ -18,15 +17,9 @@ import {
   X,
   ArrowRight,
   Sparkles,
-  Crown,
   Users,
-  Building2,
-  CreditCard,
-  Zap,
-  ChevronDown,
-  ChevronUp,
-  Star,
   Info,
+  RefreshCw,
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -51,17 +44,63 @@ type Product = {
 };
 
 type OrganizationProduct = {
+  id: string;
+  productId: string;
   productKey: string;
   productName: string;
+  productDescription: string;
+  activatedAt: string;
   isActive: boolean;
-  subscriptionStatus: "active" | "trial" | "expiring" | "expired" | "inactive";
-  activatedAt?: string;
-  expiresAt?: string;
+  subscriptionStatus?: "active" | "trial" | "expired" | "inactive";
 };
 
 type ProductStatus = "active" | "trial" | "expired" | "available";
 
-// ===== COMPONENTS =====
+// ============================================================
+// TOAST
+// ============================================================
+
+function Toast({
+  type,
+  message,
+  onClose,
+}: {
+  type: "success" | "error" | "info";
+  message: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const icons = {
+    success: <Check size={16} />,
+    error: <AlertTriangle size={16} />,
+    info: <Info size={16} />,
+  };
+
+  const classes = {
+    success: styles.toastSuccess,
+    error: styles.toastError,
+    info: styles.toastInfo,
+  };
+
+  return (
+    <div className={`${styles.toast} ${classes[type]}`}>
+      {icons[type]}
+      <span>{message}</span>
+      <button className={styles.toastClose} onClick={onClose}>
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// PRODUCT STATUS BADGE
+// ============================================================
+
 function ProductStatusBadge({ status }: { status: ProductStatus }) {
   const configs = {
     active: { label: "Active", icon: Check, className: styles.badgeActive },
@@ -79,10 +118,13 @@ function ProductStatusBadge({ status }: { status: ProductStatus }) {
   );
 }
 
-// ===== MAIN PAGE =====
+// ============================================================
+// MAIN PAGE
+// ============================================================
+
 export default function MarketplacePage() {
   const router = useRouter();
-  const { activeOrganization, suiteContext } = useAuth();
+  const { activeOrganization, loadSuiteContext } = useAuth();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [orgProducts, setOrgProducts] = useState<OrganizationProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,56 +133,124 @@ export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(
+    null
+  );
 
-  // Load products
+  // ============================================================
+  // REFRESH ORG PRODUCTS
+  // ============================================================
+
+  const refreshOrgProducts = useCallback(async () => {
+    if (!activeOrganization) return;
+    try {
+      const res = await api.get(
+        `/api/v1/products/organizations/${activeOrganization.id}/products`
+      );
+      const products = res.data.products || [];
+
+      const productsWithStatus = await Promise.all(
+        products.map(async (p: OrganizationProduct) => {
+          try {
+            const statusRes = await api.get(
+              `/api/v1/organizations/${activeOrganization.id}/subscriptions/${p.productKey}/status`
+            );
+            return {
+              ...p,
+              subscriptionStatus: statusRes.data.status.toLowerCase(),
+            };
+          } catch {
+            return { ...p, subscriptionStatus: p.isActive ? "active" : "inactive" };
+          }
+        })
+      );
+
+      setOrgProducts(productsWithStatus);
+    } catch (err) {
+      console.error("Failed to refresh org products:", err);
+    }
+  }, [activeOrganization]);
+
+  // ============================================================
+  // LOAD PRODUCTS
+  // ============================================================
+
   useEffect(() => {
     const loadProducts = async () => {
+      if (!activeOrganization) return;
+
       try {
         setLoading(true);
-        const [allProductsRes, orgProductsRes] = await Promise.all([
+        const [allRes, orgRes] = await Promise.all([
           api.get("/api/v1/products"),
-          api.get(`/api/v1/products/organizations/${activeOrganization?.id}/products`),
+          api.get(`/api/v1/products/organizations/${activeOrganization.id}/products`),
         ]);
 
-        setAllProducts(allProductsRes.data.products || []);
-        setOrgProducts(orgProductsRes.data.products || []);
+        setAllProducts(allRes.data.products || []);
+
+        const products = orgRes.data.products || [];
+        const productsWithStatus = await Promise.all(
+          products.map(async (p: OrganizationProduct) => {
+            try {
+              const statusRes = await api.get(
+                `/api/v1/organizations/${activeOrganization.id}/subscriptions/${p.productKey}/status`
+              );
+              return {
+                ...p,
+                subscriptionStatus: statusRes.data.status.toLowerCase(),
+              };
+            } catch {
+              return { ...p, subscriptionStatus: p.isActive ? "active" : "inactive" };
+            }
+          })
+        );
+        setOrgProducts(productsWithStatus);
       } catch (err) {
         console.error("Failed to load products:", err);
-        setError("Failed to load products. Please try again.");
+        setToast({ type: "error", message: "Failed to load products. Please try again." });
       } finally {
         setLoading(false);
       }
     };
 
-    if (activeOrganization) {
-      loadProducts();
-    }
+    loadProducts();
   }, [activeOrganization]);
 
-  // Get product status for an organization
-  const getProductStatus = (productKey: string): ProductStatus => {
-    const orgProduct = orgProducts.find(p => p.productKey === productKey);
-    if (!orgProduct) return "available";
-    if (orgProduct.subscriptionStatus === "active") return "active";
-    if (orgProduct.subscriptionStatus === "trial") return "trial";
-    if (orgProduct.subscriptionStatus === "expired") return "expired";
-    return "available";
-  };
+  // ============================================================
+  // GET PRODUCT STATUS
+  // ============================================================
 
-  // Get organization product details
-  const getOrgProduct = (productKey: string) => {
-    return orgProducts.find(p => p.productKey === productKey);
-  };
+  const getProductStatus = useCallback(
+    (productKey: string): ProductStatus => {
+      const orgProduct = orgProducts.find((p) => p.productKey === productKey);
+      if (!orgProduct) return "available";
 
-  // Handle product activation
+      if (orgProduct.subscriptionStatus === "active") return "active";
+      if (orgProduct.subscriptionStatus === "trial") return "trial";
+      if (orgProduct.subscriptionStatus === "expired") return "expired";
+      if (orgProduct.isActive) return "active";
+
+      return "available";
+    },
+    [orgProducts]
+  );
+
+  const getOrgProduct = useCallback(
+    (productKey: string) => {
+      return orgProducts.find((p) => p.productKey === productKey);
+    },
+    [orgProducts]
+  );
+
+  // ============================================================
+  // ACTIVATE PRODUCT
+  // ============================================================
+
   const handleActivate = async (productKey: string) => {
     if (!activeOrganization) return;
-    
+
     setActivating(productKey);
-    setError(null);
-    setSuccess(null);
+    setToast(null);
 
     try {
       await api.post(
@@ -151,32 +261,94 @@ export default function MarketplacePage() {
         }
       );
 
-      // Refresh org products
-      const orgProductsRes = await api.get(
-        `/api/v1/products/organizations/${activeOrganization.id}/products`
-      );
-      setOrgProducts(orgProductsRes.data.products || []);
+      await refreshOrgProducts();
+      
+      // ✅ Update suiteContext so sidebar reflects changes immediately
+      await loadSuiteContext(activeOrganization.id);
 
-      setSuccess(`${productKey} activated successfully!`);
-      setTimeout(() => setSuccess(null), 3000);
+      setToast({
+        type: "success",
+        message: `${productKey} activated successfully!`,
+      });
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to activate ${productKey}`);
-      setTimeout(() => setError(null), 3000);
+      if (err.response?.status === 400) {
+        await refreshOrgProducts();
+        await loadSuiteContext(activeOrganization.id);
+        setToast({
+          type: "info",
+          message: `${productKey} is already activated.`,
+        });
+      } else {
+        setToast({
+          type: "error",
+          message: err.response?.data?.message || `Failed to activate ${productKey}`,
+        });
+      }
     } finally {
       setActivating(null);
     }
   };
 
-  // Filter products
-  const filteredProducts = allProducts.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+  // ============================================================
+  // DEACTIVATE PRODUCT
+  // ============================================================
+
+  const handleDeactivate = async (productKey: string) => {
+    if (!activeOrganization) return;
+
+    setActivating(productKey);
+    setToast(null);
+
+    try {
+      await api.delete(
+        `/api/v1/products/organizations/${activeOrganization.id}/products/${productKey}`
+      );
+
+      await refreshOrgProducts();
+      
+      // ✅ Update suiteContext so sidebar reflects changes immediately
+      await loadSuiteContext(activeOrganization.id);
+
+      setToast({
+        type: "info",
+        message: `${productKey} deactivated successfully.`,
+      });
+    } catch (err: any) {
+      setToast({
+        type: "error",
+        message: err.response?.data?.message || `Failed to deactivate ${productKey}`,
+      });
+    } finally {
+      setActivating(null);
+    }
+  };
+
+  // ============================================================
+  // FILTERS
+  // ============================================================
+
+  const filteredProducts = allProducts.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "ALL" || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // Categories from products
-  const categories = ["ALL", ...new Set(allProducts.map(p => p.category).filter(Boolean))];
+  const categories = [
+    "ALL",
+    ...Array.from(
+      new Set(
+        allProducts
+          .map((p) => p.category)
+          .filter((category): category is string => typeof category === "string" && category.length > 0)
+      )
+    ),
+  ];
+
+  // ============================================================
+  // LOADING
+  // ============================================================
 
   if (loading) {
     return (
@@ -189,13 +361,26 @@ export default function MarketplacePage() {
     );
   }
 
+  // ============================================================
+  // RENDER
+  // ============================================================
+
   return (
     <div className={styles.page}>
+      {/* Toast */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* ===== HEADER ===== */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.headerIcon}>
-            <ShoppingBag size={24} />
+            <ShoppingBag size={22} />
           </div>
           <div>
             <h1 className={styles.headerTitle}>Product Marketplace</h1>
@@ -212,14 +397,14 @@ export default function MarketplacePage() {
           <div className={styles.headerDivider} />
           <div className={styles.headerStat}>
             <span className={styles.headerStatValue}>
-              {orgProducts.filter(p => p.subscriptionStatus === "active").length}
+              {orgProducts.filter((p) => p.subscriptionStatus === "active").length}
             </span>
             <span className={styles.headerStatLabel}>Active</span>
           </div>
           <div className={styles.headerDivider} />
           <div className={styles.headerStat}>
             <span className={styles.headerStatValue}>
-              {orgProducts.filter(p => p.subscriptionStatus === "trial").length}
+              {orgProducts.filter((p) => p.subscriptionStatus === "trial").length}
             </span>
             <span className={styles.headerStatLabel}>Trial</span>
           </div>
@@ -229,7 +414,7 @@ export default function MarketplacePage() {
       {/* ===== FILTERS ===== */}
       <div className={styles.filters}>
         <div className={styles.searchWrap}>
-          <Search size={16} className={styles.searchIcon} />
+          <Search size={15} className={styles.searchIcon} />
           <input
             type="text"
             className={styles.searchInput}
@@ -239,10 +424,12 @@ export default function MarketplacePage() {
           />
         </div>
         <div className={styles.categoryFilters}>
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <button
               key={cat}
-              className={`${styles.categoryFilter} ${selectedCategory === cat ? styles.categoryFilterActive : ""}`}
+              className={`${styles.categoryFilter} ${
+                selectedCategory === cat ? styles.categoryFilterActive : ""
+              }`}
               onClick={() => setSelectedCategory(cat)}
             >
               {cat === "ALL" ? "All" : cat}
@@ -251,24 +438,10 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      {/* ===== NOTIFICATIONS ===== */}
-      {error && (
-        <div className={styles.notificationError}>
-          <AlertTriangle size={16} />
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className={styles.notificationSuccess}>
-          <Check size={16} />
-          {success}
-        </div>
-      )}
-
       {/* ===== PRODUCT GRID ===== */}
       {filteredProducts.length === 0 ? (
         <div className={styles.emptyState}>
-          <Package size={48} className={styles.emptyIcon} />
+          <Package size={40} className={styles.emptyIcon} />
           <h3>No products found</h3>
           <p>Try adjusting your search or filters</p>
         </div>
@@ -303,13 +476,13 @@ export default function MarketplacePage() {
                       <span className={styles.productCategory}>{product.category}</span>
                     )}
                   </div>
-                  {orgProduct && orgProduct.expiresAt && (
+                  {orgProduct?.activatedAt && (
                     <div className={styles.productExpiry}>
                       <Clock size={12} />
-                      Expires {new Date(orgProduct.expiresAt).toLocaleDateString()}
+                      Activated {new Date(orgProduct.activatedAt).toLocaleDateString()}
                     </div>
                   )}
-                  {isActive && orgProduct && (
+                  {isActive && (
                     <div className={styles.productUsers}>
                       <Users size={12} />
                       Active in your org
@@ -319,7 +492,7 @@ export default function MarketplacePage() {
 
                 <div className={styles.productCardBottom}>
                   <button
-                    className={styles.productDetailBtn}
+                    className={styles.detailBtn}
                     onClick={() => {
                       setSelectedProduct(product);
                       setShowDetail(true);
@@ -352,7 +525,7 @@ export default function MarketplacePage() {
                   {isTrial && (
                     <button
                       className={styles.upgradeBtn}
-                      onClick={() => router.push(`/dashboard/billing`)}
+                      onClick={() => router.push("/dashboard/billing")}
                     >
                       <Sparkles size={14} />
                       Upgrade
@@ -360,13 +533,32 @@ export default function MarketplacePage() {
                   )}
 
                   {isActive && (
-                    <button
-                      className={styles.manageBtn}
-                      onClick={() => router.push(`/dashboard/products/${product.key}`)}
-                    >
-                      <ArrowRight size={14} />
-                      Manage
-                    </button>
+                    <>
+                      <button
+                        className={styles.manageBtn}
+                        onClick={() => router.push(`/dashboard/products/${product.key}`)}
+                      >
+                        <ArrowRight size={14} />
+                        Manage
+                      </button>
+                      <button
+                        className={styles.deactivateBtn}
+                        onClick={() => handleDeactivate(product.key)}
+                        disabled={isActivating}
+                      >
+                        {isActivating ? (
+                          <>
+                            <span className={styles.spinnerSmall} />
+                            ...
+                          </>
+                        ) : (
+                          <>
+                            <X size={14} />
+                            Deactivate
+                          </>
+                        )}
+                      </button>
+                    </>
                   )}
 
                   {isExpired && (

@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
-  Users,
+
   Package,
-  Building2,
+
   Activity,
   PieChart as PieChartIcon,
   RefreshCw,
@@ -42,21 +42,13 @@ import styles from "./page.module.css";
 
 type ProductStatus = "active" | "trial" | "expired" | "available";
 
-type DashboardProduct = {
-  key: string;
-  name: string;
-  description: string;
-  status: ProductStatus;
-  subscriptionStatus: string;
-  isActive: boolean;
-  subscriptionIsActive: boolean;
-};
+
 
 type AuditEvent = {
   id: string;
   action: string;
   resource: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   user: { firstName: string; lastName: string };
   userId: string;
   createdAt: string;
@@ -71,15 +63,29 @@ type Member = {
   isActive: boolean;
 };
 
+type SaleItem = {
+  product: { name: string };
+  quantity: number;
+};
+
 type Sale = {
   id: string;
   userId: string;
   totalAmount: number;
   createdAt: string;
-  items: { product: { name: string }; quantity: number }[];
+  items: SaleItem[];
   user: { firstName: string; lastName: string };
 };
 
+type ActivityItem = {
+  id: string;
+  user: string;
+  action: string;
+  target?: string;
+  time: string;
+  type: "audit" | "sale";
+  total?: number;
+};
 // ============================================================
 // AI ASSISTANT
 // ============================================================
@@ -311,13 +317,20 @@ export default function DashboardPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  const salesChartData = last7Days.map((date) => ({
-    date: new Date(date).toLocaleDateString("en-KE", { day: "2-digit", month: "short" }),
-    count: salesCounts[date] || 0,
-  }));
+
 
   // Recent activities
-  let activityItems: any[] = [];
+  type ActivityItem = {
+    id: string | number;
+    user: string;
+    action: string;
+    target?: string;
+    time: string;
+    type: "audit" | "sale";
+    total?: number;
+  };
+
+  let activityItems: ActivityItem[] = [];
 
   if (hasAuditPermission) {
     activityItems = auditLogs.slice(0, 5).map((log) => ({
@@ -339,7 +352,7 @@ export default function DashboardPage() {
       id: sale.id,
       user: `${sale.user?.firstName || "You"}`,
       action: `sold ${sale.items?.length || 0} item${sale.items?.length !== 1 ? 's' : ''}`,
-      target: sale.items?.map((item: any) => `${item.quantity} × ${item.product?.name || 'product'}`).join(', '),
+      target: sale.items?.map((item: SaleItem) => `${item.quantity} × ${item.product?.name || 'product'}`).join(', '),
       time: new Date(sale.createdAt).toLocaleDateString("en-KE", { 
         day: "2-digit", 
         month: "short",

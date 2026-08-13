@@ -33,8 +33,6 @@ export type Organization = {
   branchIds?: string[];
 };
 
-// Reduced org shape returned inline by /me/dashboard — no ownerId,
-// no country. Keep this separate from the fuller org list shape above.
 export type OrganizationDetail = {
   id: string;
   name: string;
@@ -72,10 +70,6 @@ export type SuiteProduct = {
   subscriptionIsActive: boolean;
 };
 
-// The full payload from GET /auth/me/dashboard?organizationId=...
-// This is the single source of truth for "what can this user see/do
-// in this org" — role, branches, products, and permissions all come
-// from here instead of being separately fetched/guessed on the client.
 export type SuiteContext = {
   user: User;
   organization: OrganizationDetail;
@@ -108,6 +102,7 @@ type AuthContextType = {
   logout: () => void;
   setAuth: (user: User, accessToken: string, refreshToken: string, organizations: Organization[]) => void;
   setActiveOrganization: (orgId: string) => Promise<void>;
+  setActiveOrganizationDirect: (org: Organization) => void;
   loadBranches: (orgId: string) => Promise<Branch[]>;
   loadSuiteContext: (organizationId: string) => Promise<SuiteContext>;
   hasPermission: (permission: string) => boolean;
@@ -124,8 +119,16 @@ function safeLocalStorageGet<T>(key: string, defaultValue: T): T {
   if (!stored || stored === "undefined" || stored === "null") return defaultValue;
   try {
     const parsed = JSON.parse(stored);
+    // ✅ If parsed is a string (like accessToken), return it directly
+    if (typeof parsed === 'string') {
+      return parsed as T;
+    }
     return parsed !== null && parsed !== undefined ? parsed : defaultValue;
   } catch {
+    // ✅ If JSON parse fails, check if it's a plain string
+    if (typeof stored === 'string' && stored.length > 0) {
+      return stored as T;
+    }
     return defaultValue;
   }
 }
@@ -216,10 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("suiteContext");
   };
 
-  // The single call that replaces separate org-detail + branches +
-  // subscriptions fetches. Everything the UI needs to render this org
-  // (branches, permissions, active products, low-stock count) comes
-  // back in one response.
   const loadSuiteContext = async (organizationId: string): Promise<SuiteContext> => {
     const response = await api.get<SuiteContext>(
       `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
@@ -283,8 +282,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const context = await loadSuiteContext(orgId);
 
-      // Auto-select if only one branch, clear if multiple (matches the
-      // select-branch screen's own 0/1/many skip rule).
       if (context.branches.length === 1) {
         setActiveBranchState(context.branches[0]);
         localStorage.setItem("activeBranch", JSON.stringify(context.branches[0]));
@@ -300,8 +297,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Standalone branch refresh — used e.g. after adding a new branch,
-  // where refetching the whole suite context would be overkill.
+  // ✅ Direct setter for active organization (bypasses state lookup)
+  const setActiveOrganizationDirect = (org: Organization) => {
+    setActiveOrganizationState(org);
+    localStorage.setItem("activeOrganization", JSON.stringify(org));
+  };
+
   const loadBranches = async (orgId: string): Promise<Branch[]> => {
     try {
       const response = await api.get<BranchesResponse>(
@@ -355,6 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         setAuth,
         setActiveOrganization,
+        setActiveOrganizationDirect,
         loadBranches,
         loadSuiteContext,
         hasPermission,
