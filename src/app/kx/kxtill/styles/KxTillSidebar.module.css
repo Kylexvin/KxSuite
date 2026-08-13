@@ -1,0 +1,291 @@
+/* app/kx/kxtill/styles/KxTillSidebar.module.css */
+
+.sidebar {
+  --panel: #16171d;
+  --raised: #1b1c23;
+  --raised-hi: #24252e;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #eceef2;
+  --text-muted: #a3a5b0;
+  --text-faint: #62636e;
+  --accent: #ff6a2b;
+  --accent-glow: #ff8c42;
+  --danger: #ef5350;
+
+  display: flex;
+  flex-direction: column;
+  width: 220px;
+  min-width: 220px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 14px 12px;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+  width: 64px;
+  min-width: 64px;
+  padding: 14px 10px;
+}
+
+/* Logo */
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.collapsed .logoRow {
+  justify-content: center;
+}
+
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoImage {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.logoText {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.collapsed .logoText {
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
+}
+
+.collapsed .logoWrapper {
+  gap: 0;
+}
+
+.collapsed .logoImage {
+  width: 28px;
+  height: 28px;
+}
+
+.collapseBtn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s;
+}
+
+.collapseBtn:hover {
+  background: var(--raised-hi);
+  color: var(--text);
+}
+
+.collapsed .collapseBtn {
+  transform: rotate(180deg);
+  margin-left: 0;
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.navLink:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.navLinkActive {
+  composes: navLink;
+  color: #ffffff;
+  border-color: rgba(255, 107, 43, 0.12);
+  background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 38%,
+      rgba(255, 106, 43, 0.55) 100%
+    ),
+    var(--raised);
+}
+
+.navLinkActive:hover {
+  color: #ffffff;
+}
+
+.navLinkActive::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, rgba(255, 106, 43, 0) 0%, rgba(255, 140, 66, 0.9) 100%);
+  filter: blur(6px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.navIcon {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.navLabel {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.collapsed .navLabel {
+  opacity: 0;
+  width: 0;
+}
+
+.collapsed .navLink {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+/* Spacer */
+.spacer {
+  flex: 1;
+}
+
+/* Logout */
+.logoutRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 10px;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 6px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.logoutRow:hover {
+  background: rgba(239, 83, 80, 0.08);
+  border-color: rgba(239, 83, 80, 0.3);
+}
+
+.collapsed .logoutRow {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+/* Version */
+.version {
+  display: block;
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 8px 12px 0;
+  margin-top: 4px;
+  text-align: left;
+}
+
+.collapsed .version {
+  display: none;
+}
+
+/* Scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+    padding: 12px 8px;
+  }
+
+  .logoText {
+    font-size: 15px;
+  }
+
+  .navLink {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  .logoutRow {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+}

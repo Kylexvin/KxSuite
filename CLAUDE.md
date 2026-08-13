@@ -74,3 +74,83 @@ Order matters: tightest/crispest shadow first, widest/softest last.
 3. Glow/shadow effects stay reserved for hero-level moments (mockup, maybe future feature spotlights) — don't apply to every card or button, or it stops meaning anything.
 4. Mobile breakpoint: `720px` for nav collapse, `780px` for grid collapse — stay consistent with these unless there's a specific reason to diverge.
 5. All product cards use the `ready: boolean` pattern (see `Products.tsx`) to toggle live vs. soon states — don't hardcode per-product JSX branches elsewhere.
+
+
+
+# UI Design System
+
+Reference for keeping new components visually consistent with the sidebar redesign. Copy these tokens/patterns into any new UI rather than inventing new values.
+
+## Palette
+
+```css
+--bg: #0e0f13;              /* app background */
+--panel: #16171d;           /* sidebar / panel surface */
+--raised: #1b1c23;          /* raised item background */
+--raised-hi: #24252e;       /* raised item hover */
+--border: rgba(255,255,255,0.07);
+--border-strong: rgba(255,255,255,0.14);
+--text: #eceef2;            /* primary text */
+--text-muted: #a3a5b0;      /* secondary text, inactive labels */
+--text-faint: #62636e;      /* tertiary — captions, dividers, disabled */
+--accent: #ff6a2b;          /* orange base */
+--accent-glow: #ff8c42;     /* orange highlight/glow */
+--danger: #ef5350;
+```
+
+Never use pure black or pure white. Text max-contrast is `--text` (#eceef2), not #fff.
+
+## Elevation — neomorphic raised
+
+Any interactive "card" (nav item, button, row) sits on `--panel` and gets:
+
+```css
+border: 1px solid var(--border);
+background: var(--raised);
+box-shadow:
+  -2px -2px 5px rgba(255,255,255,0.02),   /* top-left highlight */
+   3px 3px 8px rgba(0,0,0,0.4);           /* bottom-right shadow */
+border-radius: 12px;
+```
+
+- **Hover:** background → `--raised-hi`, border → `--border-strong`.
+- **Pressed/active:** flip to `inset` shadows (same offsets/blur) — reads as pushed in, not lifted.
+- Radius scale: `12px` for rows/buttons, `9–10px` for icon badges, `8px` for nested/small items.
+
+## Active / selected state — gradient pill
+
+Used for the current nav item, not for hover:
+
+```css
+background: linear-gradient(90deg,
+  rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(255,106,43,0.55) 100%
+), var(--raised);
+border-color: rgba(255,106,43,0.4);
+box-shadow:
+  inset -2px -2px 5px rgba(255,255,255,0.02),
+  inset 2px 2px 6px rgba(0,0,0,0.35),
+  0 0 18px rgba(255,106,43,0.25);
+color: #ffffff;
+```
+
+Pair with a blurred `::after` on the right edge (`rgba(255,140,66,0.9)`, `filter: blur(6px)`, `opacity: 0.5`) for the glowing tip. Only one gradient direction (left-to-right, dark-to-glow) — don't mirror it or use it vertically.
+
+## Type & spacing
+
+- Font: system stack (`-apple-system, "Segoe UI", sans-serif`). No serif, no display font — this is a utility UI.
+- Sizes: `14px` primary label, `13px` secondary/sub-items, `11–12px` captions/labels/version text.
+- Weight: `500` for labels, `700` only for logo/wordmark, `600` for small badge glyphs.
+- Row padding: `9px 12px`. Gap between icon and label: `10–11px`. Item gap in a stack: `4–6px`.
+
+## Interactive rules
+
+- No underlines on links, ever — set `text-decoration: none` on base *and* `:hover`.
+- Every clickable row gets a `border`, even at rest — don't rely on background alone to define its edges.
+- Collapsed/icon-only states: hide via `opacity: 0; width: 0` transitions on the label, not conditional unmount — keeps the collapse animation smooth.
+- Disabled state: `opacity: 0.6`, no hover background change, `cursor: default`.
+
+## When adding a new component
+
+1. Does it sit on `--panel`? → give it the raised treatment above.
+2. Is it a nav/selection control? → reuse the gradient-pill active state, don't invent a new accent treatment.
+3. Check it against `prefers-reduced-motion` — transitions should be skippable, not required.

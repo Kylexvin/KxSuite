@@ -1,0 +1,1021 @@
+/* src/app/dashboard/Sidebar.module.css */
+
+.sidebar {
+  --bg: #0e0f13;
+  --panel: #16171d;
+  --raised: #1b1c23;
+  --raised-hi: #24252e;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #eceef2;
+  --text-muted: #a3a5b0;
+  --text-faint: #62636e;
+  --accent: #ff6a2b;
+  --accent-glow: #ff8c42;
+  --danger: #ef5350;
+
+  display: flex;
+  flex-direction: column;
+  width: 264px;
+  min-width: 264px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 14px 12px;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: sticky;
+  top: 0;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed,
+.collapsed {
+  width: 76px;
+  min-width: 76px;
+  padding: 14px 10px;
+}
+
+/* Logo */
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.collapsed .logoRow {
+  justify-content: center;
+}
+
+.logoMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
+  color: #17181d;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(255, 106, 43, 0.35);
+}
+
+.logoText {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.collapsed .logoText {
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
+}
+
+.collapseBtn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s;
+}
+
+.collapseBtn:hover {
+  background: var(--raised-hi);
+  color: var(--text);
+}
+
+.collapsed .collapseBtn {
+  transform: rotate(180deg);
+  margin-left: 0;
+}
+
+/* Context Rows (Org / Branch) — neomorphic raised */
+.contextRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.025), 4px 4px 10px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.contextRow:hover {
+  background: var(--raised-hi);
+  border-color: var(--border-strong);
+}
+
+.contextRow:active {
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.45), inset -3px -3px 6px rgba(255, 255, 255, 0.02);
+}
+
+.contextRow:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.contextRow:disabled:hover {
+  background: var(--raised);
+  border-color: var(--border);
+}
+
+.collapsed .contextRow {
+  justify-content: center;
+  padding: 9px;
+}
+
+.contextIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  background: rgba(255, 106, 43, 0.12);
+  color: var(--accent-glow);
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.contextIconMuted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  color: var(--text-faint);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.contextText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.collapsed .contextText {
+  display: none;
+}
+
+.contextLabel {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.contextValue {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+}
+
+.toggleIcon {
+  font-size: 12px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.collapsed .toggleIcon {
+  display: none;
+}
+
+/* Branch Popover */
+.branchWrap {
+  position: relative;
+}
+
+.branchPopover {
+  margin: 4px 0 6px 8px;
+  padding: 4px;
+  background: var(--raised);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.branchOption {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.branchOption:hover {
+  background: var(--raised-hi);
+}
+
+.branchOptionActive {
+  composes: branchOption;
+  background: rgba(255, 106, 43, 0.12);
+  color: var(--accent-glow);
+  font-weight: 500;
+}
+
+.branchOptionActive:hover {
+  background: rgba(255, 106, 43, 0.18);
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.navLink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.navLink:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  text-decoration: none;
+}
+
+.navLinkActive {
+  composes: navLink;
+  color: #ffffff;
+  border-color: rgba(255, 107, 43, 0.121);
+  background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 38%,
+      rgba(255, 106, 43, 0.55) 100%
+    ),
+    var(--raised);
+  /* box-shadow: inset -2px -2px 5px rgba(255, 255, 255, 0.02), inset 2px 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(255, 106, 43, 0.25); */
+}
+
+.navLinkActive:hover {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.navLinkActive::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, rgba(255, 106, 43, 0) 0%, rgba(255, 140, 66, 0.9) 100%);
+  filter: blur(6px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.navIcon {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.navLabel {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.collapsed .navLabel {
+  opacity: 0;
+  width: 0;
+}
+
+.collapsed .navLink,
+.collapsed .navLinkExpandable,
+.collapsed .logoutRow {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.navLinkExpandable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.navLinkExpandable:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.navLinkExpandableLabel {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-faint);
+  transition: transform 0.2s, opacity 0.15s;
+}
+
+.chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+.collapsed .chevron {
+  opacity: 0;
+  width: 0;
+}
+
+/* Sub Navigation */
+.subNav {
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  border-color: #ef5350;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.collapsed .subNav {
+  display: none;
+}
+
+.subLink {
+  display: block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  color: rgb(123, 116, 116);
+  background-color: #0e0f13b6;
+    text-decoration: none;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.subLink:hover {
+  background: var(--raised);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.subLinkActive {
+  display: block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+  color: var(--accent-glow);
+  background: rgba(255, 106, 43, 0.1);
+}
+
+.subLinkActive:hover {
+  background: rgba(255, 106, 43, 0.16);
+}
+
+/* Spacer */
+.spacer {
+  flex: 1;
+}
+
+/* Logout */
+.logoutRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 12px;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 6px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.logoutRow:hover {
+  background: rgba(239, 83, 80, 0.08);
+  border-color: rgba(239, 83, 80, 0.3);
+}
+
+.logoutRow svg {
+  flex-shrink: 0;
+}
+
+/* Version */
+.version {
+  display: block;
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 8px 12px 0;
+  margin-top: 4px;
+  text-align: left;
+}
+
+.collapsed .version {
+  display: none;
+}
+
+/* Scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    padding: 12px 8px;
+  }
+
+  .logoText {
+    font-size: 15px;
+  }
+
+  .contextRow {
+    padding: 7px 8px;
+    font-size: 12px;
+  }
+
+  .contextValue {
+    font-size: 12px;
+  }
+
+  .navLink,
+  .navLinkExpandable {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  .subLink {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  .logoutRow {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+}
+
+/* Organization Switcher Popover */
+.orgSwitcherWrap {
+  position: relative;
+}
+
+.orgPopover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--panel, #16171d);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 220px;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.orgPopoverHeader {
+  padding: 6px 10px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-faint, #62636e);
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+}
+
+.orgPopoverList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+}
+
+.orgOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #a3a5b0);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.orgOption:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #eceef2);
+}
+
+.orgOptionActive {
+  background: rgba(255, 106, 43, 0.1);
+  color: var(--text, #eceef2);
+}
+
+.orgOptionActive:hover {
+  background: rgba(255, 106, 43, 0.15);
+}
+
+.orgOptionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text, #eceef2);
+}
+
+.orgOptionActive .orgOptionIcon {
+  background: var(--accent, #ff6a2b);
+  color: #17181d;
+}
+
+.orgOptionText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.orgOptionName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text, #eceef2);
+}
+
+.orgOptionRole {
+  font-size: 10px;
+  color: var(--text-faint, #62636e);
+}
+
+.orgOptionCheck {
+  color: var(--accent, #ff6a2b);
+  flex-shrink: 0;
+}
+
+/* Scrollbar styling for popovers */
+.orgPopover::-webkit-scrollbar {
+  width: 4px;
+}
+
+.orgPopover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.orgPopover::-webkit-scrollbar-thumb {
+  background: var(--text-faint, #62636e);
+  border-radius: 999px;
+}
+
+/* Sidebar.module.css - Add/update these styles */
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 16px 20px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  min-height: 64px;
+}
+
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoImage {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.logoText {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text, #eceef2);
+  letter-spacing: -0.5px;
+}
+
+/* When sidebar is collapsed */
+.collapsed .logoText {
+  display: none;
+}
+
+.collapsed .logoWrapper {
+  gap: 0;
+}
+
+.collapsed .logoImage {
+  width: 28px;
+  height: 28px;
+}
+
+/* Adjust padding for collapsed state */
+.collapsed .logoRow {
+  padding: 12px 12px 12px 16px;
+  justify-content: center;
+}
+
+/* Make sure the collapse button works */
+.collapseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: transparent;
+  border-radius: 8px;
+  color: var(--text-faint, #62636e);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.collapseBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong, rgba(255, 255, 255, 0.14));
+  color: var(--text, #eceef2);
+}
+
+.collapsed .collapseBtn {
+  transform: rotate(180deg);
+}
+
+/* --- For mobile --- */
+@media (max-width: 768px) {
+  .logoRow {
+    padding: 12px 14px 12px 16px;
+  }
+  
+  .logoText {
+    font-size: 16px;
+  }
+}
+/* src/app/dashboard/Sidebar.module.css */
+
+/* Add at the end of your existing CSS */
+
+/* ===== RESPONSIVE AUTO-COLLAPSE ===== */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 76px;
+    min-width: 76px;
+    padding: 14px 10px;
+  }
+
+  .sidebar .logoText {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+  }
+
+  .sidebar .contextText {
+    display: none;
+  }
+
+  .sidebar .toggleIcon {
+    display: none;
+  }
+
+  .sidebar .navLabel {
+    opacity: 0;
+    width: 0;
+  }
+
+  .sidebar .navLink,
+  .sidebar .navLinkExpandable,
+  .sidebar .logoutRow {
+    justify-content: center;
+    padding: 10px;
+    gap: 0;
+  }
+
+  .sidebar .chevron {
+    opacity: 0;
+    width: 0;
+  }
+
+  .sidebar .subNav {
+    display: none;
+  }
+
+  .sidebar .version {
+    display: none;
+  }
+
+  .sidebar .collapseBtn {
+    transform: rotate(180deg);
+    margin-left: 0;
+  }
+
+  .sidebar .logoRow {
+    justify-content: center;
+  }
+
+  .sidebar .logoWrapper {
+    gap: 0;
+  }
+
+  .sidebar .logoImage {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* When user manually expands */
+  .sidebar:not(.collapsed) {
+    width: 264px;
+    min-width: 264px;
+    padding: 14px 12px;
+  }
+
+  .sidebar:not(.collapsed) .logoText {
+    opacity: 1;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  .sidebar:not(.collapsed) .contextText {
+    display: block;
+  }
+
+  .sidebar:not(.collapsed) .toggleIcon {
+    display: block;
+  }
+
+  .sidebar:not(.collapsed) .navLabel {
+    opacity: 1;
+    width: auto;
+  }
+
+  .sidebar:not(.collapsed) .navLink,
+  .sidebar:not(.collapsed) .navLinkExpandable,
+  .sidebar:not(.collapsed) .logoutRow {
+    justify-content: flex-start;
+    padding: 9px 12px;
+    gap: 11px;
+  }
+
+  .sidebar:not(.collapsed) .chevron {
+    opacity: 1;
+    width: auto;
+  }
+
+  .sidebar:not(.collapsed) .subNav {
+    display: flex;
+  }
+
+  .sidebar:not(.collapsed) .version {
+    display: block;
+  }
+
+  .sidebar:not(.collapsed) .collapseBtn {
+    transform: rotate(0deg);
+    margin-left: auto;
+  }
+
+  .sidebar:not(.collapsed) .logoRow {
+    justify-content: space-between;
+  }
+
+  .sidebar:not(.collapsed) .logoWrapper {
+    gap: 10px;
+  }
+
+  .sidebar:not(.collapsed) .logoImage {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* On very small screens, keep auto-collapsed */
+@media (max-width: 768px) {
+  .sidebar:not(.collapsed) {
+    width: 220px;
+    min-width: 220px;
+    padding: 12px 8px;
+  }
+
+  .sidebar:not(.collapsed) .logoText {
+    font-size: 15px;
+  }
+
+  .sidebar:not(.collapsed) .contextRow {
+    padding: 7px 8px;
+    font-size: 12px;
+  }
+
+  .sidebar:not(.collapsed) .contextValue {
+    font-size: 12px;
+  }
+
+  .sidebar:not(.collapsed) .navLink,
+  .sidebar:not(.collapsed) .navLinkExpandable {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  .sidebar:not(.collapsed) .subLink {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  .sidebar:not(.collapsed) .logoutRow {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+}
+/* ============================================================
+   PROFILE ROW (above logout)
+   ============================================================ */
+
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+}
+
+.profileRow:hover {
+  background: var(--raised-hi);
+  border-color: var(--border-strong);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.profileRow:active {
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.45), inset -3px -3px 6px rgba(255, 255, 255, 0.02);
+}
+
+.collapsed .profileRow {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #17181d;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 106, 43, 0.25);
+}
+
+.collapsed .avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  font-size: 14px;
+}
+
+.profileRow .navLabel {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.collapsed .profileRow .navLabel {
+  opacity: 0;
+  width: 0;
+}

@@ -108,7 +108,7 @@ export default function Hero() {
 
       <div className={styles.assetWrap}>
         <Image
-          src="/assets/dashboard3.jpg"
+          src="/assets/dsk.png"
           alt="KXBYTE Suite dashboard analytics"
           width={1400}
           height={560}

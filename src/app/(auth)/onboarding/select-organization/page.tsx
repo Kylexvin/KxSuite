@@ -2,12 +2,22 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import axios from "axios";
 import { useAuth, Organization } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import {
+  Building2,
+  Check,
+  X,
+  Plus,
+  ArrowRight,
+  Crown,
+  Mail,
+  Rocket,
+} from "lucide-react";
 import styles from "./page.module.css";
 
 type PendingInvitation = {
@@ -58,24 +68,28 @@ type CreateOrganizationResponse = {
 
 export default function SelectOrganizationPage() {
   const router = useRouter();
-  const { 
-    user, 
-    organizations, 
-    setAuth, 
-    setActiveOrganization, 
-    loadBranches, 
-    isLoading 
+  const {
+    user,
+    organizations,
+    setAuth,
+    setActiveOrganization,
+    loadBranches,
+    isLoading,
   } = useAuth();
 
   const [pendingInvites, setPendingInvites] = useState<PendingInvitation[]>([]);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
-
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({ name: "", country: "KE" });
+  
+  const hasLoaded = useRef(false);
 
   const loadEverything = useCallback(async () => {
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
+    
     setChecking(true);
     setError("");
     try {
@@ -84,7 +98,7 @@ export default function SelectOrganizationPage() {
         api.get("/api/v1/invitations/my"),
       ]);
 
-      let freshOrgs: Organization[] = organizations;
+      let freshOrgs: Organization[] = [];
       if (orgsRes.status === "fulfilled") {
         freshOrgs = orgsRes.value.data.organizations || [];
         const accessToken = localStorage.getItem("accessToken") || "";
@@ -103,35 +117,31 @@ export default function SelectOrganizationPage() {
 
       if (freshOrgs.length === 0 && freshInvites.length === 0) {
         setShowCreateForm(true);
+      } else {
+        setShowCreateForm(false);
+      }
+
+      // Auto-select if only one organization and no invites
+      if (freshOrgs.length === 1 && freshInvites.length === 0) {
+        const org = freshOrgs[0];
+        await setActiveOrganization(org.id);
+        await loadBranches(org.id);
+        router.push("/dashboard");
+        return;
       }
     } catch (err) {
-      console.error("Failed to load organizations/invitations:", err);
+      console.error("Failed to load data:", err);
       setError("Could not load your organizations. You can still create one below.");
       setShowCreateForm(true);
     } finally {
       setChecking(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user, setAuth, setActiveOrganization, loadBranches, router]);
 
   useEffect(() => {
-    Promise.resolve().then(() => {
-      void loadEverything();
-    });
+    loadEverything();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Auto-select if only one organization
-  useEffect(() => {
-    if (!checking && organizations.length === 1 && pendingInvites.length === 0) {
-      const org = organizations[0];
-      setActiveOrganization(org.id).then(() => {
-        loadBranches(org.id).then(() => {
-          router.push("/dashboard");
-        });
-      });
-    }
-  }, [checking, organizations, pendingInvites, setActiveOrganization, loadBranches, router]);
 
   const handleSelect = async (orgId: string) => {
     setError("");
@@ -264,11 +274,9 @@ export default function SelectOrganizationPage() {
     return (
       <div className={styles.page}>
         <div className={styles.container}>
-          <div className={styles.card}>
-            <div className={styles.loading}>
-              <div className={styles.spinner} />
-              <p>Checking your account...</p>
-            </div>
+          <div className={styles.loadingCard}>
+            <div className={styles.spinner} />
+            <p>Loading your workspace...</p>
           </div>
         </div>
       </div>
@@ -282,61 +290,83 @@ export default function SelectOrganizationPage() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <div className={showCreateForm ? styles.card : styles.cardWide}>
+        <div className={styles.mainCard}>
+          {/* Brand */}
           <div className={styles.brand}>
-            <Image src="/assets/logo.png" alt="KXBYTE" width={44} height={44} className={styles.brandLogo} />
-            <h1>
-              KXBYTE <span className={styles.brandSuite}>Suite</span>
-            </h1>
+            <Image
+              src="/assets/logo.png"
+              alt="KXBYTE"
+              width={48}
+              height={48}
+              className={styles.brandLogo}
+            />
+            <div className={styles.brandText}>
+              <h1 className={styles.brandTitle}>KXBYTE</h1>
+              <span className={styles.brandSuite}>Suite</span>
+            </div>
           </div>
 
           {showCreateForm ? (
-            <>
-              <h2>Create your organization</h2>
-              <p className={styles.subtitle}>
-                {hasOrgs || hasInvites
-                  ? "Set up a new organization."
-                  : "You don't have any organizations yet. Set one up to get started."}
-              </p>
+            // ===== CREATE ORGANIZATION FORM =====
+            <div className={styles.createSection}>
+              <div className={styles.createHeader}>
+                <h2>Create your organization</h2>
+                <p className={styles.subtitle}>
+                  {hasOrgs || hasInvites
+                    ? "Set up a new organization to expand your business."
+                    : "Get started by creating your first organization."}
+                </p>
+              </div>
 
               {error && <div className={styles.error}>{error}</div>}
 
               <form onSubmit={handleCreateSubmit} className={styles.form}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="name">Organization name</label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleCreateChange}
-                    placeholder="e.g. Kamau Supermarket"
-                    required
-                    disabled={creating}
-                  />
-                </div>
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="name">Organization Name</label>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleCreateChange}
+                      placeholder="e.g. Kamau Supermarket"
+                      required
+                      disabled={creating}
+                    />
+                  </div>
 
-                <div className={styles.formGroup}>
-                  <label htmlFor="country">Country</label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleCreateChange}
-                    disabled={creating}
-                    className={styles.select}
-                  >
-                    <option value="KE">Kenya</option>
-                    <option value="UG">Uganda</option>
-                    <option value="TZ">Tanzania</option>
-                    <option value="RW">Rwanda</option>
-                    <option value="NG">Nigeria</option>
-                    <option value="ZA">South Africa</option>
-                  </select>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="country">Country</label>
+                    <select
+                      id="country"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleCreateChange}
+                      disabled={creating}
+                    >
+                      <option value="KE">🇰🇪 Kenya</option>
+                      <option value="UG">🇺🇬 Uganda</option>
+                      <option value="TZ">🇹🇿 Tanzania</option>
+                      <option value="RW">🇷🇼 Rwanda</option>
+                      <option value="NG">🇳🇬 Nigeria</option>
+                      <option value="ZA">🇿🇦 South Africa</option>
+                    </select>
+                  </div>
                 </div>
 
                 <button type="submit" className={styles.submitBtn} disabled={creating}>
-                  {creating ? "Creating..." : "Create organization"}
+                  {creating ? (
+                    <>
+                      <span className={styles.spinnerSmall} />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Rocket size={16} />
+                      Launch Organization
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -349,19 +379,28 @@ export default function SelectOrganizationPage() {
                   ← Back to your organizations
                 </button>
               )}
-            </>
+            </div>
           ) : (
-            <>
-              <h2>Your organizations</h2>
-              <p className={styles.subtitle}>
-                Select an organization to continue or accept an invitation.
-              </p>
+            // ===== SELECT ORGANIZATION =====
+            <div className={styles.selectSection}>
+              <div className={styles.selectHeader}>
+                <h2>Welcome to KXBYTE Suite</h2>
+                <p className={styles.subtitle}>
+                  {hasOrgs || hasInvites
+                    ? "Select an organization to continue."
+                    : "Get started by creating your first organization."}
+                </p>
+              </div>
 
               {error && <div className={styles.error}>{error}</div>}
 
+              {/* Organizations */}
               {hasOrgs && (
                 <div className={styles.section}>
-                  <h3 className={styles.sectionTitle}>Your organizations</h3>
+                  <div className={styles.sectionLabel}>
+                    <Building2 size={14} />
+                    Your Organizations
+                  </div>
                   <div className={styles.orgGrid}>
                     {organizations.map((org) => {
                       const role = getOrgRole(org);
@@ -374,23 +413,34 @@ export default function SelectOrganizationPage() {
                           onClick={() => handleSelect(org.id)}
                           disabled={isLoading}
                         >
-                          <div className={styles.orgTop}>
+                          <div className={styles.orgCardLeft}>
                             <div className={styles.orgIcon}>
                               {org.name.charAt(0).toUpperCase()}
                             </div>
-                            <div className={styles.arrow}>→</div>
+                            <div className={styles.orgInfo}>
+                              <span className={styles.orgName}>{org.name}</span>
+                              <span className={styles.orgRole}>
+                                {role === "OWNER" ? (
+                                  <>
+                                    <Crown size={12} />
+                                    Owner
+                                  </>
+                                ) : (
+                                  "Member"
+                                )}
+                              </span>
+                            </div>
                           </div>
-                          <h4 className={styles.orgName}>{org.name}</h4>
-                          <p className={styles.orgRole}>
-                            {role === "OWNER" ? "👑 Owner" : "Member"}
-                          </p>
-                          {role === "OWNER" ? (
-                            <span className={styles.badgeOwner}>Full Access</span>
-                          ) : fullAccess ? (
-                            <span className={styles.badge}>All Branches</span>
-                          ) : (
-                            <span className={styles.badgeLimited}>Limited Access</span>
-                          )}
+                          <div className={styles.orgCardRight}>
+                            {role === "OWNER" ? (
+                              <span className={styles.badgeOwner}>Full Access</span>
+                            ) : fullAccess ? (
+                              <span className={styles.badge}>All Branches</span>
+                            ) : (
+                              <span className={styles.badgeLimited}>Limited</span>
+                            )}
+                            <ArrowRight size={16} className={styles.orgArrow} />
+                          </div>
                         </button>
                       );
                     })}
@@ -398,33 +448,43 @@ export default function SelectOrganizationPage() {
                 </div>
               )}
 
+              {/* Invitations */}
               {hasInvites && (
                 <div className={styles.section}>
-                  <h3 className={styles.sectionTitle}>Pending invitations</h3>
+                  <div className={styles.sectionLabel}>
+                    <Mail size={14} />
+                    Pending Invitations
+                  </div>
                   <div className={styles.inviteGrid}>
                     {pendingInvites.map((invite) => (
                       <div key={invite.id} className={styles.inviteCard}>
-                        <div className={styles.orgTop}>
+                        <div className={styles.inviteLeft}>
                           <div className={styles.inviteIcon}>
                             {invite.organization.name.charAt(0).toUpperCase()}
                           </div>
-                          <span className={styles.badgePending}>Pending</span>
+                          <div className={styles.inviteInfo}>
+                            <span className={styles.inviteName}>
+                              {invite.organization.name}
+                            </span>
+                            <span className={styles.inviteBy}>
+                              Invited by {invite.invitedBy.firstName}{" "}
+                              {invite.invitedBy.lastName}
+                            </span>
+                          </div>
                         </div>
-                        <h4 className={styles.orgName}>{invite.organization.name}</h4>
-                        <p className={styles.inviteBy}>
-                          Invited by {invite.invitedBy.firstName} {invite.invitedBy.lastName}
-                        </p>
                         <div className={styles.inviteActions}>
                           <button
                             className={styles.acceptBtn}
                             onClick={() => handleAcceptInvite(invite.token)}
                           >
+                            <Check size={14} />
                             Accept
                           </button>
                           <button
                             className={styles.rejectBtn}
                             onClick={() => handleRejectInvite(invite.token)}
                           >
+                            <X size={14} />
                             Decline
                           </button>
                         </div>
@@ -434,18 +494,30 @@ export default function SelectOrganizationPage() {
                 </div>
               )}
 
+              {/* Create New */}
+              <button
+                className={styles.createBtn}
+                onClick={() => setShowCreateForm(true)}
+              >
+                <Plus size={16} />
+                {hasOrgs || hasInvites
+                  ? "Create New Organization"
+                  : "Create Your First Organization"}
+                <ArrowRight size={14} />
+              </button>
+
               <p className={styles.helpText}>
-                You can switch organizations later from the dashboard.
+                You can switch organizations anytime from the dashboard.
               </p>
-            </>
+            </div>
           )}
         </div>
       </div>
 
+      {/* FAB for quick create */}
       {showFab && (
         <button className={styles.fab} onClick={() => setShowCreateForm(true)}>
-          <span className={styles.fabPlus}>+</span>
-          <span className={styles.fabLabel}>New organization</span>
+          <Plus size={20} />
         </button>
       )}
     </div>
