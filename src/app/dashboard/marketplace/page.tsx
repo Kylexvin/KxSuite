@@ -172,6 +172,16 @@ export default function MarketplacePage() {
   }, [activeOrganization]);
 
   // ============================================================
+  // REFRESH EVERYTHING (products + context)
+  // ============================================================
+
+  const refreshEverything = useCallback(async () => {
+    if (!activeOrganization) return;
+    await refreshOrgProducts();
+    await loadSuiteContext(activeOrganization.id);
+  }, [activeOrganization, refreshOrgProducts, loadSuiteContext]);
+
+  // ============================================================
   // LOAD PRODUCTS
   // ============================================================
 
@@ -261,10 +271,7 @@ export default function MarketplacePage() {
         }
       );
 
-      await refreshOrgProducts();
-      
-      // ✅ Update suiteContext so sidebar reflects changes immediately
-      await loadSuiteContext(activeOrganization.id);
+      await refreshEverything();
 
       setToast({
         type: "success",
@@ -272,8 +279,7 @@ export default function MarketplacePage() {
       });
     } catch (err: any) {
       if (err.response?.status === 400) {
-        await refreshOrgProducts();
-        await loadSuiteContext(activeOrganization.id);
+        await refreshEverything();
         setToast({
           type: "info",
           message: `${productKey} is already activated.`,
@@ -304,10 +310,7 @@ export default function MarketplacePage() {
         `/api/v1/products/organizations/${activeOrganization.id}/products/${productKey}`
       );
 
-      await refreshOrgProducts();
-      
-      // ✅ Update suiteContext so sidebar reflects changes immediately
-      await loadSuiteContext(activeOrganization.id);
+      await refreshEverything();
 
       setToast({
         type: "info",
@@ -536,7 +539,7 @@ export default function MarketplacePage() {
                     <>
                       <button
                         className={styles.manageBtn}
-                        onClick={() => router.push(`/dashboard/products/${product.key}`)}
+                        onClick={() => router.push(`/kx/${product.key}`)}
                       >
                         <ArrowRight size={14} />
                         Manage
@@ -686,7 +689,7 @@ export default function MarketplacePage() {
                 <button
                   className={styles.modalManage}
                   onClick={() => {
-                    router.push(`/dashboard/products/${selectedProduct.key}`);
+                    router.push(`/kx/${selectedProduct.key}`);
                     setShowDetail(false);
                   }}
                 >

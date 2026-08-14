@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "./Sidebar";
@@ -16,6 +16,12 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { isAuthenticated, isLoading, organizations, activeOrganization, user, accessToken } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // ✅ Prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Debug
   console.log('DashboardLayout - isAuthenticated:', isAuthenticated);
@@ -41,7 +47,7 @@ export default function DashboardLayout({
     }
   }, [isLoading, isAuthenticated, organizations, activeOrganization, router]);
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <div className={styles.loading}>
         <div className={styles.spinner} />

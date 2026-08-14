@@ -7,6 +7,7 @@ import {
   useContext,
   useState,
   ReactNode,
+  useEffect,
 } from "react";
 import axios from "axios";
 import { api } from "@/lib/axios";
@@ -113,23 +114,23 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ✅ Fixed safeLocalStorageGet
 function safeLocalStorageGet<T>(key: string, defaultValue: T): T {
   if (typeof window === "undefined") return defaultValue;
   const stored = localStorage.getItem(key);
   if (!stored || stored === "undefined" || stored === "null") return defaultValue;
+  
+  // If the expected type is string (like accessToken), return stored directly
+  if (typeof defaultValue === 'string') {
+    return stored as T;
+  }
+  
   try {
     const parsed = JSON.parse(stored);
-    // ✅ If parsed is a string (like accessToken), return it directly
-    if (typeof parsed === 'string') {
-      return parsed as T;
-    }
     return parsed !== null && parsed !== undefined ? parsed : defaultValue;
   } catch {
-    // ✅ If JSON parse fails, check if it's a plain string
-    if (typeof stored === 'string' && stored.length > 0) {
-      return stored as T;
-    }
-    return defaultValue;
+    // If JSON parse fails, return stored as is
+    return stored as T;
   }
 }
 
@@ -162,6 +163,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     safeLocalStorageGet<SuiteContext | null>("suiteContext", null)
   );
   const [isLoading, setIsLoading] = useState(false);
+
+  // ✅ Sync state with localStorage on mount (fixes hydration issues)
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("accessToken");
+    const storedRefresh = localStorage.getItem("refreshToken");
+    const storedOrgs = localStorage.getItem("organizations");
+    const storedActive = localStorage.getItem("activeOrganization");
+    const storedActiveDetail = localStorage.getItem("activeOrganizationDetail");
+    const storedBranches = localStorage.getItem("branches");
+    const storedActiveBranch = localStorage.getItem("activeBranch");
+    const storedSuiteContext = localStorage.getItem("suiteContext");
+
+    if (storedToken && !accessToken) {
+      setAccessToken(storedToken);
+    }
+    if (storedRefresh && !refreshToken) {
+      setRefreshToken(storedRefresh);
+    }
+    if (storedUser && !user) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {}
+    }
+    if (storedOrgs && organizations.length === 0) {
+      try {
+        setOrganizations(JSON.parse(storedOrgs));
+      } catch {}
+    }
+    if (storedActive && !activeOrganization) {
+      try {
+        setActiveOrganizationState(JSON.parse(storedActive));
+      } catch {}
+    }
+    if (storedActiveDetail && !activeOrganizationDetail) {
+      try {
+        setActiveOrganizationDetail(JSON.parse(storedActiveDetail));
+      } catch {}
+    }
+    if (storedBranches && branches.length === 0) {
+      try {
+        setBranches(JSON.parse(storedBranches));
+      } catch {}
+    }
+    if (storedActiveBranch && !activeBranch) {
+      try {
+        setActiveBranchState(JSON.parse(storedActiveBranch));
+      } catch {}
+    }
+    if (storedSuiteContext && !suiteContext) {
+      try {
+        setSuiteContext(JSON.parse(storedSuiteContext));
+      } catch {}
+    }
+  }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -220,21 +276,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loadSuiteContext = async (organizationId: string): Promise<SuiteContext> => {
-    const response = await api.get<SuiteContext>(
-      `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
-    );
-    const context = response.data;
+    try {
+      const response = await api.get<SuiteContext>(
+        `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
+      );
+      const context = response.data;
 
-    setSuiteContext(context);
-    localStorage.setItem("suiteContext", JSON.stringify(context));
+      console.log('📦 SuiteContext loaded:', context);
 
-    setActiveOrganizationDetail(context.organization);
-    localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
+      setSuiteContext(context);
+      localStorage.setItem("suiteContext", JSON.stringify(context));
 
-    setBranches(context.branches);
-    localStorage.setItem("branches", JSON.stringify(context.branches));
+      setActiveOrganizationDetail(context.organization);
+      localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
 
-    return context;
+      setBranches(context.branches);
+      localStorage.setItem("branches", JSON.stringify(context.branches));
+
+      return context;
+    } catch (error) {
+      console.error('❌ Failed to load suite context:', error);
+      throw error;
+    }
   };
 
   const setAuth = (user: User, accessToken: string, refreshToken: string, organizations: Organization[]) => {
@@ -297,7 +360,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ Direct setter for active organization (bypasses state lookup)
   const setActiveOrganizationDirect = (org: Organization) => {
     setActiveOrganizationState(org);
     localStorage.setItem("activeOrganization", JSON.stringify(org));
@@ -339,6 +401,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveBranch(branch);
   };
 
+  const isAuthenticated = !!user && !!accessToken;
+
   return (
     <AuthContext.Provider
       value={{
@@ -362,7 +426,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasPermission,
         setActiveBranch,
         switchBranch,
-        isAuthenticated: !!user && !!accessToken,
+        isAuthenticated,
       }}
     >
       {children}

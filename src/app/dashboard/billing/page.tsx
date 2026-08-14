@@ -1,3 +1,5 @@
+// app/dashboard/billing/page.tsx
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -18,16 +20,10 @@ import {
   X,
   Check,
   AlertCircle,
-  Calendar,
-  DollarSign,
   RefreshCw,
   Ban,
-  Shield,
-  Building2,
-  Users,
-  Phone,
-  MapPin,
   Loader2,
+  Wallet,
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -78,6 +74,18 @@ type Product = {
   description: string;
   version: string;
   isActive: boolean;
+};
+
+type Payment = {
+  id: string;
+  amount: number;
+  currency: string;
+  status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  method: string;
+  reference: string;
+  description: string;
+  paidAt: string;
+  createdAt: string;
 };
 
 // ============================================================
@@ -141,21 +149,27 @@ function StatusBadge({ status }: { status: SubscriptionStatus }) {
 
 export default function BillingPage() {
   const router = useRouter();
-  const { activeOrganization } = useAuth();
+  const { activeOrganization, loadSuiteContext } = useAuth();
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | SubscriptionStatus>("ALL");
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [renewing, setRenewing] = useState<string | null>(null);
 
   // ============================================================
   // FETCH DATA
   // ============================================================
+
+  const refreshEverything = useCallback(async () => {
+    if (!activeOrganization) return;
+    await loadSuiteContext(activeOrganization.id);
+  }, [activeOrganization, loadSuiteContext]);
 
   const fetchData = useCallback(async () => {
     if (!activeOrganization) return;
@@ -167,8 +181,24 @@ export default function BillingPage() {
         api.get("/api/v1/products"),
       ]);
 
-      setSubscriptions(subsRes.data.subscriptions || []);
-      setProducts(productsRes.data.products || []);
+      const allProducts = productsRes.data.products || [];
+      setProducts(allProducts);
+
+      // ✅ CRITICAL: Only show subscriptions where the product EXISTS and is ACTIVE in the org
+      const allSubs = subsRes.data.subscriptions || [];
+      const activeSubs = allSubs.filter((sub: Subscription) => {
+        const product = allProducts.find((p: Product) => p.key === sub.productKey);
+        // ✅ Product must exist AND be active in the organization
+        return product !== undefined && product.isActive === true;
+      });
+      setSubscriptions(activeSubs);
+
+      try {
+        const paymentsRes = await api.get(`/api/v1/organizations/${activeOrganization.id}/payments`);
+        setPayments(paymentsRes.data.payments || []);
+      } catch {
+        setPayments([]);
+      }
     } catch (err) {
       console.error("Failed to load billing data:", err);
       setToast({ type: "error", message: "Failed to load subscriptions. Please try again." });
@@ -193,11 +223,13 @@ export default function BillingPage() {
       const sub = subscriptions.find((s) => s.id === subscriptionId);
       if (!sub) return;
 
+      // ✅ Deactivate product using the same endpoint as Marketplace
       await api.delete(
-        `/api/v1/organizations/${activeOrganization.id}/subscriptions/${sub.productKey}`
+        `/api/v1/products/organizations/${activeOrganization.id}/products/${sub.productKey}`
       );
 
       await fetchData();
+      await refreshEverything();
       setToast({ type: "success", message: "Subscription cancelled successfully" });
       setShowCancelModal(false);
       setSelectedSubscription(null);
@@ -214,17 +246,21 @@ export default function BillingPage() {
   const handleRenew = async (productKey: string) => {
     if (!activeOrganization) return;
 
+    setRenewing(productKey);
     try {
       await api.post(
         `/api/v1/organizations/${activeOrganization.id}/subscriptions/${productKey}/renew`
       );
       await fetchData();
+      await refreshEverything();
       setToast({ type: "success", message: "Subscription renewed successfully" });
     } catch (err: any) {
       setToast({
         type: "error",
         message: err.response?.data?.message || "Failed to renew subscription",
       });
+    } finally {
+      setRenewing(null);
     }
   };
 
@@ -236,8 +272,7 @@ export default function BillingPage() {
     const product = products.find((p) => p.key === sub.productKey);
     const productName = product?.name || sub.productKey;
     const matchesSearch = productName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || sub.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   // ============================================================
@@ -245,9 +280,18 @@ export default function BillingPage() {
   // ============================================================
 
   const totalSubscriptions = subscriptions.length;
-  const activeSubscriptions = subscriptions.filter((s) => s.status === "ACTIVE").length;
-  const trialSubscriptions = subscriptions.filter((s) => s.status === "TRIAL").length;
-  const expiringSubscriptions = subscriptions.filter((s) => s.status === "GRACE").length;
+  const activeCount = subscriptions.filter((s) => s.status === "ACTIVE").length;
+  const trialCount = subscriptions.filter((s) => s.status === "TRIAL").length;
+  const graceCount = subscriptions.filter((s) => s.status === "GRACE").length;
+
+  const totalSpent = payments
+    .filter((p) => p.status === "COMPLETED")
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const lastPayment = payments.find((p) => p.status === "COMPLETED");
+  const nextPayment = subscriptions
+    .filter((s) => s.status === "ACTIVE" || s.status === "TRIAL")
+    .reduce((sum, s) => sum + (s.plan?.price || 0), 0);
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("en-KE", {
@@ -275,7 +319,7 @@ export default function BillingPage() {
       <div className={styles.page}>
         <div className={styles.loadingState}>
           <Loader2 size={32} className={styles.spinner} />
-          <p>Loading subscriptions...</p>
+          <p>Loading billing information...</p>
         </div>
       </div>
     );
@@ -312,79 +356,82 @@ export default function BillingPage() {
             <div className={styles.orgMeta}>Manage your subscriptions and billing information</div>
           </div>
         </div>
-        <button
-          className={styles.primaryButton}
-          onClick={() => router.push("/dashboard/marketplace")}
-        >
-          <Plus size={16} />
-          Add Product
-        </button>
       </div>
 
       {/* ===== STATS ===== */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{activeSubscriptions}</div>
-          <div className={styles.statLabel}>Active Subscriptions</div>
+          <div className={styles.statValue}>{activeCount}</div>
+          <div className={styles.statLabel}>Active</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{trialSubscriptions}</div>
+          <div className={styles.statValue}>{trialCount}</div>
           <div className={styles.statLabel}>Trial</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{expiringSubscriptions}</div>
+          <div className={styles.statValue}>{graceCount}</div>
           <div className={styles.statLabel}>Expiring Soon</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{totalSubscriptions}</div>
-          <div className={styles.statLabel}>Total Products</div>
+          <div className={styles.statValue}>{formatCurrency(totalSpent, "KES")}</div>
+          <div className={styles.statLabel}>Total Spent</div>
         </div>
       </div>
 
-      {/* ===== FILTERS ===== */}
-      <div className={styles.filtersBar}>
-        <div className={styles.searchWrap}>
-          <Search size={16} className={styles.searchIcon} />
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Search subscriptions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      {/* ===== PAYMENT STATUS ===== */}
+      <div className={styles.paymentStatusCard}>
+        <div className={styles.paymentStatusHeader}>
+          <Wallet size={18} />
+          <span>Payment Status</span>
         </div>
-        <div className={styles.filterGroup}>
-          <select
-            className={styles.filterSelect}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          >
-            <option value="ALL">All Status</option>
-            <option value="TRIAL">Trial</option>
-            <option value="ACTIVE">Active</option>
-            <option value="GRACE">Grace Period</option>
-            <option value="EXPIRED">Expired</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
+        <div className={styles.paymentStatusGrid}>
+          <div className={styles.paymentStatusItem}>
+            <span className={styles.paymentStatusLabel}>Current Balance</span>
+            <span className={styles.paymentStatusValue}>
+              {formatCurrency(0, "KES")}
+            </span>
+          </div>
+          <div className={styles.paymentStatusItem}>
+            <span className={styles.paymentStatusLabel}>Last Payment</span>
+            <span className={styles.paymentStatusValue}>
+              {lastPayment ? formatCurrency(lastPayment.amount, lastPayment.currency) : "—"}
+            </span>
+          </div>
+          <div className={styles.paymentStatusItem}>
+            <span className={styles.paymentStatusLabel}>Last Payment Date</span>
+            <span className={styles.paymentStatusValue}>
+              {lastPayment ? formatDate(lastPayment.paidAt) : "—"}
+            </span>
+          </div>
+          <div className={styles.paymentStatusItem}>
+            <span className={styles.paymentStatusLabel}>Next Payment</span>
+            <span className={styles.paymentStatusValue}>
+              {nextPayment > 0 ? formatCurrency(nextPayment, "KES") : "—"}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ===== SUBSCRIPTION GRID ===== */}
+      {/* ===== SUBSCRIPTIONS ===== */}
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.sectionTitle}>
+          <Package size={18} />
+          Your Products
+        </h2>
+        <span className={styles.sectionCount}>{totalSubscriptions}</span>
+      </div>
+
       {filteredSubscriptions.length === 0 ? (
         <div className={styles.emptyState}>
           <Package size={48} className={styles.emptyIcon} />
-          <h3>No subscriptions found</h3>
-          <p>
-            {subscriptions.length === 0
-              ? "You haven't subscribed to any products yet."
-              : "Try adjusting your filters."}
-          </p>
+          <h3>No active subscriptions</h3>
+          <p>Browse the marketplace to activate products for your organization.</p>
           <button
             className={styles.primaryButton}
             onClick={() => router.push("/dashboard/marketplace")}
           >
             <Plus size={16} />
-            Browse Products
+            Browse Marketplace
           </button>
         </div>
       ) : (
@@ -393,6 +440,7 @@ export default function BillingPage() {
             const product = products.find((p) => p.key === sub.productKey);
             const productName = product?.name || sub.productKey;
             const isExpiring = sub.status === "ACTIVE" && sub.remainingDays && sub.remainingDays < 30;
+            const isRenewing = renewing === sub.productKey;
 
             return (
               <div key={sub.id} className={styles.subscriptionCard}>
@@ -461,7 +509,15 @@ export default function BillingPage() {
                     Details
                   </button>
 
-                  {sub.status === "ACTIVE" && (
+                  <button
+                    className={styles.subscriptionAction}
+                    onClick={() => router.push(`/kx/${sub.productKey}`)}
+                  >
+                    <ArrowRight size={14} />
+                    Manage
+                  </button>
+
+                  {sub.status === "TRIAL" && (
                     <button
                       className={`${styles.subscriptionAction} ${styles.subscriptionActionDanger}`}
                       onClick={() => {
@@ -470,31 +526,63 @@ export default function BillingPage() {
                       }}
                     >
                       <Ban size={14} />
-                      Cancel
+                      Deactivate
                     </button>
                   )}
 
-                  {(sub.status === "TRIAL" || sub.status === "EXPIRED") && (
-                    <button
-                      className={styles.subscriptionActionPrimary}
-                      onClick={() => {
-                        const productKey = sub.productKey;
-                        router.push(`/dashboard/marketplace`);
-                        // Or trigger payment flow
-                      }}
-                    >
-                      <ArrowRight size={14} />
-                      {sub.status === "TRIAL" ? "Upgrade" : "Reactivate"}
-                    </button>
+                  {sub.status === "ACTIVE" && (
+                    <>
+                      <button
+                        className={`${styles.subscriptionAction} ${styles.subscriptionActionDanger}`}
+                        onClick={() => {
+                          setSelectedSubscription(sub);
+                          setShowCancelModal(true);
+                        }}
+                      >
+                        <Ban size={14} />
+                        Cancel
+                      </button>
+                      <button
+                        className={styles.subscriptionAction}
+                        onClick={() => handleRenew(sub.productKey)}
+                        disabled={isRenewing}
+                      >
+                        {isRenewing ? (
+                          <Loader2 size={14} className={styles.spinnerSmall} />
+                        ) : (
+                          <>
+                            <RefreshCw size={14} />
+                            Renew
+                          </>
+                        )}
+                      </button>
+                    </>
                   )}
 
                   {sub.status === "GRACE" && (
                     <button
                       className={styles.subscriptionActionPrimary}
                       onClick={() => handleRenew(sub.productKey)}
+                      disabled={isRenewing}
                     >
-                      <RefreshCw size={14} />
-                      Renew Now
+                      {isRenewing ? (
+                        <Loader2 size={14} className={styles.spinnerSmall} />
+                      ) : (
+                        <>
+                          <RefreshCw size={14} />
+                          Renew Now
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {sub.status === "EXPIRED" && (
+                    <button
+                      className={styles.subscriptionActionPrimary}
+                      onClick={() => router.push("/dashboard/marketplace")}
+                    >
+                      <ArrowRight size={14} />
+                      Reactivate
                     </button>
                   )}
                 </div>
@@ -600,6 +688,16 @@ export default function BillingPage() {
                 onClick={() => setShowDetailModal(false)}
               >
                 Close
+              </button>
+              <button
+                className={styles.subscriptionActionPrimary}
+                onClick={() => {
+                  router.push(`/kx/${selectedSubscription.productKey}`);
+                  setShowDetailModal(false);
+                }}
+              >
+                <ArrowRight size={14} />
+                Manage Product
               </button>
             </div>
           </div>

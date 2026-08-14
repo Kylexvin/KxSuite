@@ -39,7 +39,6 @@ const NAV_LINKS: NavLink[] = [
     href: "/kx",
     label: "Products",
     icon: Package,
-    permission: "kxtill.inventory.view",
   },
   {
     href: "/dashboard/members",
@@ -47,7 +46,12 @@ const NAV_LINKS: NavLink[] = [
     icon: Users,
     permission: "organizations.members.view",
   },
-  // ❌ Removed Branches nav link
+  {
+    href: "/dashboard/branches",
+    label: "Branches",
+    icon: Building2,
+    permission: "branches.view",
+  },
   {
     href: "/dashboard/billing",
     label: "Billing",
@@ -96,21 +100,22 @@ export default function Sidebar() {
   };
 
   // ============================================================
-  // PRODUCT VISIBILITY
+  // PRODUCT VISIBILITY — show ALL products user has access to
   // ============================================================
 
   const products = suiteContext?.products ?? [];
 
-  const hasProductAccess = (productKey: string): boolean => {
-    if (permissions.includes("*")) return true;
-    return permissions.some((perm) => perm.startsWith(`${productKey}.`));
-  };
-
   const visibleProducts = products.filter((p) => {
     if (!p.isActive) return false;
-    if (!p.subscriptionIsActive) return false;
-    return hasProductAccess(p.key);
+
+    if (permissions.includes("*")) return true;
+    return permissions.some((perm) => perm.startsWith(`${p.key}.`));
   });
+
+  const showProductsTab =
+    suiteContext === null ||
+    visibleProducts.length > 0 ||
+    permissions.includes("*");
 
   // ============================================================
   // EFFECTS
@@ -227,12 +232,19 @@ export default function Sidebar() {
   // RENDER
   // ============================================================
 
-  const visibleLinks = NAV_LINKS.filter((link) => hasPermission(link.permission));
+  const visibleLinks = NAV_LINKS.filter((link) => {
+    if (link.href === "/kx") {
+      return showProductsTab;
+    }
+    return hasPermission(link.permission);
+  });
 
   const user = suiteContext?.user;
 
+  const sidebarKey = `sidebar-${activeOrganization?.id}-${products.length}`;
+
   return (
-    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
+    <aside key={sidebarKey} className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
       {/* Logo Row */}
       <div className={styles.logoRow}>
         <div className={styles.logoWrapper}>
@@ -305,8 +317,6 @@ export default function Sidebar() {
           </div>
         )}
       </div>
-
-      {/* ❌ Removed Branch Switcher */}
 
       <div className={styles.divider} />
 

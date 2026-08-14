@@ -1,37 +1,13 @@
-/* app/dashboard/settings/page.module.css */
-
-.page {
-  --bg: #0e0f13;
-  --panel: #16171d;
-  --raised: #1b1c23;
-  --raised-hi: #24252e;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text: #eceef2;
-  --text-muted: #a3a5b0;
-  --text-faint: #62636e;
-  --accent: #ff6a2b;
-  --accent-glow: #ff8c42;
-  --danger: #ef5350;
-  --success: #4caf82;
-  --warning: #ffa726;
-
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  color: var(--text);
-}
-
-/* ---- Header ---- */
+/* ===== ORG HEADER ===== */
 .orgHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 18px;
+  background: var(--panel);
   border: 1px solid var(--border);
-  background: var(--raised);
-  border-radius: 14px;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 4px;
 }
 
 .orgIdentity {
@@ -44,15 +20,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: linear-gradient(135deg, var(--accent-glow), var(--accent));
   color: #17181d;
-  font-weight: 700;
-  font-size: 18px;
-  box-shadow: 0 3px 10px rgba(255, 106, 43, 0.35);
+  flex-shrink: 0;
 }
 
 .orgNameRow {
@@ -63,153 +36,222 @@
 
 .orgName {
   font-size: 18px;
-  font-weight: 700;
-  margin: 0;
+  font-weight: 600;
   color: var(--text);
-}
-
-.orgMeta {
-  font-size: 12px;
-  color: var(--text-faint);
-  margin-top: 3px;
+  margin: 0;
 }
 
 .statusPill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--success);
-  background: rgba(76, 175, 130, 0.12);
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(76, 175, 130, 0.15);
+  color: #4caf82;
 }
 
-/* ---- Settings Layout ---- */
-.settingsLayout {
+.orgMeta {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .orgHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .orgName {
+    font-size: 16px;
+  }
+  
+  .orgAvatar {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .orgHeader {
+    padding: 12px 16px;
+  }
+  
+  .orgName {
+    font-size: 14px;
+  }
+  
+  .statusPill {
+    font-size: 10px;
+    padding: 1px 8px;
+  }
+  
+  .orgMeta {
+    font-size: 12px;
+  }
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
   display: flex;
-  gap: 22px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 1000;
+  min-width: 280px;
+  max-width: 420px;
+  animation: slideIn 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-/* ---- Settings Sidebar ---- */
+.toastSuccess {
+  background: var(--panel);
+  border: 1px solid rgba(76, 175, 130, 0.3);
+  color: #4caf82;
+}
+
+.toastError {
+  background: var(--panel);
+  border: 1px solid rgba(239, 83, 80, 0.3);
+  color: #ef5350;
+}
+
+.toastInfo {
+  background: var(--panel);
+  border: 1px solid rgba(100, 100, 255, 0.3);
+  color: #6b8cff;
+}
+
+.toastClose {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 2px;
+  margin-left: auto;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== LOADING ===== */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 16px;
+  color: var(--text-muted);
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== SETTINGS LAYOUT ===== */
+.settingsLayout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .settingsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .settingsSidebar {
-  width: 240px;
-  min-width: 240px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 6px;
-  border: 1px solid var(--border);
-  background: var(--raised);
-  border-radius: 14px;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
-  position: sticky;
-  top: 80px;
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-}
-
-.settingsSidebar::-webkit-scrollbar {
-  width: 3px;
-}
-
-.settingsSidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.settingsSidebar::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
-  border-radius: 999px;
 }
 
 .settingsNavItem {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: none;
   background: transparent;
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--text-muted);
   font-size: 13px;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.15s;
   width: 100%;
-  text-align: left;
 }
 
 .settingsNavItem:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--raised);
   color: var(--text);
 }
 
 .settingsNavItemActive {
-  background: rgba(255, 106, 43, 0.08);
-  color: var(--accent-glow);
-}
-
-.settingsNavItemActive:hover {
-  background: rgba(255, 106, 43, 0.12);
+  background: var(--raised);
+  color: var(--text);
+  font-weight: 500;
 }
 
 .settingsNavItemDanger {
-  color: var(--danger);
-  margin-top: 8px;
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
+  color: #ef5350;
 }
 
 .settingsNavItemDanger:hover {
   background: rgba(239, 83, 80, 0.08);
-  color: var(--danger);
-}
-
-.settingsNavItemDanger.settingsNavItemActive {
-  background: rgba(239, 83, 80, 0.12);
-  color: var(--danger);
 }
 
 .settingsNavArrow {
   margin-left: auto;
-  color: var(--text-faint);
+  opacity: 0.3;
 }
 
-/* ---- Settings Content ---- */
+/* ===== CONTENT ===== */
 .settingsContent {
   flex: 1;
-  min-width: 0;
 }
 
 .settingsSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
 }
 
 .sectionTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: var(--text);
-  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.dangerTitle {
-  color: var(--danger);
+.sectionCount {
+  font-size: 13px;
+  color: var(--text-faint);
 }
 
 .saveButton {
@@ -218,49 +260,34 @@
   gap: 8px;
   padding: 8px 16px;
   border: none;
-  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
-  border-radius: 10px;
+  border-radius: 8px;
+  background: var(--accent);
   color: #17181d;
+  font-weight: 500;
   font-size: 13px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s;
 }
 
 .saveButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(255, 106, 43, 0.35);
+  background: var(--accent-glow);
 }
 
 .saveButton:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .spinning {
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ---- Settings Card ---- */
+/* ===== SETTINGS CARD ===== */
 .settingsCard {
+  background: var(--panel);
   border: 1px solid var(--border);
-  background: var(--raised);
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
-}
-
-.dangerCard {
-  border-color: rgba(239, 83, 80, 0.2);
+  border-radius: 12px;
+  padding: 20px 24px;
 }
 
 .settingGroup {
@@ -270,379 +297,236 @@
 }
 
 .settingRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
 }
 
-.settingRow:last-child {
-  border-bottom: none;
+@media (max-width: 768px) {
+  .settingRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }
 
 .settingInfo {
-  flex: 1;
-  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .settingInfo label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
 }
 
 .settingDescription {
-  display: block;
   font-size: 12px;
   color: var(--text-faint);
-  font-weight: 400;
-  margin-top: 2px;
 }
 
 .settingInput {
   padding: 8px 12px;
   border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 10px;
-  color: var(--text);
+  background: var(--raised);
+  border-radius: 6px;
   font-size: 13px;
-  transition: all 0.15s ease;
-  width: 280px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
 }
 
 .settingInput:focus {
-  outline: none;
-  border-color: rgba(255, 106, 43, 0.4);
-  background: var(--raised-hi);
+  border-color: var(--accent);
 }
 
-.settingInputSmall {
-  width: 120px;
+.settingInput::placeholder {
+  color: var(--text-faint);
 }
 
 .settingSelect {
-  padding: 8px 32px 8px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 10px;
-  color: var(--text-muted);
+  background: var(--raised);
+  border-radius: 6px;
   font-size: 13px;
+  color: var(--text);
+  outline: none;
   cursor: pointer;
-  transition: all 0.15s ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2362636e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  width: 280px;
 }
 
 .settingSelect:focus {
-  outline: none;
-  border-color: rgba(255, 106, 43, 0.4);
-}
-
-/* ---- Toggle ---- */
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 26px;
-  flex-shrink: 0;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggleSlider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  transition: all 0.3s ease;
-}
-
-.toggleSlider::before {
-  content: "";
-  position: absolute;
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background: var(--text-faint);
-  border-radius: 999px;
-  transition: all 0.3s ease;
-}
-
-.toggle input:checked + .toggleSlider {
-  background: var(--accent);
   border-color: var(--accent);
 }
 
-.toggle input:checked + .toggleSlider::before {
-  transform: translateX(22px);
-  background: #17181d;
+/* ===== BRANCHES ===== */
+.branchesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
-/* ---- Checkbox ---- */
-.checkboxLabel {
+@media (max-width: 768px) {
+  .branchesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.branchCard {
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.checkboxLabel input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* ---- Logo Upload ---- */
-.logoUpload {
-  display: flex;
-  align-items: center;
-}
-
-.logoPreview {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
 }
 
-.logoPreview img {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid var(--border);
+.branchHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.logoRemove {
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 6px;
-  color: var(--danger);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.logoRemove:hover {
-  background: rgba(239, 83, 80, 0.1);
-  border-color: var(--danger);
-}
-
-.uploadButton {
+.branchInfo {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border: 2px dashed var(--border);
-  border-radius: 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
-.uploadButton:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-
-/* ---- Default Settings (Branch) ---- */
-.defaultSettings {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 280px;
-}
-
-.defaultSettings .checkboxLabel {
-  padding: 4px 0;
-}
-
-.defaultSettings .settingSelect {
-  width: 100%;
-}
-
-/* ---- Password Policy ---- */
-.passwordPolicy {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 280px;
-}
-
-.policyRow {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.policyInput {
-  width: 60px;
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 6px;
-  color: var(--text);
-  font-size: 13px;
-}
-
-.policyInput:focus {
-  outline: none;
-  border-color: rgba(255, 106, 43, 0.4);
-}
-
-/* ---- Integrations ---- */
-.integrationTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
+.branchCode {
+  font-size: 11px;
   font-weight: 600;
+  color: var(--accent);
+  background: rgba(255, 106, 43, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.branchName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.branchDefault {
+  font-size: 10px;
+  background: rgba(76, 175, 130, 0.15);
+  color: #4caf82;
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+.branchStatus {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+.branchStatusActive {
+  background: rgba(76, 175, 130, 0.15);
+  color: #4caf82;
+}
+
+.branchStatusInactive {
+  background: rgba(239, 83, 80, 0.15);
+  color: #ef5350;
+}
+
+.branchDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.branchDetail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
   color: var(--text-muted);
-  margin: 0 0 16px 0;
-  padding-top: 16px;
+}
+
+.branchActions {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
 }
 
-.integrationTitle:first-child {
-  padding-top: 0;
-  border-top: none;
-}
-
-.webhookRow {
+.branchActionEdit {
+  padding: 4px 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 12px;
-}
-
-.webhookEvents {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.webhookEvents .checkboxLabel {
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: transparent;
+  border-radius: 4px;
   font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.webhookEvents .checkboxLabel:has(input:checked) {
-  border-color: var(--accent);
-  background: rgba(255, 106, 43, 0.05);
+.branchActionEdit:hover {
+  border-color: var(--text);
 }
 
-.webhookRemove {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: none;
+.branchActionDeactivate {
+  padding: 4px 14px;
+  border: 1px solid rgba(239, 83, 80, 0.3);
   background: transparent;
-  color: var(--danger);
+  border-radius: 4px;
   font-size: 12px;
+  color: #ef5350;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.15s;
 }
 
-.webhookRemove:hover {
-  background: rgba(239, 83, 80, 0.1);
-  border-radius: 6px;
+.branchActionDeactivate:hover:not(:disabled) {
+  background: rgba(239, 83, 80, 0.08);
 }
 
-.webhookAdd {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 2px dashed var(--border);
-  background: transparent;
-  border-radius: 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  width: 100%;
-  justify-content: center;
+.branchActionDeactivate:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.webhookAdd:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
+.branchActionDeactivated {
+  border-color: rgba(76, 175, 130, 0.3);
+  color: #4caf82;
 }
 
-/* ---- Export Button ---- */
-.exportButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.branchActionDeactivated:hover:not(:disabled) {
+  background: rgba(76, 175, 130, 0.08);
 }
 
-.exportButton:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-strong);
-  color: var(--text);
+/* ===== DANGER ZONE ===== */
+.dangerTitle {
+  color: #ef5350;
 }
 
-/* ---- Danger Zone ---- */
+.dangerCard {
+  border-color: rgba(239, 83, 80, 0.2);
+}
+
 .dangerItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
   padding: 12px 0;
 }
 
-.dangerDivider {
-  height: 1px;
-  background: var(--border);
-  margin: 4px 0;
-}
-
-.dangerInfo {
-  flex: 1;
-  min-width: 0;
-}
-
 .dangerInfo h3 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
   margin: 0 0 4px 0;
 }
 
@@ -653,413 +537,92 @@
 }
 
 .dangerButton {
-  padding: 8px 16px;
-  border: 1px solid var(--border);
+  padding: 6px 16px;
+  border: 1px solid rgba(239, 83, 80, 0.3);
   background: transparent;
-  border-radius: 10px;
-  color: var(--text-muted);
+  border-radius: 6px;
   font-size: 13px;
-  font-weight: 500;
+  color: #ef5350;
   cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .dangerButton:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-strong);
-  color: var(--text);
+  background: rgba(239, 83, 80, 0.08);
 }
 
-.dangerButtonCritical {
-  color: var(--danger);
-  border-color: rgba(239, 83, 80, 0.3);
-}
-
-.dangerButtonCritical:hover {
-  background: rgba(239, 83, 80, 0.1);
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-/* ---- Modal ---- */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+/* ===== EMPTY STATE ===== */
+.emptyState {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  min-height: 300px;
+  gap: 12px;
+  color: var(--text-muted);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.modal {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px;
-  max-width: 480px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: -4px -4px 12px rgba(255, 255, 255, 0.02), 8px 8px 24px rgba(0, 0, 0, 0.6);
-  animation: slideUp 0.3s ease;
-}
-
-.modalDanger {
-  border-color: rgba(239, 83, 80, 0.3);
-}
-
-.modal::-webkit-scrollbar {
-  width: 4px;
-}
-
-.modal::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.modal::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
-  border-radius: 999px;
-}
-
-.modalHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.modalTitle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 600;
+.emptyState h3 {
+  font-size: 16px;
   color: var(--text);
   margin: 0;
 }
 
-.modalClose {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 8px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.modalClose:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-
-.modalActions {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.cancelButton {
-  flex: 1;
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 10px;
-  color: var(--text-muted);
+.emptyState p {
   font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  margin: 0;
 }
-
-.cancelButton:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-
-.deleteButton {
-  flex: 1;
+/* ===== BRANCH EDIT FORM ===== */
+.branchEditForm {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   gap: 8px;
-  padding: 10px 16px;
-  background: var(--danger);
+  padding: 8px 0;
+}
+
+.branchEditActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.branchActionSave {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 16px;
   border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.deleteButton:hover {
-  background: #d32f2f;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(239, 83, 80, 0.35);
-}
-
-/* ---- Delete Content ---- */
-.deleteContent {
-  text-align: center;
-  padding: 16px 0;
-}
-
-.deleteIcon {
-  color: var(--danger);
-  margin-bottom: 16px;
-}
-
-.deleteContent h3 {
-  color: var(--text);
-  font-size: 18px;
-  margin: 0 0 8px 0;
-}
-
-.deleteContent p {
-  color: var(--text-muted);
-  font-size: 14px;
-  margin: 0 0 12px 0;
-  line-height: 1.5;
-}
-
-.deleteWarning {
-  color: var(--danger) !important;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #17181d;
+  font-size: 12px;
   font-weight: 500;
-  font-size: 12px !important;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-.confirmInput {
-  margin-top: 16px;
-  text-align: left;
+.branchActionSave:hover:not(:disabled) {
+  background: var(--accent-glow);
 }
 
-.confirmInput label {
-  display: block;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 6px;
+.branchActionSave:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.confirmInput input {
-  width: 100%;
-  padding: 10px 12px;
+.branchActionCancel {
+  padding: 4px 16px;
   border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 10px;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.branchActionCancel:hover {
+  border-color: var(--text);
   color: var(--text);
-  font-size: 13px;
-  transition: all 0.15s ease;
-}
-
-.confirmInput input:focus {
-  outline: none;
-  border-color: rgba(255, 106, 43, 0.4);
-  background: var(--raised-hi);
-}
-
-/* ---- Responsive ---- */
-@media (max-width: 1200px) {
-  .settingsLayout {
-    flex-direction: column;
-  }
-
-  .settingsSidebar {
-    width: 100%;
-    min-width: 0;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 2px;
-    padding: 4px;
-    position: static;
-    max-height: none;
-    overflow-y: visible;
-  }
-
-  .settingsNavItem {
-    width: auto;
-    padding: 8px 14px;
-    flex: 0 0 auto;
-  }
-
-  .settingsNavItemDanger {
-    margin-top: 0;
-    border-top: none;
-    padding-top: 8px;
-  }
-
-  .settingsNavArrow {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .orgHeader {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .settingRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .settingInput,
-  .settingSelect,
-  .defaultSettings {
-    width: 100%;
-  }
-
-  .settingInputSmall {
-    width: 120px;
-  }
-
-  .sectionHeader {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .settingsCard {
-    padding: 16px;
-  }
-
-  .dangerItem {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .dangerButton {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .logoUpload {
-    width: 100%;
-  }
-
-  .logoPreview {
-    flex-wrap: wrap;
-  }
-
-  .passwordPolicy {
-    width: 100%;
-  }
-
-  .policyRow {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .webhookRow {
-    padding: 10px;
-  }
-
-  .webhookEvents {
-    flex-direction: column;
-  }
-
-  .modal {
-    padding: 20px;
-    width: 95%;
-  }
-
-  .modalActions {
-    flex-direction: column;
-  }
-
-  .settingsSidebar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 4px;
-  }
-
-  .settingsNavItem {
-    white-space: nowrap;
-    font-size: 12px;
-    padding: 6px 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .orgName {
-    font-size: 16px;
-  }
-
-  .settingsCard {
-    padding: 12px;
-  }
-
-  .settingRow {
-    padding: 6px 0;
-  }
-
-  .settingInfo label {
-    font-size: 13px;
-  }
-
-  .settingDescription {
-    font-size: 11px;
-  }
-
-  .toggle {
-    width: 40px;
-    height: 22px;
-  }
-
-  .toggleSlider::before {
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-  }
-
-  .toggle input:checked + .toggleSlider::before {
-    transform: translateX(18px);
-  }
-
-  .uploadButton {
-    width: 100%;
-    justify-content: center;
-  }
 }
