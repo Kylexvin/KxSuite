@@ -15,8 +15,10 @@ import {
   Check,
   Loader2,
   UserPlus,
+  AlertCircle,
 } from "lucide-react";
 import styles from "../page.module.css";
+import RoleModal from "./RoleModal";
 
 type Role = {
   id: string;
@@ -47,11 +49,23 @@ type Props = {
   members: Member[];
   roles: Role[];
   branches: Branch[];
+  permissions: any[];
   onRefresh: () => void;
+  refreshRoles: () => void;
+  refreshMembers: () => void;
   setToast: (toast: { type: "success" | "error"; message: string } | null) => void;
 };
 
-export default function MembersTab({ members, roles, branches, onRefresh, setToast }: Props) {
+export default function MembersTab({
+  members,
+  roles,
+  branches,
+  permissions = [],
+  onRefresh,
+  refreshRoles,
+  refreshMembers,
+  setToast,
+}: Props) {
   const { activeOrganization } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,6 +77,8 @@ export default function MembersTab({ members, roles, branches, onRefresh, setToa
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showNestedRoleModal, setShowNestedRoleModal] = useState(false);
+  const [showNestedRoleModalFromEdit, setShowNestedRoleModalFromEdit] = useState(false);
 
   const [inviteForm, setInviteForm] = useState({
     email: "",
@@ -90,7 +106,8 @@ export default function MembersTab({ members, roles, branches, onRefresh, setToa
 
     const matchesSearch = name.includes(search) || email.includes(search);
     const matchesRole = roleFilter === "ALL" || member.role?.name === roleFilter;
-    const matchesStatus = statusFilter === "ALL" ||
+    const matchesStatus =
+      statusFilter === "ALL" ||
       (statusFilter === "ACTIVE" && member.isActive) ||
       (statusFilter === "INACTIVE" && !member.isActive);
 
@@ -127,77 +144,72 @@ export default function MembersTab({ members, roles, branches, onRefresh, setToa
     }
   };
 
-const handleUpdateMember = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!activeOrganization || !selectedMember) return;
+  const handleUpdateMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeOrganization || !selectedMember) return;
 
-  setSaving(true);
-  try {
-    const orgId = activeOrganization.id;
+    setSaving(true);
+    try {
+      const orgId = activeOrganization.id;
 
-    // Check if owner
-    if (selectedMember.role?.name === "Owner") {
-      setToast({ type: "error", message: "Owner cannot be modified" });
+      if (selectedMember.role?.name === "Owner") {
+        setToast({ type: "error", message: "Owner cannot be modified" });
+        setSaving(false);
+        return;
+      }
+
+      if (editForm.roleId !== selectedMember.roleId) {
+        await api.patch(
+          `/api/v1/organizations/${orgId}/members/${selectedMember.userId}/role`,
+          { roleId: editForm.roleId || null }
+        );
+      }
+
+      const currentBranchIds = selectedMember.branches.map((b) => b.id);
+      const newBranchIds = editForm.branchIds;
+
+      const toRemove = currentBranchIds.filter((id) => !newBranchIds.includes(id));
+      const toAdd = newBranchIds.filter((id) => !currentBranchIds.includes(id));
+
+      for (const branchId of toRemove) {
+        try {
+          await api.delete(
+            `/api/v1/organizations/${orgId}/branches/${branchId}/assign`,
+            { data: { memberId: selectedMember.userId } }
+          );
+        } catch (err) {
+          console.error(`Failed to remove branch ${branchId}:`, err);
+        }
+      }
+
+      for (const branchId of toAdd) {
+        try {
+          await api.post(
+            `/api/v1/organizations/${orgId}/branches/${branchId}/assign`,
+            { memberId: selectedMember.userId }
+          );
+        } catch (err) {
+          console.error(`Failed to add branch ${branchId}:`, err);
+        }
+      }
+
+      refreshMembers();
+      setToast({ type: "success", message: "Member updated successfully" });
+      setShowEditModal(false);
+      setSelectedMember(null);
+    } catch (err: any) {
+      console.error("Update error:", err);
+      setToast({
+        type: "error",
+        message:
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Failed to update member",
+      });
+    } finally {
       setSaving(false);
-      return;
     }
-
-    // 1. Update role
-    if (editForm.roleId !== selectedMember.roleId) {
-      await api.patch(
-        `/api/v1/organizations/${orgId}/members/${selectedMember.userId}/role`,
-        { roleId: editForm.roleId || null }
-      );
-    }
-
-    // 2. Get current branch IDs
-    const currentBranchIds = selectedMember.branches.map((b) => b.id);
-    const newBranchIds = editForm.branchIds;
-
-    // 3. Find branches to remove
-    const toRemove = currentBranchIds.filter((id) => !newBranchIds.includes(id));
-
-    // 4. Find branches to add
-    const toAdd = newBranchIds.filter((id) => !currentBranchIds.includes(id));
-
-    // 5. Remove branches
-    for (const branchId of toRemove) {
-      try {
-        await api.delete(
-          `/api/v1/organizations/${orgId}/branches/${branchId}/assign`,
-          { data: { memberId: selectedMember.userId } }
-        );
-      } catch (err) {
-        console.error(`Failed to remove branch ${branchId}:`, err);
-      }
-    }
-
-    // 6. Add branches
-    for (const branchId of toAdd) {
-      try {
-        await api.post(
-          `/api/v1/organizations/${orgId}/branches/${branchId}/assign`,
-          { memberId: selectedMember.userId }
-        );
-      } catch (err) {
-        console.error(`Failed to add branch ${branchId}:`, err);
-      }
-    }
-
-    onRefresh();
-    setToast({ type: "success", message: "Member updated successfully" });
-    setShowEditModal(false);
-    setSelectedMember(null);
-  } catch (err: any) {
-    console.error("Update error:", err);
-    setToast({
-      type: "error",
-      message: err.response?.data?.error || err.response?.data?.message || "Failed to update member",
-    });
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
   const handleRemoveMember = async () => {
     if (!activeOrganization || !selectedMember) return;
@@ -221,7 +233,7 @@ const handleUpdateMember = async (e: React.FormEvent) => {
 
       await api.delete(`/api/v1/organizations/${orgId}/members/${selectedMember.id}`);
 
-      onRefresh();
+      refreshMembers();
       setToast({ type: "success", message: "Member removed successfully" });
       setShowDeleteModal(false);
       setSelectedMember(null);
@@ -318,6 +330,7 @@ const handleUpdateMember = async (e: React.FormEvent) => {
 
             return (
               <div key={member.id} className={styles.memberRow}>
+                {/* Card Header */}
                 <div className={styles.memberInfo}>
                   <div className={styles.memberAvatar}>
                     {member.user.firstName?.charAt(0) || "U"}
@@ -332,15 +345,20 @@ const handleUpdateMember = async (e: React.FormEvent) => {
                         </span>
                       )}
                       {member.hasAllBranches && !isOwnerMember && (
-                        <span className={styles.ownerBadge}>All Branches</span>
+                        <span className={styles.allBranchesBadge}>All Branches</span>
                       )}
                     </div>
                     <div className={styles.memberEmail}>{member.user.email}</div>
                   </div>
                 </div>
 
+                {/* Desktop Fields (hidden on mobile) */}
                 <div className={styles.memberRole}>
-                  <span className={`${styles.roleBadge} ${member.role ? styles.roleActive : styles.roleInactive}`}>
+                  <span
+                    className={`${styles.roleBadge} ${
+                      member.role ? styles.roleActive : styles.roleInactive
+                    }`}
+                  >
                     {member.role?.name || "No Role"}
                   </span>
                 </div>
@@ -365,15 +383,75 @@ const handleUpdateMember = async (e: React.FormEvent) => {
                 </div>
 
                 <div className={styles.memberStatus}>
-                  <span className={`${styles.statusPill} ${member.isActive ? styles.statusActive : styles.statusInactive}`}>
+                  <span
+                    className={`${styles.statusPill} ${
+                      member.isActive ? styles.statusActive : styles.statusInactive
+                    }`}
+                  >
                     {member.isActive ? "Active" : "Inactive"}
                   </span>
                 </div>
 
                 <div className={styles.memberJoined}>
-                  {new Date(member.joinedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                  {new Date(member.joinedAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "numeric",
+                  })}
                 </div>
 
+                {/* Mobile Details Grid */}
+                <div className={styles.memberDetails}>
+                  <div className={styles.memberDetailItem}>
+                    <span className={styles.memberDetailLabel}>Role</span>
+                    <span className={styles.memberDetailValue}>
+                      {member.role?.name || "No Role"}
+                    </span>
+                  </div>
+                  <div className={styles.memberDetailItem}>
+                    <span className={styles.memberDetailLabel}>Branches</span>
+                    <span className={styles.memberDetailValue}>
+                      {member.branches.length > 0 ? (
+                        <div className={styles.branchTags}>
+                          {member.branches.slice(0, 2).map((branch) => (
+                            <span key={branch.id} className={styles.branchTag}>
+                              {branch.code}
+                            </span>
+                          ))}
+                          {member.branches.length > 2 && (
+                            <span className={styles.branchTagMore}>
+                              +{member.branches.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className={styles.noBranches}>—</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className={styles.memberDetailItem}>
+                    <span className={styles.memberDetailLabel}>Status</span>
+                    <span className={styles.memberDetailValue}>
+                      <span
+                        className={`${styles.statusPill} ${
+                          member.isActive ? styles.statusActive : styles.statusInactive
+                        }`}
+                      >
+                        {member.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </span>
+                  </div>
+                  <div className={styles.memberDetailItem}>
+                    <span className={styles.memberDetailLabel}>Joined</span>
+                    <span className={styles.memberDetailValue}>
+                      {new Date(member.joinedAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Actions */}
                 <div className={styles.memberActions}>
                   {!isOwnerMember ? (
                     <>
@@ -430,17 +508,30 @@ const handleUpdateMember = async (e: React.FormEvent) => {
 
               <div className={styles.formGroup}>
                 <label>Role</label>
-                <select
-                  value={inviteForm.roleId}
-                  onChange={(e) => setInviteForm({ ...inviteForm, roleId: e.target.value })}
-                >
-                  <option value="">No role</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
+                {roles.length === 0 ? (
+                  <div className={styles.noRolesWarning}>
+                    <span>No roles available.</span>
+                    <button
+                      type="button"
+                      className={styles.createRoleLink}
+                      onClick={() => setShowNestedRoleModal(true)}
+                    >
+                      Create Role
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={inviteForm.roleId}
+                    onChange={(e) => setInviteForm({ ...inviteForm, roleId: e.target.value })}
+                  >
+                    <option value="">No role</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className={styles.formGroup}>
@@ -489,6 +580,21 @@ const handleUpdateMember = async (e: React.FormEvent) => {
                 </button>
               </div>
             </form>
+
+            {/* ===== NESTED ROLE MODAL FROM INVITE ===== */}
+            {showNestedRoleModal && (
+              <RoleModal
+                role={null}
+                permissions={permissions}
+                branches={branches}
+                onClose={() => setShowNestedRoleModal(false)}
+                onSuccess={() => {
+                  setShowNestedRoleModal(false);
+                  refreshRoles();
+                }}
+                setToast={setToast}
+              />
+            )}
           </div>
         </div>
       )}
@@ -510,29 +616,49 @@ const handleUpdateMember = async (e: React.FormEvent) => {
             <form onSubmit={handleUpdateMember} className={styles.modalForm}>
               <div className={styles.formGroup}>
                 <label>Email</label>
-                <input type="email" value={selectedMember.user.email} disabled className={styles.inputDisabled} />
+                <input
+                  type="email"
+                  value={selectedMember.user.email}
+                  disabled
+                  className={styles.inputDisabled}
+                />
               </div>
 
               <div className={styles.formGroup}>
                 <label>Role</label>
-                <select
-                  value={editForm.roleId}
-                  onChange={(e) => setEditForm({ ...editForm, roleId: e.target.value })}
-                >
-                  <option value="">No role</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
+                {roles.length === 0 ? (
+                  <div className={styles.noRolesWarning}>
+                    <span>No roles available.</span>
+                    <button
+                      type="button"
+                      className={styles.createRoleLink}
+                      onClick={() => setShowNestedRoleModalFromEdit(true)}
+                    >
+                      Create Role
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={editForm.roleId}
+                    onChange={(e) => setEditForm({ ...editForm, roleId: e.target.value })}
+                  >
+                    <option value="">No role</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className={styles.formGroup}>
                 <label>Status</label>
                 <select
                   value={editForm.isActive ? "ACTIVE" : "INACTIVE"}
-                  onChange={(e) => setEditForm({ ...editForm, isActive: e.target.value === "ACTIVE" })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, isActive: e.target.value === "ACTIVE" })
+                  }
                 >
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
@@ -577,6 +703,23 @@ const handleUpdateMember = async (e: React.FormEvent) => {
                 </button>
               </div>
             </form>
+
+            {/* ===== NESTED ROLE MODAL FROM EDIT ===== */}
+            {showNestedRoleModalFromEdit && (
+              <RoleModal
+                role={null}
+                permissions={permissions}
+                branches={branches}
+                onClose={() => setShowNestedRoleModalFromEdit(false)}
+                onSuccess={() => {
+                  setShowNestedRoleModalFromEdit(false);
+                  refreshRoles();
+                  // Re-open edit modal after role creation
+                  setShowEditModal(true);
+                }}
+                setToast={setToast}
+              />
+            )}
           </div>
         </div>
       )}
@@ -601,8 +744,11 @@ const handleUpdateMember = async (e: React.FormEvent) => {
               </div>
               <h3>Are you sure?</h3>
               <p>
-                This will remove <strong>{selectedMember.user.firstName} {selectedMember.user.lastName}</strong> from the organization.
-                They will lose access to all branches and data.
+                This will remove{" "}
+                <strong>
+                  {selectedMember.user.firstName} {selectedMember.user.lastName}
+                </strong>{" "}
+                from the organization. They will lose access to all branches and data.
               </p>
               <p className={styles.deleteWarning}>This action cannot be undone.</p>
             </div>
@@ -611,7 +757,12 @@ const handleUpdateMember = async (e: React.FormEvent) => {
               <button type="button" className={styles.cancelButton} onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </button>
-              <button type="button" className={styles.deleteButton} onClick={handleRemoveMember} disabled={saving}>
+              <button
+                type="button"
+                className={styles.deleteButton}
+                onClick={handleRemoveMember}
+                disabled={saving}
+              >
                 {saving ? <Loader2 size={16} className={styles.spinning} /> : <Trash2 size={16} />}
                 Remove Member
               </button>

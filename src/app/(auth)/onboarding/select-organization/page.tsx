@@ -4,7 +4,6 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import axios from "axios";
 import { toast } from "sonner";
 import { useAuth, Organization } from "@/contexts/AuthContext";
@@ -22,6 +21,7 @@ import {
   Users,
   TrendingUp,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -84,94 +84,125 @@ export default function SelectOrganizationPage() {
   } = useAuth();
 
   const [pendingInvites, setPendingInvites] = useState<PendingInvitation[]>([]);
+  const [archivedOrgs, setArchivedOrgs] = useState<Organization[]>([]);
+  const [restoring, setRestoring] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({ name: "", country: "KE" });
   const [redirecting, setRedirecting] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   
   const hasLoaded = useRef(false);
 
   // ============================================================
-  // LOAD EVERYTHING
+  // LOAD DATA
   // ============================================================
 
-  const loadEverything = useCallback(async () => {
+  useEffect(() => {
     if (hasLoaded.current) return;
     hasLoaded.current = true;
-    
-    setChecking(true);
-    setError("");
-    try {
-      const [orgsRes, invitesRes] = await Promise.allSettled([
-        api.get<OrganizationsResponse>("/api/v1/organizations"),
-        api.get("/api/v1/invitations/my"),
-      ]);
 
-      let freshOrgs: Organization[] = [];
-      if (orgsRes.status === "fulfilled") {
-        freshOrgs = orgsRes.value.data.organizations || [];
-        const accessToken = localStorage.getItem("accessToken") || "";
-        const refreshToken = localStorage.getItem("refreshToken") || "";
-        if (user) {
-          setAuth(user, accessToken, refreshToken, freshOrgs);
+    const loadData = async () => {
+      setChecking(true);
+      setError("");
+
+      try {
+        // Fetch organizations and invitations
+        const [orgsRes, invitesRes] = await Promise.allSettled([
+          api.get<OrganizationsResponse>("/api/v1/organizations"),
+          api.get("/api/v1/invitations/my"),
+        ]);
+
+        let freshOrgs: Organization[] = [];
+        if (orgsRes.status === "fulfilled") {
+          freshOrgs = orgsRes.value.data.organizations || [];
+          const accessToken = localStorage.getItem("accessToken") || "";
+          const refreshToken = localStorage.getItem("refreshToken") || "";
+          if (user) {
+            setAuth(user, accessToken, refreshToken, freshOrgs);
+          }
         }
-      }
 
-      let freshInvites: PendingInvitation[] = [];
-      if (invitesRes.status === "fulfilled") {
-        const invites = invitesRes.value.data.invitations || [];
-        freshInvites = invites.filter((inv: PendingInvitation) => inv.status === "PENDING");
-        setPendingInvites(freshInvites);
-      }
+        let freshInvites: PendingInvitation[] = [];
+        if (invitesRes.status === "fulfilled") {
+          const invites = invitesRes.value.data.invitations || [];
+          freshInvites = invites.filter((inv: PendingInvitation) => inv.status === "PENDING");
+          setPendingInvites(freshInvites);
+        }
 
-      // ✅ If no orgs and no invites → show create form
-      if (freshOrgs.length === 0 && freshInvites.length === 0) {
-        setShowCreateForm(true);
-        setChecking(false);
-        return;
-      }
-
-      // ✅ If there are invites → show selection (don't auto-redirect)
-      if (freshInvites.length > 0) {
-        setShowCreateForm(false);
-        setChecking(false);
-        return;
-      }
-
-      // ✅ If exactly 1 org and NO invites → auto-redirect to dashboard
-      if (freshOrgs.length === 1 && freshInvites.length === 0) {
-        setRedirecting(true);
-        const org = freshOrgs[0];
+        // Fetch archived orgs
+        let archivedOrgsData: Organization[] = [];
         try {
-          setActiveOrganizationDirect(org);
-          await loadSuiteContext(org.id);
-          await loadBranches(org.id);
-          router.push("/dashboard");
+          const archivedRes = await api.get("/api/v1/organizations/archived");
+          archivedOrgsData = archivedRes.data.organizations || [];
+          setArchivedOrgs(archivedOrgsData);
         } catch (err) {
-          console.error("Auto-redirect failed:", err);
-          setRedirecting(false);
+          console.error("Failed to fetch archived orgs:", err);
+        }
+
+        // ─── DECISION LOGIC ─────────────────────────────────────────────
+
+        // If no orgs and no invites → show create form
+        if (freshOrgs.length === 0 && freshInvites.length === 0) {
+          setShowCreateForm(true);
+          setChecking(false);
+          setInitialLoadDone(true);
+          return;
+        }
+
+        // If there are invites → show selection (don't auto-redirect)
+        if (freshInvites.length > 0) {
           setShowCreateForm(false);
           setChecking(false);
+          setInitialLoadDone(true);
+          return;
         }
-        return;
+
+        // ✅ If there is an archived org → show selection (don't auto-redirect)
+        if (archivedOrgsData.length > 0) {
+          setShowCreateForm(false);
+          setChecking(false);
+          setInitialLoadDone(true);
+          console.log("📦 Archived orgs found, showing selection page");
+          return;
+        }
+
+        // ✅ If exactly 1 org, no invites, no archived orgs → auto-redirect
+        if (freshOrgs.length === 1 && freshInvites.length === 0 && archivedOrgsData.length === 0) {
+          setRedirecting(true);
+          const org = freshOrgs[0];
+          try {
+            setActiveOrganizationDirect(org);
+            await loadSuiteContext(org.id);
+            await loadBranches(org.id);
+            router.push("/dashboard");
+          } catch (err) {
+            console.error("Auto-redirect failed:", err);
+            setRedirecting(false);
+            setShowCreateForm(false);
+            setChecking(false);
+            setInitialLoadDone(true);
+          }
+          return;
+        }
+
+        // Multiple orgs → show selection
+        setShowCreateForm(false);
+        setChecking(false);
+        setInitialLoadDone(true);
+
+      } catch (err) {
+        console.error("Failed to load data:", err);
+        toast.error("Could not load your organizations");
+        setShowCreateForm(true);
+        setChecking(false);
+        setInitialLoadDone(true);
       }
+    };
 
-      // ✅ Multiple orgs → show selection
-      setShowCreateForm(false);
-      setChecking(false);
-
-    } catch (err) {
-      console.error("Failed to load data:", err);
-      toast.error("Could not load your organizations");
-      setShowCreateForm(true);
-      setChecking(false);
-    }
-  }, [user, setAuth, setActiveOrganizationDirect, loadSuiteContext, loadBranches, router]);
-
-  useEffect(() => {
-    loadEverything();
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -190,20 +221,39 @@ export default function SelectOrganizationPage() {
         return;
       }
       
-      // ✅ Set active org
       setActiveOrganizationDirect(org);
-      
-      // ✅ Load suite context (permissions, branches, products)
       await loadSuiteContext(org.id);
-      
-      // ✅ Load branches
       await loadBranches(org.id);
-      
       router.push("/dashboard");
     } catch (err) {
       toast.error("Failed to select organization");
       console.error(err);
       setRedirecting(false);
+    }
+  };
+
+  const handleRestoreOrganization = async (orgId: string) => {
+    setRestoring(orgId);
+    try {
+      await api.patch(`/api/v1/organizations/${orgId}/restore`);
+      
+      setArchivedOrgs(prev => prev.filter(org => org.id !== orgId));
+      
+      // Refetch active organizations
+      const orgsRes = await api.get<OrganizationsResponse>("/api/v1/organizations");
+      const freshOrgs = orgsRes.data.organizations || [];
+      const accessToken = localStorage.getItem("accessToken") || "";
+      const refreshToken = localStorage.getItem("refreshToken") || "";
+      if (user) {
+        setAuth(user, accessToken, refreshToken, freshOrgs);
+      }
+      
+      toast.success("Organization restored successfully!");
+    } catch (err) {
+      toast.error("Failed to restore organization");
+      console.error(err);
+    } finally {
+      setRestoring(null);
     }
   };
 
@@ -227,8 +277,8 @@ export default function SelectOrganizationPage() {
 
       toast.success("Invitation accepted!");
 
-      // ✅ Auto-redirect if only 1 org and no invites left
-      if (updatedOrgs.length === 1 && remainingInvites.length === 0) {
+      // ✅ Check if there are archived orgs before auto-redirect
+      if (updatedOrgs.length === 1 && remainingInvites.length === 0 && archivedOrgs.length === 0) {
         setRedirecting(true);
         const org = updatedOrgs[0];
         setActiveOrganizationDirect(org);
@@ -249,13 +299,11 @@ export default function SelectOrganizationPage() {
       const remainingInvites = pendingInvites.filter((inv) => inv.token !== token);
       setPendingInvites(remainingInvites);
       
-      // ✅ If no invites and no orgs → show create form
       if (organizations.length === 0 && remainingInvites.length === 0) {
         setShowCreateForm(true);
       }
       
-      // ✅ If no invites and exactly 1 org → auto-redirect
-      if (organizations.length === 1 && remainingInvites.length === 0) {
+      if (organizations.length === 1 && remainingInvites.length === 0 && archivedOrgs.length === 0) {
         setRedirecting(true);
         const org = organizations[0];
         setActiveOrganizationDirect(org);
@@ -310,7 +358,6 @@ export default function SelectOrganizationPage() {
 
       toast.success(`🎉 "${organization.name}" created successfully!`);
 
-      // ✅ Auto-redirect to dashboard
       setRedirecting(true);
       setActiveOrganizationDirect(newOrg);
       await loadSuiteContext(newOrg.id);
@@ -623,6 +670,49 @@ export default function SelectOrganizationPage() {
                             >
                               <X size={14} />
                               Decline
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Archived Organizations */}
+                {archivedOrgs.length > 0 && (
+                  <div className={styles.section}>
+                    <div className={styles.sectionLabel}>
+                      <RefreshCw size={14} />
+                      Archived Organizations
+                    </div>
+                    <div className={styles.inviteGrid}>
+                      {archivedOrgs.map((org) => (
+                        <div key={org.id} className={`${styles.inviteCard} ${styles.archivedCard}`}>
+                          <div className={styles.inviteLeft}>
+                            <div className={styles.inviteIcon} style={{ opacity: 0.5 }}>
+                              {org.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className={styles.inviteInfo}>
+                              <span className={styles.inviteName} style={{ opacity: 0.6 }}>
+                                {org.name}
+                              </span>
+                              <span className={styles.inviteBy} style={{ color: 'var(--text-faint)' }}>
+                                Archived • Restore to regain access
+                              </span>
+                            </div>
+                          </div>
+                          <div className={styles.inviteActions}>
+                            <button
+                              className={styles.restoreBtn}
+                              onClick={() => handleRestoreOrganization(org.id)}
+                              disabled={restoring === org.id}
+                            >
+                              {restoring === org.id ? (
+                                <span className={styles.spinnerSmall} />
+                              ) : (
+                                <RefreshCw size={14} />
+                              )}
+                              Restore
                             </button>
                           </div>
                         </div>

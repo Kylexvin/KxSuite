@@ -1,4 +1,6 @@
-/* app/dashboard/members/page.module.css */
+/* ============================================================
+   ROOT VARIABLES
+   ============================================================ */
 
 .page {
   --bg: #0e0f13;
@@ -21,7 +23,10 @@
   color: var(--text);
 }
 
-/* ---- Loading ---- */
+/* ============================================================
+   LOADING
+   ============================================================ */
+
 .loadingState {
   display: flex;
   flex-direction: column;
@@ -42,7 +47,10 @@
   }
 }
 
-/* ---- Header ---- */
+/* ============================================================
+   HEADER
+   ============================================================ */
+
 .orgHeader {
   display: flex;
   align-items: center;
@@ -94,7 +102,19 @@
   margin-top: 3px;
 }
 
-/* ---- Stats ---- */
+/* ---- Header Responsive ---- */
+@media (max-width: 768px) {
+  .orgHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
+/* ============================================================
+   STATS
+   ============================================================ */
+
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -122,7 +142,30 @@
   margin-top: 4px;
 }
 
-/* ---- Tabs ---- */
+/* ---- Stats Responsive ---- */
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .statValue {
+    font-size: 18px;
+  }
+  .statCard {
+    padding: 12px;
+  }
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+
 .tabsContainer {
   display: flex;
   gap: 0;
@@ -171,7 +214,21 @@
   color: var(--accent-glow);
 }
 
-/* ---- Filters ---- */
+/* ---- Tabs Responsive ---- */
+@media (max-width: 768px) {
+  .tabButton {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .tabButton span:last-child {
+    display: none;
+  }
+}
+
+/* ============================================================
+   FILTERS
+   ============================================================ */
+
 .filtersBar {
   display: flex;
   align-items: center;
@@ -238,7 +295,21 @@
   border-color: rgba(255, 106, 43, 0.4);
 }
 
-/* ---- Primary Button ---- */
+/* ---- Filters Responsive ---- */
+@media (max-width: 768px) {
+  .filtersBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterGroup {
+    flex-direction: column;
+  }
+}
+
+/* ============================================================
+   PRIMARY BUTTON
+   ============================================================ */
+
 .primaryButton {
   display: flex;
   align-items: center;
@@ -260,138 +331,9 @@
   box-shadow: 0 4px 16px rgba(255, 106, 43, 0.35);
 }
 
-/* ---- Member/Role List ---- */
-.memberList {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--raised);
-}
-
-.memberListHeader {
-  display: grid;
-  grid-template-columns: 2.5fr 1.2fr 1.2fr 1fr 1fr 0.8fr;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.memberRow {
-  display: grid;
-  grid-template-columns: 2.5fr 1.2fr 1.2fr 1fr 1fr 0.8fr;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  align-items: center;
-  transition: background 0.15s;
-}
-
-.memberRow:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-/* ---- Member Info ---- */
-.memberInfo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.memberAvatar {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #17181d;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.memberName {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.memberEmail {
-  font-size: 12px;
-  color: var(--text-faint);
-}
-
-.memberRole {
-  font-size: 13px;
-}
-
-.memberBranches {
-  font-size: 13px;
-}
-
-.memberDescription {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.memberPermissions {
-  font-size: 13px;
-}
-
-.permissionCount {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-/* ---- Branch Tags ---- */
-.branchTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.branchTag {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-muted);
-}
-
-.branchTagMore {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  background: rgba(255, 106, 43, 0.12);
-  color: var(--accent-glow);
-}
-
-.noBranches {
-  color: var(--text-faint);
-}
-
-.memberJoined {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.memberActions {
-  display: flex;
-  gap: 4px;
-}
+/* ============================================================
+   BADGES & TAGS
+   ============================================================ */
 
 /* ---- Status Pills ---- */
 .statusPill {
@@ -441,6 +383,30 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.permissionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.memberCountBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .ownerBadge {
   display: inline-flex;
   align-items: center;
@@ -451,6 +417,18 @@
   font-weight: 600;
   background: rgba(255, 106, 43, 0.12);
   color: var(--accent-glow);
+}
+
+.allBranchesBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(76, 175, 130, 0.12);
+  color: var(--success);
 }
 
 .ownerProtected {
@@ -464,7 +442,39 @@
   white-space: nowrap;
 }
 
-/* ---- Action Buttons ---- */
+/* ---- Branch Tags ---- */
+.branchTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.branchTag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+
+.branchTagMore {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 106, 43, 0.12);
+  color: var(--accent-glow);
+}
+
+.noBranches {
+  color: var(--text-faint);
+}
+
+/* ============================================================
+   ACTION BUTTONS
+   ============================================================ */
+
 .actionButton {
   display: flex;
   align-items: center;
@@ -496,7 +506,59 @@
   cursor: not-allowed;
 }
 
-/* ---- Empty State ---- */
+/* ---- Action Button Responsive ---- */
+@media (max-width: 480px) {
+  .actionButton {
+    width: 28px;
+    height: 28px;
+  }
+  .actionButton svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* ============================================================
+   NO ROLES WARNING
+   ============================================================ */
+
+.noRolesWarning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.createRoleLink {
+  color: var(--accent);
+  background: none;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 13px;
+}
+
+.createRoleLink:hover {
+  color: var(--accent-glow);
+}
+
+/* ---- No Roles Warning Responsive ---- */
+@media (max-width: 480px) {
+  .noRolesWarning {
+    flex-wrap: wrap;
+  }
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -525,7 +587,271 @@
   margin: 0;
 }
 
-/* ---- Modal ---- */
+/* ============================================================
+   MEMBER LIST — DESKTOP TABLE + MOBILE CARDS
+   ============================================================ */
+
+.memberList {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--raised);
+}
+
+.memberListHeader {
+  display: grid;
+  grid-template-columns: 2.5fr 1.2fr 1.2fr 1fr 1fr 0.8fr;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.memberRow {
+  display: grid;
+  grid-template-columns: 2.5fr 1.2fr 1.2fr 1fr 1fr 0.8fr;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.memberRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.memberRow:last-child {
+  border-bottom: none;
+}
+
+/* ---- Desktop Member Info ---- */
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.memberAvatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #17181d;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.memberName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.memberEmail {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ---- Desktop fields ---- */
+.memberRole {
+  font-size: 13px;
+}
+
+.memberBranches {
+  font-size: 13px;
+}
+
+.memberStatus {
+  font-size: 13px;
+}
+
+.memberJoined {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.memberActions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ---- Mobile Details Grid (hidden on desktop) ---- */
+.memberDetails {
+  display: none;
+}
+
+.memberDetailItem {
+  display: none;
+}
+
+.memberDetailLabel {
+  display: none;
+}
+
+.memberDetailValue {
+  display: none;
+}
+
+/* ============================================================
+   MEMBER LIST — RESPONSIVE (CARDS ON MOBILE)
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .memberList {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .memberListHeader {
+    display: none;
+  }
+
+  .memberRow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px 18px;
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 0;
+    box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s ease;
+  }
+
+  .memberRow:hover {
+    background: var(--raised-hi);
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+  }
+
+  .memberRow:last-child {
+    margin-bottom: 0;
+  }
+
+  /* ---- Hide desktop fields on mobile ---- */
+  .memberRole,
+  .memberBranches,
+  .memberStatus,
+  .memberJoined {
+    display: none !important;
+  }
+
+  /* ---- Card Header ---- */
+  .memberInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .memberAvatar {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    font-size: 18px;
+  }
+
+  .memberName {
+    font-size: 16px;
+  }
+
+  .memberEmail {
+    font-size: 13px;
+  }
+
+  /* ---- Card Details Grid ---- */
+  .memberDetails {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 16px;
+    padding-top: 6px;
+    width: 100%;
+  }
+
+  .memberDetailItem {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 2px 0;
+  }
+
+  .memberDetailLabel {
+    display: inline !important;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-weight: 500;
+    min-width: 50px;
+  }
+
+  .memberDetailValue {
+    display: inline !important;
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  /* ---- Card Actions ---- */
+  .memberActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    justify-content: flex-end;
+  }
+
+  .memberActions .actionButton {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* ---- Branch Tags in cards ---- */
+  .memberBranches .branchTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .memberBranches .branchTag {
+    padding: 2px 10px;
+    font-size: 11px;
+  }
+
+  .memberStatus .statusPill {
+    font-size: 12px;
+  }
+
+  .memberJoined {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+}
+/* ============================================================
+   MODALS
+   ============================================================ */
+
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -561,6 +887,16 @@
   }
 }
 
+.modal {
+  max-width: 480px;
+  width: 90%;
+}
+
+.modalLarge {
+  max-width: 640px;
+  width: 92%;
+}
+
 .modal,
 .modalLarge {
   background: var(--raised);
@@ -571,16 +907,6 @@
   overflow-y: auto;
   box-shadow: -4px -4px 12px rgba(255, 255, 255, 0.02), 8px 8px 24px rgba(0, 0, 0, 0.6);
   animation: slideUp 0.3s ease;
-}
-
-.modal {
-  max-width: 480px;
-  width: 90%;
-}
-
-.modalLarge {
-  max-width: 640px;
-  width: 92%;
 }
 
 .modalDanger {
@@ -626,7 +952,33 @@
   color: var(--text);
 }
 
-/* ---- Form ---- */
+/* ---- Modals Responsive ---- */
+@media (max-width: 768px) {
+  .modal,
+  .modalLarge {
+    padding: 20px;
+    width: 95%;
+  }
+  .modalActions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal,
+  .modalLarge {
+    padding: 16px;
+    width: 98%;
+  }
+  .modalTitle {
+    font-size: 16px;
+  }
+}
+
+/* ============================================================
+   MODAL FORMS
+   ============================================================ */
+
 .modalForm {
   display: flex;
   flex-direction: column;
@@ -764,7 +1116,33 @@
   cursor: not-allowed;
 }
 
-/* ---- Delete Content ---- */
+.restoreButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--success);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.restoreButton:hover {
+  background: #388e3c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(76, 175, 130, 0.35);
+}
+
+/* ============================================================
+   DELETE CONTENT
+   ============================================================ */
+
 .deleteContent {
   text-align: center;
   padding: 16px 0;
@@ -794,7 +1172,10 @@
   font-size: 12px !important;
 }
 
-/* ---- Permissions ---- */
+/* ============================================================
+   PERMISSIONS
+   ============================================================ */
+
 .permissionsContainer {
   display: flex;
   flex-direction: column;
@@ -864,6 +1245,12 @@
   color: var(--text);
 }
 
+.checkboxLabel .permissionDesc {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-left: 4px;
+}
+
 .branchCheckboxes {
   display: flex;
   flex-direction: column;
@@ -881,7 +1268,17 @@
   margin: 0;
 }
 
-/* ---- Toast ---- */
+/* ---- Permissions Responsive ---- */
+@media (max-width: 768px) {
+  .permissionItems {
+    padding-left: 16px;
+  }
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
 .toast {
   position: fixed;
   top: 20px;
@@ -895,6 +1292,7 @@
   font-size: 13px;
   font-weight: 500;
   animation: slideIn 0.3s ease;
+  max-width: 400px;
 }
 
 .toastSuccess {
@@ -931,96 +1329,25 @@
   animation: spin 1s linear infinite;
 }
 
-/* ---- Responsive ---- */
-@media (max-width: 1200px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* ============================================================
+   SCROLLBARS
+   ============================================================ */
+
+.modal::-webkit-scrollbar,
+.modalLarge::-webkit-scrollbar,
+.permissionsContainer::-webkit-scrollbar {
+  width: 4px;
 }
 
-@media (max-width: 1024px) {
-  .memberListHeader,
-  .memberRow {
-    grid-template-columns: 2fr 1fr 1fr 0.8fr 0.8fr 0.5fr;
-    font-size: 12px;
-  }
+.modal::-webkit-scrollbar-track,
+.modalLarge::-webkit-scrollbar-track,
+.permissionsContainer::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-@media (max-width: 768px) {
-  .orgHeader {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .statsGrid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .filtersBar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filterGroup {
-    flex-direction: column;
-  }
-
-  .memberListHeader {
-    display: none;
-  }
-
-  .memberRow {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 14px 16px;
-  }
-
-  .memberInfo {
-    gap: 10px;
-  }
-
-  .memberBranches {
-    padding-left: 48px;
-  }
-
-  .memberRole {
-    padding-left: 48px;
-  }
-
-  .memberStatus {
-    padding-left: 48px;
-  }
-
-  .memberJoined {
-    padding-left: 48px;
-  }
-
-  .memberActions {
-    padding-left: 48px;
-    justify-content: flex-start;
-  }
-
-  .modal,
-  .modalLarge {
-    padding: 20px;
-    width: 95%;
-  }
-
-  .modalActions {
-    flex-direction: column;
-  }
-
-  .tabButton {
-    padding: 10px 14px;
-    font-size: 13px;
-  }
-
-  .tabButton span:last-child {
-    display: none;
-  }
-
-  .permissionItems {
-    padding-left: 16px;
-  }
+.modal::-webkit-scrollbar-thumb,
+.modalLarge::-webkit-scrollbar-thumb,
+.permissionsContainer::-webkit-scrollbar-thumb {
+  background: var(--text-faint);
+  border-radius: 999px;
 }

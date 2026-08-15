@@ -193,7 +193,7 @@ export default function TopBar() {
             <span className={styles.userName}>
               {user?.firstName} {user?.lastName}
             </span>
-            <ChevronDown size={13} className={styles.chevronSmall} data-open={userMenuOpen} />
+            {/* ✅ Chevron removed */}
           </button>
 
           {userMenuOpen && (

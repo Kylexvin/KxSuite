@@ -14,15 +14,12 @@ import {
   MapPin,
   Globe,
   Save,
-  RefreshCw,
-  ChevronRight,
   AlertTriangle,
-  Crown,
   Loader2,
   Check,
   X,
-  ChevronDown,
-  ChevronUp,
+  RefreshCw,
+  ArrowLeft,
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -43,33 +40,6 @@ type Organization = {
   timezone: string;
   isActive: boolean;
   isArchived: boolean;
-};
-
-type Branch = {
-  id: string;
-  name: string;
-  code: string;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  isActive: boolean;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type Member = {
-  id: string;
-  userId: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
-  roleId: string | null;
-  isActive: boolean;
-  joinedAt: string;
 };
 
 // ============================================================
@@ -115,11 +85,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
-  const [activeSection, setActiveSection] = useState<string>("general");
-  const [editingBranch, setEditingBranch] = useState<string | null>(null);
 
   // ============================================================
   // FETCH DATA
@@ -131,18 +97,19 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const orgId = activeOrganization.id;
-
-      // Get organization details
       const orgRes = await api.get(`/api/v1/organizations/${orgId}`);
-      setOrganization(orgRes.data.organization || orgRes.data);
+      const org = orgRes.data.organization || orgRes.data;
+      setOrganization(org);
 
-      // Get branches
-      const branchesRes = await api.get(`/api/v1/organizations/${orgId}/branches`);
-      setBranches(branchesRes.data.items || branchesRes.data.branches || []);
-
-      // Get members
-      const membersRes = await api.get(`/api/v1/organizations/${orgId}/members`);
-      setMembers(membersRes.data.members || []);
+      // ✅ If organization is archived, redirect to onboarding immediately
+      if (org.isArchived) {
+        localStorage.removeItem("suiteContext");
+        localStorage.removeItem("activeOrganization");
+        localStorage.removeItem("activeOrganizationDetail");
+        localStorage.removeItem("branches");
+        localStorage.removeItem("activeBranch");
+        window.location.href = "/onboarding/select-organization";
+      }
     } catch (err) {
       console.error("Failed to load settings:", err);
       setToast({ type: "error", message: "Failed to load settings. Please try again." });
@@ -165,34 +132,13 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await api.patch(`/api/v1/organizations/${activeOrganization.id}`, data);
-      
       await fetchData();
       await loadSuiteContext(activeOrganization.id);
-      
       setToast({ type: "success", message: "Organization updated successfully" });
     } catch (err: any) {
       setToast({
         type: "error",
         message: err.response?.data?.message || "Failed to update organization",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleUpdateBranch = async (branchId: string, data: Partial<Branch>) => {
-    if (!activeOrganization) return;
-
-    setSaving(true);
-    try {
-      await api.patch(`/api/v1/organizations/${activeOrganization.id}/branches/${branchId}`, data);
-      await fetchData();
-      setToast({ type: "success", message: "Branch updated successfully" });
-      setEditingBranch(null);
-    } catch (err: any) {
-      setToast({
-        type: "error",
-        message: err.response?.data?.message || "Failed to update branch",
       });
     } finally {
       setSaving(false);
@@ -207,9 +153,18 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await api.delete(`/api/v1/organizations/${activeOrganization.id}`);
+      
       setToast({ type: "success", message: "Organization archived successfully" });
+      
+      // ✅ Clear state and redirect to onboarding
+      localStorage.removeItem("suiteContext");
+      localStorage.removeItem("activeOrganization");
+      localStorage.removeItem("activeOrganizationDetail");
+      localStorage.removeItem("branches");
+      localStorage.removeItem("activeBranch");
+      
       setTimeout(() => {
-        router.push("/dashboard");
+        window.location.href = "/onboarding/select-organization";
       }, 1500);
     } catch (err: any) {
       setToast({
@@ -221,15 +176,14 @@ export default function SettingsPage() {
     }
   };
 
-  // ============================================================
-  // SECTIONS
-  // ============================================================
-
-  const sections = [
-    { id: "general", label: "General", icon: Settings },
-    { id: "branches", label: "Branches", icon: Building2 },
-    { id: "danger", label: "Danger Zone", icon: AlertTriangle },
-  ];
+  const goToSelectOrganization = () => {
+    localStorage.removeItem("suiteContext");
+    localStorage.removeItem("activeOrganization");
+    localStorage.removeItem("activeOrganizationDetail");
+    localStorage.removeItem("branches");
+    localStorage.removeItem("activeBranch");
+    window.location.href = "/onboarding/select-organization";
+  };
 
   // ============================================================
   // LOADING
@@ -253,6 +207,13 @@ export default function SettingsPage() {
           <Building2 size={48} />
           <h3>Organization not found</h3>
           <p>Please select an organization first.</p>
+          <button
+            className={styles.backButton}
+            onClick={goToSelectOrganization}
+          >
+            <ArrowLeft size={16} />
+            Back to Organizations
+          </button>
         </div>
       </div>
     );
@@ -282,359 +243,199 @@ export default function SettingsPage() {
           <div>
             <div className={styles.orgNameRow}>
               <h1 className={styles.orgName}>Settings</h1>
-              <span className={styles.statusPill}>{organization.name}</span>
+              <span className={styles.statusPill}>
+                {organization.name}
+              </span>
             </div>
             <div className={styles.orgMeta}>
               Manage your organization settings and preferences
             </div>
           </div>
         </div>
+        <button
+          className={styles.switchButton}
+          onClick={goToSelectOrganization}
+          title="Switch organization"
+        >
+          <ArrowLeft size={16} />
+          Switch Organization
+        </button>
       </div>
 
-      {/* ===== LAYOUT ===== */}
-      <div className={styles.settingsLayout}>
-        {/* Sidebar */}
-        <div className={styles.settingsSidebar}>
-          {sections.map((section) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.id;
-            const isDanger = section.id === "danger";
-            return (
-              <button
-                key={section.id}
-                className={`${styles.settingsNavItem} ${isActive ? styles.settingsNavItemActive : ""} ${isDanger ? styles.settingsNavItemDanger : ""}`}
-                onClick={() => setActiveSection(section.id)}
-              >
-                <Icon size={16} />
-                <span>{section.label}</span>
-                {isActive && <ChevronRight size={14} className={styles.settingsNavArrow} />}
-              </button>
-            );
-          })}
+      {/* ===== GENERAL SETTINGS ===== */}
+      <div className={styles.settingsCard}>
+        <div className={styles.cardHeader}>
+          <h2 className={styles.cardTitle}>
+            <Settings size={18} />
+            General Settings
+          </h2>
+          <button
+            className={styles.saveButton}
+            onClick={() => {
+              const data = {
+                name: organization.name,
+                email: organization.email,
+                phone: organization.phone,
+                address: organization.address,
+                country: organization.country,
+                currency: organization.currency,
+                timezone: organization.timezone,
+              };
+              handleUpdateOrg(data);
+            }}
+            disabled={saving}
+          >
+            {saving ? <Loader2 size={16} className={styles.spinning} /> : <Save size={16} />}
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
 
-        {/* Content */}
-        <div className={styles.settingsContent}>
-          {/* ===== GENERAL ===== */}
-          {activeSection === "general" && (
-            <div className={styles.settingsSection}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>General Settings</h2>
-                <button
-                  className={styles.saveButton}
-                  onClick={() => {
-                    const data = {
-                      name: organization.name,
-                      email: organization.email,
-                      phone: organization.phone,
-                      address: organization.address,
-                      country: organization.country,
-                      currency: organization.currency,
-                      timezone: organization.timezone,
-                    };
-                    handleUpdateOrg(data);
-                  }}
-                  disabled={saving}
-                >
-                  {saving ? <Loader2 size={16} className={styles.spinning} /> : <Save size={16} />}
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-
-              <div className={styles.settingsCard}>
-                <div className={styles.settingGroup}>
-                  <div className={styles.settingRow}>
-                    <div className={styles.settingInfo}>
-                      <label>Organization Name</label>
-                      <span className={styles.settingDescription}>Display name used across products</span>
-                    </div>
-                    <input
-                      type="text"
-                      className={styles.settingInput}
-                      value={organization.name || ""}
-                      onChange={(e) => setOrganization({ ...organization, name: e.target.value })}
-                    />
-                  </div>
-
-                  <div className={styles.settingRow}>
-                    <div className={styles.settingInfo}>
-                      <label>
-                        <Mail size={14} />
-                        Email
-                      </label>
-                      <span className={styles.settingDescription}>Primary contact email</span>
-                    </div>
-                    <input
-                      type="email"
-                      className={styles.settingInput}
-                      value={organization.email || ""}
-                      onChange={(e) => setOrganization({ ...organization, email: e.target.value })}
-                    />
-                  </div>
-
-                  <div className={styles.settingRow}>
-                    <div className={styles.settingInfo}>
-                      <label>
-                        <Phone size={14} />
-                        Phone
-                      </label>
-                      <span className={styles.settingDescription}>Primary contact number</span>
-                    </div>
-                    <input
-                      type="tel"
-                      className={styles.settingInput}
-                      value={organization.phone || ""}
-                      onChange={(e) => setOrganization({ ...organization, phone: e.target.value })}
-                    />
-                  </div>
-
-                  <div className={styles.settingRow}>
-                    <div className={styles.settingInfo}>
-                      <label>
-                        <MapPin size={14} />
-                        Address
-                      </label>
-                      <span className={styles.settingDescription}>Physical business address</span>
-                    </div>
-                    <input
-                      type="text"
-                      className={styles.settingInput}
-                      value={organization.address || ""}
-                      onChange={(e) => setOrganization({ ...organization, address: e.target.value })}
-                    />
-                  </div>
-
-                  <div className={styles.settingRow}>
-                    <div className={styles.settingInfo}>
-                      <label>
-                        <Globe size={14} />
-                        Country
-                      </label>
-                    </div>
-                    <select
-                      className={styles.settingSelect}
-                      value={organization.country || "KE"}
-                      onChange={(e) => setOrganization({ ...organization, country: e.target.value })}
-                    >
-                      <option value="KE">🇰🇪 Kenya</option>
-                      <option value="UG">🇺🇬 Uganda</option>
-                      <option value="TZ">🇹🇿 Tanzania</option>
-                      <option value="RW">🇷🇼 Rwanda</option>
-                      <option value="NG">🇳🇬 Nigeria</option>
-                      <option value="ZA">🇿🇦 South Africa</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.settingRow}>
-                    <div className={styles.settingInfo}>
-                      <label>Currency</label>
-                    </div>
-                    <select
-                      className={styles.settingSelect}
-                      value={organization.currency || "KES"}
-                      onChange={(e) => setOrganization({ ...organization, currency: e.target.value })}
-                    >
-                      <option value="KES">KES - Kenyan Shilling</option>
-                      <option value="UGX">UGX - Ugandan Shilling</option>
-                      <option value="TZS">TZS - Tanzanian Shilling</option>
-                      <option value="RWF">RWF - Rwandan Franc</option>
-                      <option value="NGN">NGN - Nigerian Naira</option>
-                      <option value="ZAR">ZAR - South African Rand</option>
-                      <option value="USD">USD - US Dollar</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.settingRow}>
-                    <div className={styles.settingInfo}>
-                      <label>Timezone</label>
-                    </div>
-                    <select
-                      className={styles.settingSelect}
-                      value={organization.timezone || "Africa/Nairobi"}
-                      onChange={(e) => setOrganization({ ...organization, timezone: e.target.value })}
-                    >
-                      <option value="Africa/Nairobi">Africa/Nairobi</option>
-                      <option value="Africa/Kampala">Africa/Kampala</option>
-                      <option value="Africa/Dar_es_Salaam">Africa/Dar_es_Salaam</option>
-                      <option value="Africa/Kigali">Africa/Kigali</option>
-                      <option value="Africa/Lagos">Africa/Lagos</option>
-                      <option value="Africa/Johannesburg">Africa/Johannesburg</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+        <div className={styles.settingGroup}>
+          <div className={styles.settingRow}>
+            <div className={styles.settingInfo}>
+              <label>Organization Name</label>
+              <span className={styles.settingDescription}>Display name used across products</span>
             </div>
-          )}
+            <input
+              type="text"
+              className={styles.settingInput}
+              value={organization.name || ""}
+              onChange={(e) => setOrganization({ ...organization, name: e.target.value })}
+            />
+          </div>
 
-          {/* ===== BRANCHES ===== */}
-          {activeSection === "branches" && (
-            <div className={styles.settingsSection}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Branches</h2>
-                <span className={styles.sectionCount}>{branches.length} branches</span>
-              </div>
-
-              <div className={styles.branchesGrid}>
-                {branches.map((branch) => {
-                  const isEditing = editingBranch === branch.id;
-                  return (
-                    <div key={branch.id} className={styles.branchCard}>
-                      <div className={styles.branchHeader}>
-                        <div className={styles.branchInfo}>
-                          <span className={styles.branchCode}>{branch.code}</span>
-                          <span className={styles.branchName}>{branch.name}</span>
-                          {branch.isDefault && (
-                            <span className={styles.branchDefault}>Default</span>
-                          )}
-                        </div>
-                        <span className={`${styles.branchStatus} ${branch.isActive ? styles.branchStatusActive : styles.branchStatusInactive}`}>
-                          {branch.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-
-                      {isEditing ? (
-                        <div className={styles.branchEditForm}>
-                          <input
-                            type="text"
-                            className={styles.settingInput}
-                            value={branch.name}
-                            onChange={(e) => {
-                              const updated = branches.map(b => 
-                                b.id === branch.id ? { ...b, name: e.target.value } : b
-                              );
-                              setBranches(updated);
-                            }}
-                            placeholder="Branch name"
-                          />
-                          <input
-                            type="text"
-                            className={styles.settingInput}
-                            value={branch.address || ""}
-                            onChange={(e) => {
-                              const updated = branches.map(b => 
-                                b.id === branch.id ? { ...b, address: e.target.value } : b
-                              );
-                              setBranches(updated);
-                            }}
-                            placeholder="Address"
-                          />
-                          <input
-                            type="text"
-                            className={styles.settingInput}
-                            value={branch.phone || ""}
-                            onChange={(e) => {
-                              const updated = branches.map(b => 
-                                b.id === branch.id ? { ...b, phone: e.target.value } : b
-                              );
-                              setBranches(updated);
-                            }}
-                            placeholder="Phone"
-                          />
-                          <div className={styles.branchEditActions}>
-                            <button
-                              className={styles.branchActionSave}
-                              onClick={() => {
-                                const updated = branches.find(b => b.id === branch.id);
-                                if (updated) {
-                                  handleUpdateBranch(branch.id, {
-                                    name: updated.name,
-                                    address: updated.address,
-                                    phone: updated.phone,
-                                  });
-                                }
-                              }}
-                              disabled={saving}
-                            >
-                              {saving ? <Loader2 size={14} className={styles.spinning} /> : <Check size={14} />}
-                              Save
-                            </button>
-                            <button
-                              className={styles.branchActionCancel}
-                              onClick={() => setEditingBranch(null)}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className={styles.branchDetails}>
-                            {branch.address && (
-                              <div className={styles.branchDetail}>
-                                <MapPin size={14} />
-                                {branch.address}
-                              </div>
-                            )}
-                            {branch.phone && (
-                              <div className={styles.branchDetail}>
-                                <Phone size={14} />
-                                {branch.phone}
-                              </div>
-                            )}
-                            {branch.email && (
-                              <div className={styles.branchDetail}>
-                                <Mail size={14} />
-                                {branch.email}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className={styles.branchActions}>
-                            <button
-                              className={styles.branchActionEdit}
-                              onClick={() => setEditingBranch(branch.id)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className={`${styles.branchActionDeactivate} ${!branch.isActive ? styles.branchActionDeactivated : ""}`}
-                              onClick={() => {
-                                handleUpdateBranch(branch.id, { isActive: !branch.isActive });
-                              }}
-                              disabled={saving || branch.isDefault}
-                            >
-                              {branch.isActive ? "Deactivate" : "Activate"}
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+          <div className={styles.settingRow}>
+            <div className={styles.settingInfo}>
+              <label>
+                <Mail size={14} />
+                Email
+              </label>
+              <span className={styles.settingDescription}>Primary contact email</span>
             </div>
-          )}
+            <input
+              type="email"
+              className={styles.settingInput}
+              value={organization.email || ""}
+              onChange={(e) => setOrganization({ ...organization, email: e.target.value })}
+            />
+          </div>
 
-          {/* ===== DANGER ZONE ===== */}
-          {activeSection === "danger" && (
-            <div className={styles.settingsSection}>
-              <div className={styles.sectionHeader}>
-                <h2 className={`${styles.sectionTitle} ${styles.dangerTitle}`}>
-                  <AlertTriangle size={18} />
-                  Danger Zone
-                </h2>
-              </div>
-
-              <div className={`${styles.settingsCard} ${styles.dangerCard}`}>
-                <div className={styles.dangerItem}>
-                  <div className={styles.dangerInfo}>
-                    <h3>
-                      <AlertTriangle size={16} />
-                      Archive Organization
-                    </h3>
-                    <p>This will deactivate the organization. All members will lose access. This can be undone.</p>
-                  </div>
-                  <button
-                    className={styles.dangerButton}
-                    onClick={handleArchiveOrganization}
-                    disabled={saving}
-                  >
-                    {saving ? <Loader2 size={16} className={styles.spinning} /> : "Archive"}
-                  </button>
-                </div>
-              </div>
+          <div className={styles.settingRow}>
+            <div className={styles.settingInfo}>
+              <label>
+                <Phone size={14} />
+                Phone
+              </label>
+              <span className={styles.settingDescription}>Primary contact number</span>
             </div>
-          )}
+            <input
+              type="tel"
+              className={styles.settingInput}
+              value={organization.phone || ""}
+              onChange={(e) => setOrganization({ ...organization, phone: e.target.value })}
+            />
+          </div>
+
+          <div className={styles.settingRow}>
+            <div className={styles.settingInfo}>
+              <label>
+                <MapPin size={14} />
+                Address
+              </label>
+              <span className={styles.settingDescription}>Physical business address</span>
+            </div>
+            <input
+              type="text"
+              className={styles.settingInput}
+              value={organization.address || ""}
+              onChange={(e) => setOrganization({ ...organization, address: e.target.value })}
+            />
+          </div>
+
+          <div className={styles.settingRow}>
+            <div className={styles.settingInfo}>
+              <label>
+                <Globe size={14} />
+                Country
+              </label>
+            </div>
+            <select
+              className={styles.settingSelect}
+              value={organization.country || "KE"}
+              onChange={(e) => setOrganization({ ...organization, country: e.target.value })}
+            >
+              <option value="KE">🇰🇪 Kenya</option>
+              <option value="UG">🇺🇬 Uganda</option>
+              <option value="TZ">🇹🇿 Tanzania</option>
+              <option value="RW">🇷🇼 Rwanda</option>
+              <option value="NG">🇳🇬 Nigeria</option>
+              <option value="ZA">🇿🇦 South Africa</option>
+            </select>
+          </div>
+
+          <div className={styles.settingRow}>
+            <div className={styles.settingInfo}>
+              <label>Currency</label>
+            </div>
+            <select
+              className={styles.settingSelect}
+              value={organization.currency || "KES"}
+              onChange={(e) => setOrganization({ ...organization, currency: e.target.value })}
+            >
+              <option value="KES">KES - Kenyan Shilling</option>
+              <option value="UGX">UGX - Ugandan Shilling</option>
+              <option value="TZS">TZS - Tanzanian Shilling</option>
+              <option value="RWF">RWF - Rwandan Franc</option>
+              <option value="NGN">NGN - Nigerian Naira</option>
+              <option value="ZAR">ZAR - South African Rand</option>
+              <option value="USD">USD - US Dollar</option>
+            </select>
+          </div>
+
+          <div className={styles.settingRow}>
+            <div className={styles.settingInfo}>
+              <label>Timezone</label>
+            </div>
+            <select
+              className={styles.settingSelect}
+              value={organization.timezone || "Africa/Nairobi"}
+              onChange={(e) => setOrganization({ ...organization, timezone: e.target.value })}
+            >
+              <option value="Africa/Nairobi">Africa/Nairobi</option>
+              <option value="Africa/Kampala">Africa/Kampala</option>
+              <option value="Africa/Dar_es_Salaam">Africa/Dar_es_Salaam</option>
+              <option value="Africa/Kigali">Africa/Kigali</option>
+              <option value="Africa/Lagos">Africa/Lagos</option>
+              <option value="Africa/Johannesburg">Africa/Johannesburg</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== DANGER ZONE ===== */}
+      <div className={`${styles.settingsCard} ${styles.dangerCard}`}>
+        <div className={styles.cardHeader}>
+          <h2 className={`${styles.cardTitle} ${styles.dangerTitle}`}>
+            <AlertTriangle size={18} />
+            Danger Zone
+          </h2>
+        </div>
+
+        <div className={styles.dangerItem}>
+          <div className={styles.dangerInfo}>
+            <h3>
+              <AlertTriangle size={16} />
+              Archive Organization
+            </h3>
+            <p>This will deactivate the organization. All members will lose access. This can be undone.</p>
+          </div>
+          <button
+            className={styles.dangerButton}
+            onClick={handleArchiveOrganization}
+            disabled={saving}
+          >
+            {saving ? <Loader2 size={16} className={styles.spinning} /> : "Archive"}
+          </button>
         </div>
       </div>
     </div>

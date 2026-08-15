@@ -21,7 +21,17 @@ import {
   Archive,
   RefreshCw,
   Loader2,
+  BarChart3,
+  Activity,
+  PieChart as PieChartIcon,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+} from "recharts";
 import styles from "./page.module.css";
 
 // ============================================================
@@ -64,13 +74,15 @@ type BranchFormData = {
   email: string;
 };
 
+const COLORS = ["#ff6a2b", "#4caf82", "#62636e", "#ef5350"];
+
 // ============================================================
 // TOAST
 // ============================================================
 
 function Toast({ type, message, onClose }: { type: "success" | "error" | "info"; message: string; onClose: () => void }) {
   useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
+    const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
@@ -107,8 +119,10 @@ export default function BranchesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchMembers, setBranchMembers] = useState<BranchMember[]>([]);
+  const [activityData, setActivityData] = useState<any>(null);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   // UI States
@@ -142,11 +156,9 @@ export default function BranchesPage() {
     try {
       const orgId = activeOrganization.id;
 
-      // Fetch branches
       const branchesRes = await api.get(`/api/v1/organizations/${orgId}/branches`);
       const branchesData = branchesRes.data.items || branchesRes.data.branches || [];
       
-      // Fetch members for each branch
       const branchesWithMembers = await Promise.all(
         branchesData.map(async (branch: Branch) => {
           try {
@@ -163,14 +175,31 @@ export default function BranchesPage() {
     } catch (err) {
       console.error("Failed to fetch branches:", err);
       setToast({ type: "error", message: "Failed to load branches. Please try again." });
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setLoading(false);
     }
   }, [activeOrganization]);
 
+  const fetchActivity = useCallback(async () => {
+    if (!activeOrganization) return;
+    setLoadingActivity(true);
+    try {
+      const res = await api.get(
+        `/api/v1/organizations/${activeOrganization.id}/branches/activity?days=7`
+      );
+      setActivityData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch activity:", err);
+    } finally {
+      setLoadingActivity(false);
+    }
+  }, [activeOrganization]);
+
   useEffect(() => {
     refreshData();
-  }, [refreshData]);
+    fetchActivity();
+  }, [refreshData, fetchActivity]);
 
   // ============================================================
   // HANDLERS
@@ -183,16 +212,19 @@ export default function BranchesPage() {
     setSaving(true);
     try {
       await api.post(`/api/v1/organizations/${activeOrganization.id}/branches`, formData);
-      await refreshData();
       await loadSuiteContext(activeOrganization.id);
+      await refreshData();
+      await fetchActivity();
       setToast({ type: "success", message: "Branch created successfully" });
       setShowCreateModal(false);
       setFormData({ name: "", code: "", address: "", phone: "", email: "" });
+      setTimeout(() => setToast(null), 3000);
     } catch (err: any) {
       setToast({
         type: "error",
         message: err.response?.data?.message || "Failed to create branch",
       });
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -209,15 +241,18 @@ export default function BranchesPage() {
         formData
       );
       await refreshData();
+      await fetchActivity();
       setToast({ type: "success", message: "Branch updated successfully" });
       setShowEditModal(false);
       setSelectedBranch(null);
       setFormData({ name: "", code: "", address: "", phone: "", email: "" });
+      setTimeout(() => setToast(null), 3000);
     } catch (err: any) {
       setToast({
         type: "error",
         message: err.response?.data?.message || "Failed to update branch",
       });
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -233,17 +268,20 @@ export default function BranchesPage() {
         { isActive: !selectedBranch.isActive }
       );
       await refreshData();
+      await fetchActivity();
       setToast({
         type: "success",
         message: selectedBranch.isActive ? "Branch archived" : "Branch restored",
       });
       setShowArchiveModal(false);
       setSelectedBranch(null);
+      setTimeout(() => setToast(null), 3000);
     } catch (err: any) {
       setToast({
         type: "error",
         message: err.response?.data?.message || "Failed to update branch status",
       });
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -279,6 +317,7 @@ export default function BranchesPage() {
       setShowMembersModal(true);
     } catch (err) {
       setToast({ type: "error", message: "Failed to load branch members" });
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setLoadingMembers(false);
     }
@@ -305,6 +344,12 @@ export default function BranchesPage() {
   const activeBranches = branches.filter(b => b.isActive).length;
   const inactiveBranches = branches.filter(b => !b.isActive).length;
   const totalMembers = branches.reduce((sum, b) => sum + (b.members?.length || 0), 0);
+
+  // Chart data
+  const statusChartData = [
+    { name: "Active", value: activeBranches, color: "#4caf82" },
+    { name: "Archived", value: inactiveBranches, color: "#62636e" },
+  ];
 
   // ============================================================
   // LOADING
@@ -363,23 +408,112 @@ export default function BranchesPage() {
         </button>
       </div>
 
-      {/* ===== STATS ===== */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{totalBranches}</div>
-          <div className={styles.statLabel}>Total Branches</div>
+      {/* ===== CHARTS ROW (replaces stats) ===== */}
+      <div className={styles.chartsRow}>
+        {/* Bar Chart - Activity by Branch */}
+        <div className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitle}>
+              <BarChart3 size={16} />
+              <span>Activity by Branch</span>
+            </div>
+            <span className={styles.chartBadge}>Last 7 days</span>
+          </div>
+          <div className={styles.chartBody}>
+            {loadingActivity ? (
+              <div className={styles.chartPlaceholder}>
+                <Loader2 size={24} className={styles.spinner} />
+                <span>Loading...</span>
+              </div>
+            ) : activityData && activityData.branchActivity.length > 0 ? (
+              <div className={styles.barChart}>
+                {activityData.branchActivity.map((item: any) => {
+                  const max = Math.max(...activityData.branchActivity.map((b: any) => b.activity), 1);
+                  const percent = (item.activity / max) * 100;
+                  return (
+                    <div key={item.branch} className={styles.barRow}>
+                      <span className={styles.barLabel}>{item.branch}</span>
+                      <div className={styles.barTrack}>
+                        <div 
+                          className={styles.barFill} 
+                          style={{ width: `${Math.max(percent, 4)}%` }}
+                        />
+                      </div>
+                      <span className={styles.barValue}>{item.activity}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.chartPlaceholder}>
+                <Activity size={24} className={styles.chartPlaceholderIcon} />
+                <span>No activity data</span>
+              </div>
+            )}
+          </div>
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{activeBranches}</div>
-          <div className={styles.statLabel}>Active</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{inactiveBranches}</div>
-          <div className={styles.statLabel}>Archived</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{totalMembers}</div>
-          <div className={styles.statLabel}>Total Members</div>
+
+        {/* Donut Chart - Branch Status */}
+        <div className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitle}>
+              <PieChartIcon size={16} />
+              <span>Branch Status</span>
+            </div>
+            <span className={styles.chartBadge}>
+              {activeBranches} active
+            </span>
+          </div>
+          <div className={styles.donutContainer}>
+            {totalBranches > 0 ? (
+              <>
+                <div className={styles.donutWrapper}>
+                  <ResponsiveContainer width={140} height={140}>
+                    <PieChart>
+                      <Pie 
+                        data={statusChartData} 
+                        dataKey="value" 
+                        innerRadius={40} 
+                        outerRadius={60} 
+                        stroke="none"
+                        paddingAngle={2}
+                      >
+                        {statusChartData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          background: "#1b1c23", 
+                          border: "1px solid rgba(255,255,255,0.07)", 
+                          borderRadius: "8px", 
+                          fontSize: "12px" 
+                        }} 
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className={styles.donutCenter}>
+                    <span className={styles.donutValue}>{totalBranches}</span>
+                    <span className={styles.donutLabel}>Total</span>
+                  </div>
+                </div>
+                <div className={styles.donutLegend}>
+                  {statusChartData.map((item) => (
+                    <div key={item.name} className={styles.legendRow}>
+                      <span className={styles.legendDot} style={{ background: item.color }} />
+                      <span className={styles.legendName}>{item.name}</span>
+                      <span className={styles.legendValue}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className={styles.chartPlaceholder}>
+                <Building2 size={24} className={styles.chartPlaceholderIcon} />
+                <span>No branches</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -700,71 +834,71 @@ export default function BranchesPage() {
         </div>
       )}
 
-{/* ===== MEMBERS MODAL — READ ONLY ===== */}
-{showMembersModal && selectedBranch && (
-  <div className={styles.modalOverlay} onClick={() => setShowMembersModal(false)}>
-    <div className={styles.modalLarge} onClick={(e) => e.stopPropagation()}>
-      <div className={styles.modalHeader}>
-        <h2 className={styles.modalTitle}>
-          <Users size={20} />
-          Members - {selectedBranch.name}
-        </h2>
-        <button className={styles.modalClose} onClick={() => setShowMembersModal(false)}>
-          <X size={20} />
-        </button>
-      </div>
-
-      {loadingMembers ? (
-        <div className={styles.loadingMembers}>
-          <Loader2 size={24} className={styles.spinner} />
-          <p>Loading members...</p>
-        </div>
-      ) : branchMembers.length === 0 ? (
-        <div className={styles.emptyMemberState}>
-          <Users size={48} className={styles.emptyIcon} />
-          <h4>No members assigned</h4>
-          <p>This branch has no members assigned yet.</p>
-        </div>
-      ) : (
-        <div className={styles.membersList}>
-          <div className={styles.membersListHeader}>
-            <span>Name</span>
-            <span>Email</span>
-            <span>Role</span>
-            <span>Status</span>
-          </div>
-          {branchMembers.map((member) => (
-            <div key={member.userId} className={styles.membersListItem}>
-              <div className={styles.memberInfo}>
-                <div className={styles.memberAvatarSmall}>
-                  {member.user.firstName?.charAt(0) || "U"}
-                </div>
-                <span className={styles.memberName}>
-                  {member.user.firstName} {member.user.lastName}
-                </span>
-              </div>
-              <span className={styles.memberEmail}>{member.user.email}</span>
-              <span className={styles.memberRole}>
-                {member.roleId ? "Assigned" : "No Role"}
-              </span>
-              <span className={styles.memberStatus}>
-                <span className={`${styles.statusPill} ${member.isActive ? styles.statusActive : styles.statusInactive}`}>
-                  {member.isActive ? "Active" : "Inactive"}
-                </span>
-              </span>
+      {/* ===== MEMBERS MODAL ===== */}
+      {showMembersModal && selectedBranch && (
+        <div className={styles.modalOverlay} onClick={() => setShowMembersModal(false)}>
+          <div className={styles.modalLarge} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                <Users size={20} />
+                Members - {selectedBranch.name}
+              </h2>
+              <button className={styles.modalClose} onClick={() => setShowMembersModal(false)}>
+                <X size={20} />
+              </button>
             </div>
-          ))}
+
+            {loadingMembers ? (
+              <div className={styles.loadingMembers}>
+                <Loader2 size={24} className={styles.spinner} />
+                <p>Loading members...</p>
+              </div>
+            ) : branchMembers.length === 0 ? (
+              <div className={styles.emptyMemberState}>
+                <Users size={48} className={styles.emptyIcon} />
+                <h4>No members assigned</h4>
+                <p>This branch has no members assigned yet.</p>
+              </div>
+            ) : (
+              <div className={styles.membersList}>
+                <div className={styles.membersListHeader}>
+                  <span>Name</span>
+                  <span>Email</span>
+                  <span>Role</span>
+                  <span>Status</span>
+                </div>
+                {branchMembers.map((member) => (
+                  <div key={member.userId} className={styles.membersListItem}>
+                    <div className={styles.memberInfo}>
+                      <div className={styles.memberAvatarSmall}>
+                        {member.user.firstName?.charAt(0) || "U"}
+                      </div>
+                      <span className={styles.memberName}>
+                        {member.user.firstName} {member.user.lastName}
+                      </span>
+                    </div>
+                    <span className={styles.memberEmail}>{member.user.email}</span>
+                    <span className={styles.memberRole}>
+                      {member.roleId ? "Assigned" : "No Role"}
+                    </span>
+                    <span className={styles.memberStatus}>
+                      <span className={`${styles.statusPill} ${member.isActive ? styles.statusActive : styles.statusInactive}`}>
+                        {member.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.cancelButton} onClick={() => setShowMembersModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-      <div className={styles.modalActions}>
-        <button type="button" className={styles.cancelButton} onClick={() => setShowMembersModal(false)}>
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
     </div>
   );
 }

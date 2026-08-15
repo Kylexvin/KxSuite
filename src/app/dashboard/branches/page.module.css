@@ -21,6 +21,119 @@
   color: var(--text);
 }
 
+/* ---- Loading States ---- */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+  color: var(--text-faint);
+}
+
+.loadingMembers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+  color: var(--text-faint);
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+  color: var(--accent);
+}
+
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  box-shadow: -4px -4px 12px rgba(255, 255, 255, 0.02), 8px 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  min-width: 280px;
+  max-width: 420px;
+  animation: slideIn 0.3s ease;
+  color: var(--text);
+}
+
+.toastSuccess {
+  border-color: var(--success);
+}
+
+.toastSuccess svg {
+  color: var(--success);
+}
+
+.toastError {
+  border-color: var(--danger);
+}
+
+.toastError svg {
+  color: var(--danger);
+}
+
+.toastInfo {
+  border-color: var(--accent);
+}
+
+.toastInfo svg {
+  color: var(--accent);
+}
+
+.toastClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.toastClose:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* ---- Header ---- */
 .orgHeader {
   display: flex;
@@ -73,32 +186,195 @@
   margin-top: 3px;
 }
 
-/* ---- Stats ---- */
-.statsGrid {
+/* ---- Charts Row ---- */
+.chartsRow {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
 }
 
-.statCard {
-  padding: 16px;
+.chartCard {
   border: 1px solid var(--border);
   background: var(--raised);
   border-radius: 14px;
-  text-align: center;
+  padding: 18px 20px;
   box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
 }
 
-.statValue {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text);
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
 
-.statLabel {
-  font-size: 12px;
+.chartTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.chartBadge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 11px;
   color: var(--text-faint);
-  margin-top: 4px;
+}
+
+.chartBody {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 2px 0;
+}
+
+.chartPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: var(--text-faint);
+  gap: 8px;
+}
+
+.chartPlaceholderIcon {
+  opacity: 0.3;
+}
+
+/* ---- Bar Chart ---- */
+.barChart {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.barLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.barTrack {
+  flex: 1;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  min-width: 40px;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-glow));
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  min-width: 4px;
+}
+
+.barValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  width: 32px;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ---- Donut Chart ---- */
+.donutContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  height: 100%;
+  padding: 4px 0;
+}
+
+.donutWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.donutCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.donutValue {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.donutLabel {
+  display: block;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.legendName {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.legendValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-left: auto;
+  min-width: 24px;
+  text-align: right;
 }
 
 /* ---- Filters ---- */
@@ -349,7 +625,7 @@
   color: var(--danger);
 }
 
-/* ---- Empty State ---- */
+/* ---- Empty States ---- */
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -376,6 +652,113 @@
   color: var(--text-faint);
   font-size: 14px;
   margin: 0;
+}
+
+.emptyMemberState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.emptyMemberState svg {
+  color: var(--text-faint);
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.emptyMemberState h4 {
+  color: var(--text-muted);
+  font-size: 16px;
+  margin: 0 0 6px 0;
+}
+
+.emptyMemberState p {
+  color: var(--text-faint);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ---- Members Modal ---- */
+.membersList {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.membersList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.membersList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.membersList::-webkit-scrollbar-thumb {
+  background: var(--text-faint);
+  border-radius: 999px;
+}
+
+.membersListHeader {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1.5fr;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.membersListItem {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1.5fr;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.membersListItem:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.memberAvatarSmall {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #17181d;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.memberName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.memberEmail {
+  font-size: 11px;
+  color: var(--text-faint);
 }
 
 /* ---- Modal Base ---- */
@@ -536,22 +919,6 @@
   gap: 14px;
 }
 
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.checkboxLabel input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
 /* ---- Modal Actions ---- */
 .modalActions {
   display: flex;
@@ -672,374 +1039,6 @@
   line-height: 1.5;
 }
 
-.deleteWarning {
-  color: var(--danger) !important;
-  font-weight: 500;
-  font-size: 12px !important;
-}
-
-/* ---- Members Modal ---- */
-.membersList {
-  max-height: 400px;
-  overflow-y: auto;
-  margin-bottom: 16px;
-}
-
-.membersList::-webkit-scrollbar {
-  width: 4px;
-}
-
-.membersList::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.membersList::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
-  border-radius: 999px;
-}
-
-.membersListHeader {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1.5fr;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.membersListItem {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1.5fr;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  align-items: center;
-  transition: background 0.15s;
-}
-
-.membersListItem:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.memberInfo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.memberAvatarSmall {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #17181d;
-  font-weight: 600;
-  font-size: 12px;
-}
-
-.memberName {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.memberEmail {
-  font-size: 11px;
-  color: var(--text-faint);
-}
-
-/* ---- Toggle Button ---- */
-.toggleButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px 4px 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  position: relative;
-  width: fit-content;
-}
-
-.toggleOn {
-  background: rgba(76, 175, 130, 0.12);
-  border-color: var(--success);
-  color: var(--success);
-}
-
-.toggleOff {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: var(--border);
-  color: var(--text-faint);
-}
-
-.toggleKnob {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: var(--text-faint);
-  transition: all 0.3s ease;
-}
-
-.toggleOn .toggleKnob {
-  background: var(--success);
-}
-
-.toggleOff .toggleKnob {
-  background: var(--text-faint);
-}
-
-.toggleLabel {
-  padding-right: 4px;
-}
-
-/* ---- Role Badges (for members) ---- */
-.roleBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 500;
-  width: fit-content;
-}
-
-.roleOwner {
-  color: var(--accent-glow);
-  background: rgba(255, 106, 43, 0.12);
-}
-
-.roleManager {
-  color: var(--success);
-  background: rgba(76, 175, 130, 0.12);
-}
-
-.roleStaff {
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* ---- Products Modal ---- */
-.productsList {
-  max-height: 400px;
-  overflow-y: auto;
-  margin-bottom: 16px;
-}
-
-.productsList::-webkit-scrollbar {
-  width: 4px;
-}
-
-.productsList::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.productsList::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
-  border-radius: 999px;
-}
-
-.productsListHeader {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 1fr;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.productsListItem {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 1fr;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  align-items: center;
-}
-
-.productInfo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.productIcon {
-  color: var(--text-muted);
-}
-
-.productName {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.subscriptionStatus {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.subscriptionActive {
-  color: var(--success);
-}
-
-.subscriptionExpiring {
-  color: var(--accent-glow);
-}
-
-.subscriptionExpired {
-  color: var(--danger);
-}
-
-.expiresAt {
-  font-size: 12px;
-  color: var(--text-faint);
-}
-
-/* ---- Subscription Modal ---- */
-.subscriptionSummary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.subscriptionStat {
-  text-align: center;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--panel);
-}
-
-.subscriptionStatValue {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.subscriptionStatLabel {
-  font-size: 12px;
-  color: var(--text-faint);
-  margin-top: 4px;
-}
-
-.subscriptionList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.subscriptionItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--panel);
-  transition: all 0.15s ease;
-}
-
-.subscriptionItem:hover {
-  background: var(--raised-hi);
-  border-color: var(--border-strong);
-}
-
-.subscriptionItemInfo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.subscriptionItemName {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.subscriptionStatusBadge {
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.subscriptionItemActions {
-  display: flex;
-  gap: 8px;
-}
-
-.renewButton {
-  padding: 4px 12px;
-  border: none;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #17181d;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.renewButton:hover {
-  background: var(--accent-glow);
-  transform: translateY(-1px);
-}
-
-.reactivateButton {
-  padding: 4px 12px;
-  border: none;
-  border-radius: 6px;
-  background: var(--success);
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.reactivateButton:hover {
-  background: #388e3c;
-  transform: translateY(-1px);
-}
-
-/* ---- Scrollbar for all modals ---- */
-.modal::-webkit-scrollbar,
-.modalLarge::-webkit-scrollbar {
-  width: 4px;
-}
-
-.modal::-webkit-scrollbar-track,
-.modalLarge::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.modal::-webkit-scrollbar-thumb,
-.modalLarge::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
-  border-radius: 999px;
-}
-
 /* ---- Responsive ---- */
 @media (max-width: 1200px) {
   .branchGrid {
@@ -1048,8 +1047,8 @@
 }
 
 @media (max-width: 1024px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
+  .chartsRow {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -1094,31 +1093,6 @@
     display: none;
   }
 
-  .productsListHeader,
-  .productsListItem {
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    padding: 10px;
-  }
-
-  .productsListHeader {
-    display: none;
-  }
-
-  .subscriptionSummary {
-    grid-template-columns: 1fr;
-  }
-
-  .subscriptionItem {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .subscriptionItemInfo {
-    justify-content: space-between;
-  }
-
   .branchActions {
     justify-content: stretch;
   }
@@ -1131,18 +1105,32 @@
   .modalActions {
     flex-direction: column;
   }
+
+  .chartsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .donutContainer {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .barLabel {
+    min-width: 70px;
+    font-size: 12px;
+  }
+
+  .barTrack {
+    height: 16px;
+  }
+
+  .barValue {
+    font-size: 13px;
+    min-width: 28px;
+  }
 }
 
 @media (max-width: 480px) {
-  .statsGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .statValue {
-    font-size: 20px;
-  }
-
   .branchCard {
     padding: 16px;
   }
@@ -1150,62 +1138,22 @@
   .detailValue {
     max-width: 50%;
   }
-}
 
-/* ---- Empty Member State ---- */
-.emptyMemberState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 20px;
-  text-align: center;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-}
+  .barLabel {
+    min-width: 60px;
+    font-size: 11px;
+  }
 
-.emptyMemberState svg {
-  color: var(--text-faint);
-  margin-bottom: 12px;
-  opacity: 0.5;
-}
+  .barTrack {
+    height: 14px;
+  }
 
-.emptyMemberState h4 {
-  color: var(--text-muted);
-  font-size: 16px;
-  margin: 0 0 6px 0;
-}
+  .barValue {
+    font-size: 12px;
+    min-width: 24px;
+  }
 
-.emptyMemberState p {
-  color: var(--text-faint);
-  font-size: 13px;
-  margin: 0;
-}
-
-/* ---- Member Table Headers ---- */
-.membersListHeader {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1.5fr;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.membersListItem {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1.5fr;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  align-items: center;
-  transition: background 0.15s;
-}
-
-.membersListItem:hover {
-  background: rgba(255, 255, 255, 0.02);
+  .donutWrapper {
+    transform: scale(0.9);
+  }
 }

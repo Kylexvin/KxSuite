@@ -23,11 +23,17 @@ type Branch = {
   isDefault: boolean;
 };
 
+type RawPermission = {
+  permission: Permission;
+  roleId: string;
+  permissionId: string;
+};
+
 type Role = {
   id: string;
   name: string;
   description: string;
-  permissions: Permission[];
+  permissions: Permission[] | RawPermission[];
   memberCount: number;
 };
 
@@ -66,11 +72,28 @@ export default function RoleModal({
     return acc;
   }, {} as Record<string, Permission[]>);
 
+  // ============================================================
+  // FLATTEN PERMISSIONS WHEN EDITING
+  // ============================================================
+
   useEffect(() => {
     if (role) {
       setName(role.name);
       setDescription(role.description || "");
-      setSelectedPermissions(role.permissions.map((p) => p.key));
+
+      // Check if permissions are nested or flat
+      const firstPerm = role.permissions?.[0];
+      let flatPermissions: Permission[] = [];
+
+      if (firstPerm && "permission" in firstPerm) {
+        // Nested: { permission: { key, name, ... } }
+        flatPermissions = (role.permissions as RawPermission[]).map((rp) => rp.permission);
+      } else {
+        // Already flat
+        flatPermissions = role.permissions as Permission[];
+      }
+
+      setSelectedPermissions(flatPermissions.map((p) => p.key));
     } else {
       setName("");
       setDescription("");

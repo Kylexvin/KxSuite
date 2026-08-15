@@ -13,10 +13,6 @@ import {
 } from "lucide-react";
 import styles from "./page.module.css";
 
-// ============================================================
-// TYPES
-// ============================================================
-
 type Permission = {
   id: string;
   key: string;
@@ -58,16 +54,8 @@ type Member = {
   joinedAt: string;
 };
 
-// ============================================================
-// COMPONENTS
-// ============================================================
-
 import MembersTab from "./components/MembersTab";
 import RolesTab from "./components/RolesTab";
-
-// ============================================================
-// MAIN PAGE
-// ============================================================
 
 export default function MembersPage() {
   const { activeOrganization } = useAuth();
@@ -81,10 +69,6 @@ export default function MembersPage() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
 
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  // ============================================================
-  // FETCH DATA
-  // ============================================================
 
   const fetchData = async () => {
     if (!activeOrganization) return;
@@ -108,7 +92,6 @@ export default function MembersPage() {
       setBranches(branchesData);
       setPermissions(permissionsData);
 
-      // Fetch branch assignments for each member
       const membersWithBranches = await Promise.all(
         membersData.map(async (member: any) => {
           try {
@@ -146,21 +129,65 @@ export default function MembersPage() {
     }
   };
 
+  // ✅ Refresh only roles (keeps invite modal open)
+  const refreshRoles = async () => {
+    if (!activeOrganization) return;
+    try {
+      const orgId = activeOrganization.id;
+      const rolesRes = await api.get(`/api/v1/organizations/${orgId}/roles`);
+      const rolesData = rolesRes.data.roles || [];
+      const rolesWithCount = rolesData.map((role: any) => ({
+        ...role,
+        memberCount: members.filter((m) => m.roleId === role.id).length,
+      }));
+      setRoles(rolesWithCount);
+    } catch (err) {
+      console.error("Failed to refresh roles:", err);
+    }
+  };
+
+  // ✅ Refresh only members (keeps other modals open)
+  const refreshMembers = async () => {
+    if (!activeOrganization) return;
+    try {
+      const orgId = activeOrganization.id;
+      const membersRes = await api.get(`/api/v1/organizations/${orgId}/members`);
+      const membersData = membersRes.data.members || [];
+
+      const membersWithBranches = await Promise.all(
+        membersData.map(async (member: any) => {
+          try {
+            const branchRes = await api.get(
+              `/api/v1/organizations/${orgId}/branches/members/${member.userId}/branches`
+            );
+            const role = roles.find((r: Role) => r.id === member.roleId) || null;
+            return {
+              ...member,
+              role: role,
+              branches: branchRes.data.branches || [],
+            };
+          } catch {
+            return {
+              ...member,
+              role: null,
+              branches: [],
+            };
+          }
+        })
+      );
+      setMembers(membersWithBranches);
+    } catch (err) {
+      console.error("Failed to refresh members:", err);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [activeOrganization]);
 
-  // ============================================================
-  // STATS
-  // ============================================================
-
   const totalMembers = members.length;
   const activeMembers = members.filter((m) => m.isActive).length;
   const totalRoles = roles.length;
-
-  // ============================================================
-  // LOADING
-  // ============================================================
 
   if (loading) {
     return (
@@ -172,10 +199,6 @@ export default function MembersPage() {
       </div>
     );
   }
-
-  // ============================================================
-  // RENDER
-  // ============================================================
 
   return (
     <div className={styles.page}>
@@ -255,9 +278,24 @@ export default function MembersPage() {
       </div>
 
       {activeTab === "members" ? (
-        <MembersTab members={members} roles={roles} branches={branches} onRefresh={fetchData} setToast={setToast} />
+        <MembersTab
+          members={members}
+          roles={roles}
+          branches={branches}
+          permissions={permissions}
+          onRefresh={fetchData}
+          refreshRoles={refreshRoles}
+          refreshMembers={refreshMembers}
+          setToast={setToast}
+        />
       ) : (
-        <RolesTab roles={roles} permissions={permissions} branches={branches} onRefresh={fetchData} setToast={setToast} />
+        <RolesTab
+          roles={roles}
+          permissions={permissions}
+          branches={branches}
+          onRefresh={fetchData}
+          setToast={setToast}
+        />
       )}
     </div>
   );

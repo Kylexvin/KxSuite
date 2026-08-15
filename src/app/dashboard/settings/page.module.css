@@ -1,13 +1,36 @@
-/* ===== ORG HEADER ===== */
+/* app/dashboard/settings/page.module.css */
+
+.page {
+  --bg: #0e0f13;
+  --panel: #16171d;
+  --raised: #1b1c23;
+  --raised-hi: #24252e;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #eceef2;
+  --text-muted: #a3a5b0;
+  --text-faint: #62636e;
+  --accent: #ff6a2b;
+  --accent-glow: #ff8c42;
+  --danger: #ef5350;
+  --success: #4caf82;
+
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--text);
+}
+
+/* ---- Header ---- */
 .orgHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--panel);
+  padding: 16px 18px;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 4px;
+  background: var(--raised);
+  border-radius: 14px;
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 .orgIdentity {
@@ -20,12 +43,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--accent-glow), var(--accent));
   color: #17181d;
-  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 3px 10px rgba(255, 106, 43, 0.35);
 }
 
 .orgNameRow {
@@ -36,278 +62,110 @@
 
 .orgName {
   font-size: 18px;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 700;
   margin: 0;
+  color: var(--text);
 }
 
 .statusPill {
   display: inline-flex;
   align-items: center;
-  font-size: 11px;
-  font-weight: 500;
+  gap: 4px;
   padding: 2px 10px;
-  border-radius: 12px;
-  background: rgba(76, 175, 130, 0.15);
-  color: #4caf82;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+  background: rgba(76, 175, 130, 0.12);
 }
 
 .orgMeta {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-@media (max-width: 768px) {
-  .orgHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .orgName {
-    font-size: 16px;
-  }
-  
-  .orgAvatar {
-    width: 36px;
-    height: 36px;
-  }
-}
-
-@media (max-width: 480px) {
-  .orgHeader {
-    padding: 12px 16px;
-  }
-  
-  .orgName {
-    font-size: 14px;
-  }
-  
-  .statusPill {
-    font-size: 10px;
-    padding: 1px 8px;
-  }
-  
-  .orgMeta {
-    font-size: 12px;
-  }
-}
-
-/* ===== TOAST ===== */
-.toast {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  z-index: 1000;
-  min-width: 280px;
-  max-width: 420px;
-  animation: slideIn 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.toastSuccess {
-  background: var(--panel);
-  border: 1px solid rgba(76, 175, 130, 0.3);
-  color: #4caf82;
-}
-
-.toastError {
-  background: var(--panel);
-  border: 1px solid rgba(239, 83, 80, 0.3);
-  color: #ef5350;
-}
-
-.toastInfo {
-  background: var(--panel);
-  border: 1px solid rgba(100, 100, 255, 0.3);
-  color: #6b8cff;
-}
-
-.toastClose {
-  background: none;
-  border: none;
+  font-size: 12px;
   color: var(--text-faint);
-  cursor: pointer;
-  padding: 2px;
-  margin-left: auto;
+  margin-top: 3px;
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ===== LOADING ===== */
-.loadingState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  gap: 16px;
-  color: var(--text-muted);
-}
-
-.spinner {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ===== SETTINGS LAYOUT ===== */
-.settingsLayout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 24px;
-  margin-top: 20px;
-}
-
-@media (max-width: 768px) {
-  .settingsLayout {
-    grid-template-columns: 1fr;
-  }
-}
-
-.settingsSidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.settingsNavItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-  width: 100%;
-}
-
-.settingsNavItem:hover {
+/* ---- Settings Card ---- */
+.settingsCard {
+  border: 1px solid var(--border);
   background: var(--raised);
-  color: var(--text);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
 }
 
-.settingsNavItemActive {
-  background: var(--raised);
-  color: var(--text);
-  font-weight: 500;
+.dangerCard {
+  border-color: rgba(239, 83, 80, 0.2);
 }
 
-.settingsNavItemDanger {
-  color: #ef5350;
-}
-
-.settingsNavItemDanger:hover {
-  background: rgba(239, 83, 80, 0.08);
-}
-
-.settingsNavArrow {
-  margin-left: auto;
-  opacity: 0.3;
-}
-
-/* ===== CONTENT ===== */
-.settingsContent {
-  flex: 1;
-}
-
-.settingsSection {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.sectionHeader {
+.cardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
-.sectionTitle {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text);
+.cardTitle {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
 }
 
-.sectionCount {
-  font-size: 13px;
-  color: var(--text-faint);
+.dangerTitle {
+  color: var(--danger);
 }
 
+/* ---- Save Button ---- */
 .saveButton {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
   border: none;
-  border-radius: 8px;
-  background: var(--accent);
+  border-radius: 10px;
   color: #17181d;
-  font-weight: 500;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s ease;
 }
 
-.saveButton:hover:not(:disabled) {
-  background: var(--accent-glow);
+.saveButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(255, 106, 43, 0.35);
 }
 
 .saveButton:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
-.spinning {
-  animation: spin 0.8s linear infinite;
-}
-
-/* ===== SETTINGS CARD ===== */
-.settingsCard {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px 24px;
-}
-
+/* ---- Setting Rows ---- */
 .settingGroup {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding-top: 16px;
 }
 
 .settingRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 20px;
   align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
 }
 
-@media (max-width: 768px) {
-  .settingRow {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
+.settingRow:last-child {
+  border-bottom: none;
 }
 
 .settingInfo {
@@ -317,12 +175,12 @@
 }
 
 .settingInfo label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
 }
 
 .settingDescription {
@@ -333,16 +191,18 @@
 .settingInput {
   padding: 8px 12px;
   border: 1px solid var(--border);
-  background: var(--raised);
-  border-radius: 6px;
-  font-size: 13px;
+  background: var(--panel);
+  border-radius: 10px;
   color: var(--text);
-  outline: none;
-  transition: border-color 0.15s;
+  font-size: 13px;
+  transition: all 0.15s ease;
+  width: 100%;
 }
 
 .settingInput:focus {
-  border-color: var(--accent);
+  outline: none;
+  border-color: rgba(255, 106, 43, 0.4);
+  background: var(--raised-hi);
 }
 
 .settingInput::placeholder {
@@ -352,181 +212,39 @@
 .settingSelect {
   padding: 8px 12px;
   border: 1px solid var(--border);
-  background: var(--raised);
-  border-radius: 6px;
-  font-size: 13px;
+  background: var(--panel);
+  border-radius: 10px;
   color: var(--text);
-  outline: none;
-  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s ease;
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2362636e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
 }
 
 .settingSelect:focus {
-  border-color: var(--accent);
+  outline: none;
+  border-color: rgba(255, 106, 43, 0.4);
 }
 
-/* ===== BRANCHES ===== */
-.branchesGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-@media (max-width: 768px) {
-  .branchesGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.branchCard {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.branchHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.branchInfo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.branchCode {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  background: rgba(255, 106, 43, 0.1);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.branchName {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.branchDefault {
-  font-size: 10px;
-  background: rgba(76, 175, 130, 0.15);
-  color: #4caf82;
-  padding: 1px 8px;
-  border-radius: 10px;
-}
-
-.branchStatus {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 10px;
-  border-radius: 10px;
-}
-
-.branchStatusActive {
-  background: rgba(76, 175, 130, 0.15);
-  color: #4caf82;
-}
-
-.branchStatusInactive {
-  background: rgba(239, 83, 80, 0.15);
-  color: #ef5350;
-}
-
-.branchDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.branchDetail {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.branchActions {
-  display: flex;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-.branchActionEdit {
-  padding: 4px 14px;
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--text);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.branchActionEdit:hover {
-  border-color: var(--text);
-}
-
-.branchActionDeactivate {
-  padding: 4px 14px;
-  border: 1px solid rgba(239, 83, 80, 0.3);
-  background: transparent;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #ef5350;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.branchActionDeactivate:hover:not(:disabled) {
-  background: rgba(239, 83, 80, 0.08);
-}
-
-.branchActionDeactivate:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.branchActionDeactivated {
-  border-color: rgba(76, 175, 130, 0.3);
-  color: #4caf82;
-}
-
-.branchActionDeactivated:hover:not(:disabled) {
-  background: rgba(76, 175, 130, 0.08);
-}
-
-/* ===== DANGER ZONE ===== */
-.dangerTitle {
-  color: #ef5350;
-}
-
-.dangerCard {
-  border-color: rgba(239, 83, 80, 0.2);
-}
-
+/* ---- Danger Zone ---- */
 .dangerItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 16px 0 0 0;
+  gap: 20px;
 }
 
 .dangerInfo h3 {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--danger);
   margin: 0 0 4px 0;
 }
 
@@ -537,92 +255,198 @@
 }
 
 .dangerButton {
-  padding: 6px 16px;
-  border: 1px solid rgba(239, 83, 80, 0.3);
-  background: transparent;
-  border-radius: 6px;
+  padding: 8px 20px;
+  background: var(--danger);
+  border: none;
+  border-radius: 10px;
+  color: white;
   font-size: 13px;
-  color: #ef5350;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .dangerButton:hover {
-  background: rgba(239, 83, 80, 0.08);
+  background: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(239, 83, 80, 0.35);
 }
 
-/* ===== EMPTY STATE ===== */
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--text);
+  font-size: 13px;
+  box-shadow: -4px -4px 12px rgba(255, 255, 255, 0.02), 8px 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+  max-width: 400px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toastSuccess {
+  border-color: var(--success);
+}
+.toastError {
+  border-color: var(--danger);
+}
+.toastInfo {
+  border-color: var(--accent);
+}
+
+.toastClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.toastClose:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+/* ---- Loading / Empty ---- */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  color: var(--accent);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
-  gap: 12px;
-  color: var(--text-muted);
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-faint);
 }
 
 .emptyState h3 {
-  font-size: 16px;
   color: var(--text);
-  margin: 0;
+  margin: 12px 0 4px 0;
 }
 
-.emptyState p {
-  font-size: 13px;
-  margin: 0;
-}
-/* ===== BRANCH EDIT FORM ===== */
-.branchEditForm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 0;
-}
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .settingRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 
-.branchEditActions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
+  .settingInfo label {
+    font-size: 12px;
+  }
 
-.branchActionSave {
+  .cardHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .saveButton {
+    justify-content: center;
+  }
+
+  .dangerItem {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .dangerButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .orgHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .orgIdentity {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .orgNameRow {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+.switchButton {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 16px;
-  border: none;
-  border-radius: 4px;
-  background: var(--accent);
-  color: #17181d;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.branchActionSave:hover:not(:disabled) {
-  background: var(--accent-glow);
-}
-
-.branchActionSave:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.branchActionCancel {
-  padding: 4px 16px;
+  padding: 8px 14px;
   border: 1px solid var(--border);
   background: transparent;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: 10px;
   color: var(--text-muted);
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
-.branchActionCancel:hover {
-  border-color: var(--text);
+.switchButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
   color: var(--text);
+}
+
+.emptyState .backButton {
+  margin-top: 16px;
 }

@@ -23,18 +23,24 @@ import {
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
 
-const APP_VERSION = "v1.0.0";
+
 
 type NavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
   permission?: string;
+  requiresOwner?: boolean;
 };
 
 const NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/marketplace", label: "Marketplace", icon: ShoppingBag },
+  {
+    href: "/dashboard/marketplace",
+    label: "Marketplace",
+    icon: ShoppingBag,
+    requiresOwner: true, // Only owner can add products
+  },
   {
     href: "/kx",
     label: "Products",
@@ -92,30 +98,28 @@ export default function Sidebar() {
   // ============================================================
 
   const permissions = suiteContext?.permissions ?? [];
+  const isOwner = permissions.includes("*");
 
   const hasPermission = (permission?: string): boolean => {
     if (!permission) return true;
-    if (permissions.includes("*")) return true;
+    if (isOwner) return true;
     return permissions.includes(permission);
   };
 
   // ============================================================
-  // PRODUCT VISIBILITY — show ALL products user has access to
+  // PRODUCT VISIBILITY — show ONLY products user has permissions for
   // ============================================================
 
   const products = suiteContext?.products ?? [];
 
   const visibleProducts = products.filter((p) => {
     if (!p.isActive) return false;
-
-    if (permissions.includes("*")) return true;
+    if (isOwner) return true;
     return permissions.some((perm) => perm.startsWith(`${p.key}.`));
   });
 
-  const showProductsTab =
-    suiteContext === null ||
-    visibleProducts.length > 0 ||
-    permissions.includes("*");
+  // Products tab only shows if user has any visible products OR is owner
+  const showProductsTab = visibleProducts.length > 0 || isOwner;
 
   // ============================================================
   // EFFECTS
@@ -229,15 +233,27 @@ export default function Sidebar() {
   };
 
   // ============================================================
-  // RENDER
+  // FILTER NAV LINKS
   // ============================================================
 
   const visibleLinks = NAV_LINKS.filter((link) => {
+    // Skip Products (/kx) - handled separately
     if (link.href === "/kx") {
       return showProductsTab;
     }
+
+    // Marketplace requires owner
+    if (link.requiresOwner && !isOwner) {
+      return false;
+    }
+
+    // Check permission
     return hasPermission(link.permission);
   });
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   const user = suiteContext?.user;
 
@@ -409,7 +425,7 @@ export default function Sidebar() {
         <LogOut size={15} color="currentColor" />
         <span className={styles.navLabel}>Logout</span>
       </button>
-      <span className={styles.version}>{APP_VERSION}</span>
+      
     </aside>
   );
 }

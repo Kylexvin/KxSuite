@@ -88,23 +88,7 @@ export default function RolesTab({ roles, permissions = [], branches = [], onRef
 
   return (
     <>
-      <div className={styles.tabHeader}>
-        <div className={styles.tabHeaderLeft}>
-          <span className={styles.tabSubtitle}>
-            {roles.length} roles · Manage permissions and access
-          </span>
-        </div>
-        <button
-          className={styles.primaryButton}
-          onClick={() => {
-            setEditingRole(null);
-            setShowRoleModal(true);
-          }}
-        >
-          <Plus size={16} />
-          Create Role
-        </button>
-      </div>
+
 
       <div className={styles.memberList}>
         <div className={styles.memberListHeader}>
