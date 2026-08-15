@@ -114,13 +114,11 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ✅ Fixed safeLocalStorageGet
 function safeLocalStorageGet<T>(key: string, defaultValue: T): T {
   if (typeof window === "undefined") return defaultValue;
   const stored = localStorage.getItem(key);
   if (!stored || stored === "undefined" || stored === "null") return defaultValue;
   
-  // If the expected type is string (like accessToken), return stored directly
   if (typeof defaultValue === 'string') {
     return stored as T;
   }
@@ -129,7 +127,6 @@ function safeLocalStorageGet<T>(key: string, defaultValue: T): T {
     const parsed = JSON.parse(stored);
     return parsed !== null && parsed !== undefined ? parsed : defaultValue;
   } catch {
-    // If JSON parse fails, return stored as is
     return stored as T;
   }
 }
@@ -164,7 +161,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ Sync state with localStorage on mount (fixes hydration issues)
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("accessToken");
@@ -275,30 +271,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("suiteContext");
   };
 
-  const loadSuiteContext = async (organizationId: string): Promise<SuiteContext> => {
-    try {
-      const response = await api.get<SuiteContext>(
-        `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
-      );
-      const context = response.data;
+const loadSuiteContext = async (organizationId: string): Promise<SuiteContext> => {
+  try {
+    const response = await api.get<SuiteContext>(
+      `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
+    );
+    const context = response.data;
 
-      console.log('📦 SuiteContext loaded:', context);
+    console.log('📦 SuiteContext loaded:', context);
 
-      setSuiteContext(context);
-      localStorage.setItem("suiteContext", JSON.stringify(context));
+    setSuiteContext(context);
+    localStorage.setItem("suiteContext", JSON.stringify(context));
 
-      setActiveOrganizationDetail(context.organization);
-      localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
+    setActiveOrganizationDetail(context.organization);
+    localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
 
-      setBranches(context.branches);
-      localStorage.setItem("branches", JSON.stringify(context.branches));
+    setBranches(context.branches);
+    localStorage.setItem("branches", JSON.stringify(context.branches));
 
-      return context;
-    } catch (error) {
-      console.error('❌ Failed to load suite context:', error);
-      throw error;
+    // ✅ Set active branch
+    if (context.branches.length > 0) {
+      // Try to keep current active branch if still valid
+      const currentBranch = activeBranch;
+      const stillValid = currentBranch && context.branches.some(b => b.id === currentBranch.id);
+      const branchToSet = stillValid ? currentBranch : context.branches[0];
+      
+      setActiveBranchState(branchToSet);
+      localStorage.setItem("activeBranch", JSON.stringify(branchToSet));
+    } else {
+      setActiveBranchState(null);
+      localStorage.removeItem("activeBranch");
     }
-  };
+
+    return context;
+  } catch (error) {
+    console.error('❌ Failed to load suite context:', error);
+    throw error;
+  }
+};
 
   const setAuth = (user: User, accessToken: string, refreshToken: string, organizations: Organization[]) => {
     const safeOrgs = organizations || [];

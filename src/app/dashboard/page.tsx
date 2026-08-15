@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
-
   Package,
-
   Activity,
   PieChart as PieChartIcon,
   RefreshCw,
@@ -21,6 +19,7 @@ import {
   ArrowUpRight,
   ShoppingBag,
   TrendingUp,
+  CreditCard,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -41,8 +40,6 @@ import styles from "./page.module.css";
 // ============================================================
 
 type ProductStatus = "active" | "trial" | "expired" | "available";
-
-
 
 type AuditEvent = {
   id: string;
@@ -86,8 +83,52 @@ type ActivityItem = {
   type: "audit" | "sale";
   total?: number;
 };
+
+type Subscription = {
+  id: string;
+  productKey: string;
+  status: string;
+  plan: {
+    name: string;
+    price: number;
+    currency: string;
+    interval: string;
+  };
+  currentPeriodEnd: string;
+  isActive: boolean;
+};
+
 // ============================================================
-// AI ASSISTANT
+// FORMAT HELPERS
+// ============================================================
+
+const formatAction = (action: string): string => {
+  return action
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const formatTime = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-KE", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-KE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// ============================================================
+// AI ASSISTANT (Owner only)
 // ============================================================
 
 const AI_RESPONSES: Record<string, string> = {
@@ -108,16 +149,16 @@ function AIAssistant({ isMobile, onClose }: { isMobile?: boolean; onClose?: () =
 
   const handleSend = () => {
     if (!message.trim()) return;
-    
+
     const userMsg = message.trim();
-    setConversation(prev => [...prev, { role: "user", content: userMsg }]);
+    setConversation((prev) => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
     setMessage("");
 
     setTimeout(() => {
       const lowerMsg = userMsg.toLowerCase();
       let response = AI_RESPONSES.default;
-      
+
       if (lowerMsg.includes("top") || lowerMsg.includes("product")) {
         response = AI_RESPONSES["top products"];
       } else if (lowerMsg.includes("stock") || lowerMsg.includes("inventory") || lowerMsg.includes("low")) {
@@ -129,8 +170,8 @@ function AIAssistant({ isMobile, onClose }: { isMobile?: boolean; onClose?: () =
       } else if (lowerMsg.includes("product")) {
         response = AI_RESPONSES["products"];
       }
-      
-      setConversation(prev => [...prev, { role: "assistant", content: response }]);
+
+      setConversation((prev) => [...prev, { role: "assistant", content: response }]);
       setLoading(false);
     }, 1000);
   };
@@ -202,6 +243,64 @@ function ProductStatusBadge({ status }: { status: ProductStatus }) {
 }
 
 // ============================================================
+// SUBSCRIPTION & BILLING CARD
+// ============================================================
+
+function SubscriptionCard({ subscription }: { subscription: Subscription | null }) {
+  const router = useRouter();
+
+  if (!subscription) {
+    return (
+      <div className={styles.billingCard}>
+        <div className={styles.billingHeader}>
+          <span className={styles.billingProduct}>No active subscription</span>
+        </div>
+        <div className={styles.billingDetails}>
+          <p className={styles.billingEmpty}>Subscribe to a product to get started.</p>
+        </div>
+        <button className={styles.billingCTA} onClick={() => router.push("/dashboard/marketplace")}>
+          View Plans →
+        </button>
+      </div>
+    );
+  }
+
+  const statusColor = subscription.status === "ACTIVE" ? styles.badgeActive : styles.badgeInactive;
+  const statusLabel = subscription.status === "ACTIVE" ? "Active" : subscription.status;
+
+  return (
+    <div className={styles.billingCard}>
+      <div className={styles.billingHeader}>
+        <span className={styles.billingProduct}>
+          <CreditCard size={14} />
+          {subscription.plan?.name || subscription.productKey}
+        </span>
+        <span className={`${styles.billingStatus} ${statusColor}`}>
+          {statusLabel}
+        </span>
+      </div>
+      <div className={styles.billingDetails}>
+        <div className={styles.billingRow}>
+          <span>Renews:</span>
+          <span>{formatDate(subscription.currentPeriodEnd)}</span>
+        </div>
+        <div className={styles.billingRow}>
+          <span>Amount:</span>
+          <span>KES {subscription.plan?.price || 0}/{subscription.plan?.interval?.toLowerCase() || "month"}</span>
+        </div>
+        <div className={styles.billingRow}>
+          <span>Payment:</span>
+          <span>M-PESA</span>
+        </div>
+      </div>
+      <button className={styles.billingCTA} onClick={() => router.push("/dashboard/billing")}>
+        Manage Billing →
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
 // MAIN DASHBOARD
 // ============================================================
 
@@ -212,14 +311,13 @@ export default function DashboardPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditEvent[]>([]);
   const [salesData, setSalesData] = useState<{ items: Sale[] }>({ items: [] });
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [showAIMobile, setShowAIMobile] = useState(false);
 
   const permissions = suiteContext?.permissions ?? [];
-  const hasPermission = (perm: string): boolean => {
-    if (permissions.includes("*")) return true;
-    return permissions.includes(perm);
-  };
-  const hasAuditPermission = hasPermission("audit.logs.view");
+  const isOwner = permissions.includes("*");
+  const hasAuditPermission = isOwner || permissions.includes("audit.logs.view");
+  const hasBillingPermission = isOwner || permissions.includes("subscriptions.view");
   const currentUserId = suiteContext?.user?.id;
 
   // ============================================================
@@ -229,7 +327,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       if (!activeOrganization) return;
-      
+
       setLoading(true);
       try {
         const orgId = activeOrganization.id;
@@ -251,6 +349,10 @@ export default function DashboardPage() {
         );
         setSalesData(salesRes.data || { items: [] });
 
+        const subsRes = await api.get<{ subscriptions: Subscription[] }>(
+          `/api/v1/organizations/${orgId}/subscriptions`
+        );
+        setSubscriptions(subsRes.data.subscriptions || []);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -267,19 +369,20 @@ export default function DashboardPage() {
 
   const products = suiteContext?.products || [];
   const totalProducts = products.length;
-  const activeProducts = products.filter(p => p.subscriptionIsActive).length;
+  const activeProducts = products.filter((p) => p.subscriptionIsActive).length;
   const totalBranches = branches?.length || 0;
-  const totalMembers = members.filter(m => m.isActive).length;
-  const pendingMembers = members.filter(m => !m.isActive).length;
+  const totalMembers = members.filter((m) => m.isActive).length;
+  const pendingMembers = members.filter((m) => !m.isActive).length;
 
-  // Product status distribution
+  const activeSubscription = subscriptions.find((s) => s.isActive) || null;
+
   const statusCounts = products.reduce((acc, p) => {
     let status: ProductStatus = "available";
     if (p.subscriptionIsActive && p.subscriptionStatus === "active") status = "active";
     else if (p.subscriptionStatus === "trial") status = "trial";
     else if (p.subscriptionStatus === "expired") status = "expired";
     else status = "available";
-    
+
     acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -289,46 +392,37 @@ export default function DashboardPage() {
     { name: "Trial", value: statusCounts.trial || 0, color: "#ff8c42" },
     { name: "Available", value: statusCounts.available || 0, color: "#62636e" },
     { name: "Expired", value: statusCounts.expired || 0, color: "#ef5350" },
-  ].filter(d => d.value > 0);
+  ].filter((d) => d.value > 0);
 
-  // Activity chart — last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
     return d.toISOString().split("T")[0];
   });
 
-  const activityCounts = auditLogs.reduce((acc, log) => {
-    const date = new Date(log.createdAt).toISOString().split("T")[0];
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  let activityCounts: Record<string, number> = {};
+
+  if (hasAuditPermission) {
+    activityCounts = auditLogs.reduce((acc, log) => {
+      const date = new Date(log.createdAt).toISOString().split("T")[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  } else {
+    const salesItems = salesData.items || [];
+    activityCounts = salesItems.reduce((acc, sale) => {
+      const date = new Date(sale.createdAt).toISOString().split("T")[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }
 
   const chartData = last7Days.map((date) => ({
     date: new Date(date).toLocaleDateString("en-KE", { day: "2-digit", month: "short" }),
     count: activityCounts[date] || 0,
   }));
 
-  // Sales chart
   const salesItems = salesData.items || [];
-  const salesCounts = salesItems.reduce((acc, sale) => {
-    const date = new Date(sale.createdAt).toISOString().split("T")[0];
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-
-
-  // Recent activities
-  type ActivityItem = {
-    id: string | number;
-    user: string;
-    action: string;
-    target?: string;
-    time: string;
-    type: "audit" | "sale";
-    total?: number;
-  };
 
   let activityItems: ActivityItem[] = [];
 
@@ -336,33 +430,35 @@ export default function DashboardPage() {
     activityItems = auditLogs.slice(0, 5).map((log) => ({
       id: log.id,
       user: `${log.user?.firstName || ""} ${log.user?.lastName || ""}`.trim() || "System",
-      action: log.action.replace(/_/g, " ").toLowerCase(),
+      action: formatAction(log.action),
       target: log.resource,
-      time: new Date(log.createdAt).toLocaleDateString("en-KE", { 
-        day: "2-digit", 
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      time: formatTime(log.createdAt),
       type: "audit",
     }));
   } else {
-    const mySales = salesItems.filter(sale => sale.userId === currentUserId);
+    const mySales = salesItems.filter((sale) => sale.userId === currentUserId);
     activityItems = mySales.slice(0, 5).map((sale) => ({
       id: sale.id,
       user: `${sale.user?.firstName || "You"}`,
-      action: `sold ${sale.items?.length || 0} item${sale.items?.length !== 1 ? 's' : ''}`,
-      target: sale.items?.map((item: SaleItem) => `${item.quantity} × ${item.product?.name || 'product'}`).join(', '),
-      time: new Date(sale.createdAt).toLocaleDateString("en-KE", { 
-        day: "2-digit", 
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      action: "Created sale",
+      target: sale.items
+        ?.map((item: SaleItem) => `${item.quantity} × ${item.product?.name || "product"}`)
+        .join(", "),
+      time: formatTime(sale.createdAt),
       type: "sale",
       total: sale.totalAmount,
     }));
   }
+
+  // ============================================================
+  // COMING SOON PRODUCTS
+  // ============================================================
+
+  const comingSoonProducts = [
+    { name: "KxInvoice", description: "Invoicing & Billing", icon: "📄" },
+    { name: "KxCRM", description: "Customer Relationship Management", icon: "👥" },
+    { name: "KxHR", description: "HR & Payroll", icon: "👤" },
+  ];
 
   // ============================================================
   // LOADING
@@ -385,11 +481,10 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      {/* ===== TOP ROW: Org Header + Stats + AI ===== */}
-      <div className={styles.topRow}>
+      {/* ===== TOP ROW: Org Header + Stats ===== */}
+      <div className={`${styles.topRow} ${!isOwner ? styles.topRowNoAI : ""}`}>
         <div className={styles.orgHeader}>
           <div className={styles.orgHeaderGrid}>
-            {/* Left: Avatar + Name */}
             <div className={styles.orgHeaderMain}>
               <div className={styles.orgAvatar}>
                 {activeOrganization?.name?.charAt(0) || "O"}
@@ -399,7 +494,6 @@ export default function DashboardPage() {
               </h1>
             </div>
 
-            {/* Right: Compact Stats */}
             <div className={styles.orgHeaderStats}>
               <div className={styles.headerStatItem}>
                 <span className={styles.headerStatValue}>{totalBranches}</span>
@@ -418,7 +512,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Bottom: Stats Strip */}
           <div className={styles.orgStatsStrip}>
             <div className={styles.orgStatItem}>
               <span className={styles.orgStatValue}>{totalProducts}</span>
@@ -447,15 +540,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* AI Chat — desktop always visible */}
-        <div className={styles.aiDesktopWrapper}>
-          <AIAssistant />
-        </div>
+        {isOwner && (
+          <div className={styles.aiDesktopWrapper}>
+            <AIAssistant />
+          </div>
+        )}
       </div>
 
-      {/* ===== TWO COLUMN: Donut + Activity Chart ===== */}
+      {/* ===== TWO COLUMN ===== */}
       <div className={styles.twoCol}>
-        {/* Left: Product Distribution */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitle}>
@@ -468,11 +561,11 @@ export default function DashboardPage() {
             <div className={styles.pieChart}>
               <ResponsiveContainer width={120} height={120}>
                 <PieChart>
-                  <Pie 
-                    data={pieData} 
-                    dataKey="value" 
-                    innerRadius={36} 
-                    outerRadius={52} 
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    innerRadius={36}
+                    outerRadius={52}
                     stroke="none"
                     paddingAngle={2}
                   >
@@ -500,7 +593,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right: Activity Chart (Heat Line) */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitle}>
@@ -510,7 +602,7 @@ export default function DashboardPage() {
             <span className={styles.chartMeta}>Last 7 days</span>
           </div>
           <div className={styles.chartBody}>
-            {chartData.some(d => d.count > 0) ? (
+            {chartData.some((d) => d.count > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
                   <defs>
@@ -526,30 +618,30 @@ export default function DashboardPage() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fill: "#62636e", fontSize: 8 }} 
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: "#62636e", fontSize: 8 }}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <YAxis 
-                    tick={{ fill: "#62636e", fontSize: 8 }} 
+                  <YAxis
+                    tick={{ fill: "#62636e", fontSize: 8 }}
                     axisLine={false}
                     tickLine={false}
                     width={16}
                     allowDecimals={false}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: "#1b1c23", 
+                  <Tooltip
+                    contentStyle={{
+                      background: "#1b1c23",
                       border: "1px solid rgba(255,255,255,0.07)",
                       borderRadius: "6px",
-                      fontSize: "11px"
+                      fontSize: "11px",
                     }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="count" 
+                  <Area
+                    type="monotone"
+                    dataKey="count"
                     stroke="url(#heatLine)"
                     strokeWidth={2}
                     fill="url(#heatGradient)"
@@ -567,16 +659,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ===== PRODUCTS SECTION ===== */}
+      {/* ===== PRODUCTS ===== */}
       <div className={styles.productsRow}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionTitle}>
             <Package size={14} />
             Products
           </span>
-          <span className={styles.sectionCount}>{totalProducts}</span>
+          <span className={styles.sectionCount}>{totalProducts + comingSoonProducts.length}</span>
         </div>
         <div className={styles.productsGrid}>
+          {/* Active Products */}
           {products.map((product) => (
             <div key={product.key} className={styles.productCard}>
               <div className={styles.productCardTop}>
@@ -587,13 +680,19 @@ export default function DashboardPage() {
                   <span className={styles.productCardName}>{product.name}</span>
                   <span className={styles.productCardDesc}>{product.description}</span>
                 </div>
-                <ProductStatusBadge status={
-                  product.subscriptionIsActive && product.subscriptionStatus === "active" ? "active" :
-                  product.subscriptionStatus === "trial" ? "trial" :
-                  product.subscriptionStatus === "expired" ? "expired" : "available"
-                } />
+                <ProductStatusBadge
+                  status={
+                    product.subscriptionIsActive && product.subscriptionStatus === "active"
+                      ? "active"
+                      : product.subscriptionStatus === "trial"
+                      ? "trial"
+                      : product.subscriptionStatus === "expired"
+                      ? "expired"
+                      : "available"
+                  }
+                />
               </div>
-              <button 
+              <button
                 className={styles.productCardCTA}
                 onClick={() => router.push(`/kx/${product.key}`)}
               >
@@ -602,12 +701,31 @@ export default function DashboardPage() {
               </button>
             </div>
           ))}
+
+          {/* Coming Soon Placeholders */}
+          {comingSoonProducts.map((product, index) => (
+            <div key={`coming-${index}`} className={styles.productCardPlaceholder}>
+              <div className={styles.productCardTop}>
+                <div className={styles.productCardIconPlaceholder}>
+                  <span>{product.icon}</span>
+                </div>
+                <div className={styles.productCardInfo}>
+                  <span className={styles.productCardName}>{product.name}</span>
+                  <span className={styles.productCardDesc}>{product.description}</span>
+                </div>
+                <span className={`${styles.productBadge} ${styles.badgeComingSoon}`}>
+                  Coming Soon
+                </span>
+              </div>
+              <div className={styles.productCardCTADisabled}>Coming Soon</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ===== BOTTOM ROW: Recent Activity ===== */}
+      {/* ===== BOTTOM ROW: Recent Activity + Subscription ===== */}
       <div className={styles.bottomRow}>
-        <div className={styles.activityCard}>
+        <div className={`${styles.activityCard} ${!hasBillingPermission ? styles.activityCardFull : ""}`}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>
               {hasAuditPermission ? (
@@ -623,7 +741,7 @@ export default function DashboardPage() {
               )}
             </span>
           </div>
-          <div className={styles.activityList}>
+          <div className={styles.activityGrid}>
             {activityItems.length > 0 ? (
               activityItems.map((item) => (
                 <div key={item.id} className={styles.activityItem}>
@@ -633,13 +751,13 @@ export default function DashboardPage() {
                   </div>
                   <div className={styles.activityContent}>
                     <span className={styles.activityText}>
-                      <strong>{item.user}</strong> {item.action}
-                      {item.target && <strong> {item.target}</strong>}
-                      {item.total && <span className={styles.activityTotal}> · KES {item.total}</span>}
+                      <strong>{item.user}</strong>
+                      <span className={styles.activityAction}>{item.action}</span>
+                      {item.target && <span className={styles.activityTarget}>· {item.target}</span>}
+                      {item.total && <span className={styles.activityTotal}>· KES {item.total}</span>}
                     </span>
                     <span className={styles.activityTime}>{item.time}</span>
                   </div>
-                  <ChevronRight size={12} className={styles.activityArrow} />
                 </div>
               ))
             ) : (
@@ -647,18 +765,22 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+
+        {hasBillingPermission && (
+          <div className={styles.subscriptionCard}>
+            <SubscriptionCard subscription={activeSubscription} />
+          </div>
+        )}
       </div>
 
-      {/* ===== AI FAB (Mobile only) ===== */}
-      <button
-        className={styles.aiFab}
-        onClick={() => setShowAIMobile(true)}
-      >
-        <Bot size={20} />
-      </button>
+      {/* ===== AI FAB (Mobile only, Owner only) ===== */}
+      {isOwner && (
+        <button className={styles.aiFab} onClick={() => setShowAIMobile(true)}>
+          <Bot size={20} />
+        </button>
+      )}
 
-      {/* ===== AI Mobile Overlay ===== */}
-      {showAIMobile && (
+      {isOwner && showAIMobile && (
         <div className={styles.aiMobileOverlay}>
           <AIAssistant isMobile onClose={() => setShowAIMobile(false)} />
         </div>

@@ -1,11 +1,10 @@
 /* app/dashboard/page.module.css */
 
 .page {
-   max-width: auto;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: auto;
+  gap: 16px;
+  width: 100%;
 }
 
 /* ===== LOADING ===== */
@@ -14,7 +13,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
+  min-height: 200px;
   gap: 12px;
   color: var(--text-muted);
   font-size: 12px;
@@ -40,12 +39,19 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  
+}
+
+/* When AI is hidden, org header stretches full width */
+.topRowNoAI .orgHeader {
+  grid-column: 1 / -1;
 }
 
 @media (min-width: 768px) {
   .topRow {
     grid-template-columns: 1fr 280px;
+  }
+  .topRowNoAI {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -62,12 +68,12 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: auto;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   height: 100%;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .orgHeaderGrid {
@@ -75,9 +81,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  width: 100%;
   flex-wrap: wrap;
-  
 }
 
 .orgHeaderMain {
@@ -98,7 +102,7 @@
   font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 3px 10px rgba(255, 106, 43, 0.3);
 }
 
 .orgHeaderName {
@@ -106,7 +110,6 @@
   font-weight: 600;
   color: var(--text);
   margin: 0;
-  letter-spacing: -0.2px;
 }
 
 .orgHeaderStats {
@@ -145,16 +148,15 @@
 }
 
 /* ============================================================
-   ORG STATS STRIP (inside header)
+   ORG STATS STRIP
    ============================================================ */
 .orgStatsStrip {
   display: flex;
   align-items: center;
-  gap: 4px 0;
+  gap: 0;
   padding-top: 10px;
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
-  
 }
 
 .orgStatItem {
@@ -199,7 +201,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 120px;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .aiCardDesktop {
@@ -218,7 +220,6 @@
   background: var(--panel);
   border: none;
   animation: slideUp 0.3s ease;
-  
 }
 
 @keyframes slideUp {
@@ -386,7 +387,7 @@
 }
 
 /* ============================================================
-   AI FAB - ONLY MOBILE
+   AI FAB - MOBILE ONLY
    ============================================================ */
 .aiFab {
   display: none;
@@ -457,7 +458,6 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  
 }
 
 @media (min-width: 640px) {
@@ -469,9 +469,9 @@
 .chartCard {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .chartHeader {
@@ -540,7 +540,7 @@
   .pieContainer {
     flex-direction: row;
     justify-content: center;
-    gap: 12px;
+    gap: 16px;
   }
 }
 
@@ -576,7 +576,7 @@
 .pieLegend {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px 8px;
+  gap: 4px 12px;
   justify-content: center;
 }
 
@@ -607,9 +607,8 @@
 .productsRow {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  
+  border-radius: 12px;
+  padding: 14px 16px;
 }
 
 .sectionHeader {
@@ -658,10 +657,16 @@
   background: var(--raised);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
+}
+
+.productCard:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 .productCardTop {
@@ -712,7 +717,6 @@
   font-weight: 500;
   flex-shrink: 0;
   margin-top: 1px;
-  letter-spacing: 0.2px;
 }
 
 .badgeActive { background: rgba(76, 175, 130, 0.15); color: #4caf82; }
@@ -730,7 +734,7 @@
   padding: 4px 0;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: #ef5350;
+  background: transparent;
   color: var(--text-muted);
   font-size: 9px;
   font-weight: 500;
@@ -745,35 +749,63 @@
 }
 
 /* ============================================================
-   ACTIVITY
+   BOTTOM ROW: Activity + Subscription
    ============================================================ */
 .bottomRow {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
+/* Activity takes full width when subscription card is hidden */
+.activityCardFull {
+  grid-column: 1 / -1;
+}
+
+/* ============================================================
+   BOTTOM ROW: Activity + Subscription
+   ============================================================ */
+.bottomRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.activityCardFull {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .bottomRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   ACTIVITY
+   ============================================================ */
 .activityCard {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 10px 12px;
 }
 
-.activityList {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.activityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
 }
 
 .activityItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: 10px;
+  padding: 6px 10px;
   border-radius: 6px;
   transition: background 0.15s;
   cursor: default;
+  width: 100%;
 }
 
 .activityItem:hover {
@@ -781,8 +813,8 @@
 }
 
 .activityIcon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 5px;
   background: var(--raised);
   display: flex;
@@ -802,12 +834,21 @@
   color: var(--text-muted);
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: 3px;
+  width: 100%;
 }
 
 .activityText strong {
   color: var(--text);
   font-weight: 500;
+}
+
+.activityAction {
+  color: var(--text);
+}
+
+.activityTarget {
+  color: var(--text-faint);
 }
 
 .activityTotal {
@@ -822,29 +863,179 @@
   margin-top: 1px;
 }
 
-.activityArrow {
-  color: var(--text-faint);
-  flex-shrink: 0;
-}
-
 .activityEmpty {
   text-align: center;
   color: var(--text-faint);
-  padding: 16px 0;
+  padding: 20px 0;
   font-size: 11px;
+}
+/* ============================================================
+   SUBSCRIPTION CARD
+   ============================================================ */
+.subscriptionCard {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.billingCard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .subscriptionCard {
+    min-width: unset;
+    max-width: unset;
+  }
+}
+
+.billingCard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.billingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.billingProduct {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.billingStatus {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+.badgeActive {
+  background: rgba(76, 175, 130, 0.15);
+  color: #4caf82;
+}
+
+.badgeInactive {
+  background: rgba(239, 83, 80, 0.15);
+  color: #ef5350;
+}
+
+.billingDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.billingRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.billingRow span:last-child {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.billingEmpty {
+  color: var(--text-faint);
+  font-size: 12px;
+  margin: 0;
+}
+
+.billingCTA {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: auto;
+}
+
+.billingCTA:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ============================================================
-   RESPONSIVE OVERRIDES
+   RESPONSIVE: BOTTOM ROW & ACTIVITY
+   ============================================================ */
+@media (max-width: 768px) {
+  .bottomRow {
+    grid-template-columns: 1fr;
+  }
+
+  .subscriptionCard {
+    min-width: unset;
+    max-width: unset;
+  }
+}
+
+@media (max-width: 640px) {
+  .activityGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+.aiConversation::-webkit-scrollbar {
+  width: 3px;
+}
+
+.aiConversation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.aiConversation::-webkit-scrollbar-thumb {
+  background: var(--text-faint);
+  border-radius: 4px;
+}
+
+/* ============================================================
+   RESPONSIVE: REST
    ============================================================ */
 @media (max-width: 480px) {
   .page {
-    padding: 8px;
-    gap: 8px;
+    gap: 10px;
   }
 
   .orgHeader {
-    padding: 10px 12px;
+    padding: 12px 14px;
   }
 
   .orgHeaderName {
@@ -895,7 +1086,7 @@
   }
 
   .productCard {
-    padding: 6px 8px;
+    padding: 8px 10px;
   }
 
   .productCardName {
@@ -907,8 +1098,8 @@
   }
 
   .productCardIcon {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     font-size: 9px;
   }
 
@@ -950,14 +1141,6 @@
     min-height: 60px;
     max-height: 40vh;
   }
-
-  .aiInputWrap input {
-    font-size: 10px;
-  }
-
-  .topRow {
-    gap: 8px;
-  }
 }
 
 @media (max-width: 360px) {
@@ -969,31 +1152,6 @@
 
   .orgHeaderStats {
     justify-content: flex-start;
-    padding-left: 2px;
-  }
-
-  .headerStatValue {
-    font-size: 11px;
-  }
-
-  .headerStatLabel {
-    font-size: 6px;
-  }
-
-  .headerStatDivider {
-    height: 14px;
-  }
-
-  .orgStatValue {
-    font-size: 11px;
-  }
-
-  .orgStatLabel {
-    font-size: 6px;
-  }
-
-  .orgStatDivider {
-    height: 14px;
   }
 
   .productsGrid {
@@ -1002,19 +1160,17 @@
   }
 
   .page {
-    padding: 6px;
-    gap: 6px;
+    gap: 8px;
   }
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 20px 24px;
     gap: 16px;
   }
 
   .orgHeader {
-    padding: 16px 20px;
+    padding: 18px 22px;
   }
 
   .orgHeaderName {
@@ -1062,12 +1218,11 @@
 
 @media (min-width: 1024px) {
   .page {
-    padding: 24px 32px;
     gap: 20px;
   }
 
   .orgHeader {
-    padding: 18px 24px;
+    padding: 20px 24px;
     border-radius: 14px;
   }
 
@@ -1095,17 +1250,57 @@
 }
 
 /* ============================================================
-   SCROLLBAR
+   COMING SOON PRODUCTS
    ============================================================ */
-.aiConversation::-webkit-scrollbar {
-  width: 3px;
+.productCardPlaceholder {
+  background: var(--raised);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transition: all 0.15s ease;
 }
 
-.aiConversation::-webkit-scrollbar-track {
-  background: transparent;
+.productCardPlaceholder:hover {
+  opacity: 0.7;
+  border-color: var(--border-strong);
 }
 
-.aiConversation::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
+.productCardIconPlaceholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.badgeComingSoon {
+  background: rgba(255, 140, 66, 0.15);
+  color: #ff8c42;
+}
+
+.productCardCTADisabled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 4px 0;
+  border: 1px solid var(--border);
   border-radius: 4px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 9px;
+  font-weight: 500;
+  cursor: not-allowed;
 }

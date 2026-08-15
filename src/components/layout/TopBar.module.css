@@ -45,7 +45,7 @@
   padding: 9px 12px;
   border: 1px solid var(--border);
   background: var(--panel);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--text);
   font-size: 13px;
   font-weight: 500;
@@ -81,7 +81,37 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.branchSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
 
+.branchSwitcher:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
+}
+
+.branchSwitcher:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.branchIcon {
+  color: var(--text-muted);
+}
+
+.branchName {
+  white-space: nowrap;
+}
 /* ---- Right ---- */
 .actions {
   display: flex;
@@ -517,7 +547,7 @@
   }
 
   .orgSwitcher {
-    padding: 4px 8px;
+    padding: 6px 8px;
     gap: 4px;
   }
 

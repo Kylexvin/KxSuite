@@ -496,6 +496,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .branchCardTitle {
@@ -503,6 +505,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex: 1;
 }
 
 .branchIcon {
@@ -532,62 +535,42 @@
 
 /* ---- Branch Details ---- */
 .branchDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  padding: 4px 0;
 }
 
 .detailRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.detailRow:last-child {
+  border-bottom: none;
 }
 
 .detailLabel {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-faint);
+  white-space: nowrap;
 }
 
 .detailValue {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   font-weight: 500;
   text-align: right;
-  max-width: 60%;
+  max-width: 55%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* ---- Status Pills ---- */
-.statusPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.statusActive {
-  color: var(--success);
-  background: rgba(76, 175, 130, 0.12);
-}
-
-.statusPending {
-  color: var(--accent-glow);
-  background: rgba(255, 106, 43, 0.12);
-}
-
-.statusInactive {
-  color: var(--text-faint);
-  background: rgba(255, 255, 255, 0.05);
 }
 
 /* ---- Branch Actions ---- */
@@ -603,7 +586,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border: 1px solid var(--border);
   background: transparent;
   border-radius: 8px;
@@ -624,6 +607,95 @@
   border-color: rgba(239, 83, 80, 0.3);
   color: var(--danger);
 }
+
+/* ---- Responsive: Mobile Branch Cards ---- */
+@media (max-width: 768px) {
+  .branchGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .branchCard {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .branchCardHeader {
+    flex-wrap: wrap;
+  }
+
+  .branchName {
+    font-size: 15px;
+    max-width: 140px;
+  }
+
+  .branchDetails {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .detailRow {
+    padding: 6px 0;
+  }
+
+  .detailLabel {
+    font-size: 12px;
+  }
+
+  .detailValue {
+    font-size: 12px;
+    max-width: 60%;
+  }
+
+  .branchActions {
+    justify-content: stretch;
+    gap: 4px;
+  }
+
+  .branchActions .actionButton {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .branchCard {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .branchName {
+    font-size: 14px;
+    max-width: 110px;
+  }
+
+  .defaultBadge {
+    font-size: 9px;
+    padding: 1px 8px;
+  }
+
+  .detailLabel {
+    font-size: 11px;
+  }
+
+  .detailValue {
+    font-size: 11px;
+    max-width: 55%;
+  }
+
+  .branchActions .actionButton {
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+
+  .branchActions .actionButton svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 
 /* ---- Empty States ---- */
 .emptyState {

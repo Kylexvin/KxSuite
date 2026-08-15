@@ -1,0 +1,618 @@
+/* app/dashboard/profile/page.module.css */
+
+.page {
+  --bg: #0e0f13;
+  --panel: #16171d;
+  --raised: #1b1c23;
+  --raised-hi: #24252e;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #eceef2;
+  --text-muted: #a3a5b0;
+  --text-faint: #62636e;
+  --accent: #ff6a2b;
+  --accent-glow: #ff8c42;
+  --danger: #ef5350;
+  --success: #4caf82;
+  --warning: #ffb74d;
+
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  color: var(--text);
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease;
+  max-width: 420px;
+}
+
+.toastSuccess { border-color: var(--success); }
+.toastError { border-color: var(--danger); }
+.toastInfo { border-color: var(--accent); }
+
+.toastClose {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 12px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  color: var(--accent);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.header {
+  margin-bottom: 28px;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatarLarge {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #17181d;
+  font-weight: 700;
+  font-size: 28px;
+  box-shadow: 0 4px 16px rgba(255, 106, 43, 0.3);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: var(--text);
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+.badgeRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.badgeVerified {
+  color: var(--success);
+  background: rgba(76, 175, 130, 0.12);
+}
+
+.badgeActive {
+  color: var(--success);
+  background: rgba(76, 175, 130, 0.12);
+}
+
+.badgeInactive {
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================
+   GRID
+   ============================================================ */
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   CARD
+   ============================================================ */
+
+.card {
+  border: 1px solid var(--border);
+  background: var(--raised);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cardHeader h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ============================================================
+   FORM
+   ============================================================ */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formGroup label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.formGroup input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: rgba(255, 106, 43, 0.4);
+  background: var(--raised-hi);
+}
+
+.formGroup input::placeholder {
+  color: var(--text-faint);
+}
+
+.emailDisplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text-muted);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.emailNote {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.passwordInput {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInput input {
+  flex: 1;
+  padding-right: 40px;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.submitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
+  border: none;
+  border-radius: 10px;
+  color: #17181d;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.submitButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(255, 106, 43, 0.35);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================================
+   SESSIONS
+   ============================================================ */
+
+.sessionCount {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-faint);
+  background: var(--panel);
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.sessionList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sessionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.sessionItem:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--border);
+}
+
+.sessionCurrent {
+  border-color: rgba(255, 106, 43, 0.2);
+  background: rgba(255, 106, 43, 0.05);
+}
+
+.sessionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text-muted);
+}
+
+.sessionInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.sessionDevice {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sessionMeta {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.currentBadge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(255, 106, 43, 0.12);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.sessionLogout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sessionLogout:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(239, 83, 80, 0.08);
+}
+
+.logoutAllButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.logoutAllButton:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.emptyText {
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .page {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 16px;
+  }
+
+  .header {
+    margin-bottom: 20px;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+  }
+
+  .avatarLarge {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    font-size: 24px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .badgeRow {
+    justify-content: center;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .cardHeader h2 {
+    font-size: 15px;
+  }
+
+  .sessionItem {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+  }
+
+  .sessionDevice {
+    font-size: 12px;
+  }
+
+  .sessionMeta {
+    font-size: 11px;
+  }
+
+  .emailDisplay {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .emailNote {
+    margin-left: 0;
+    width: 100%;
+    text-align: left;
+  }
+
+  .submitButton {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .logoutAllButton {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .toast {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+    font-size: 13px;
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 12px;
+  }
+
+  .avatarLarge {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    font-size: 20px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .headerContent {
+    gap: 10px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .cardHeader {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+  }
+
+  .formGroup input {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .sessionItem {
+    padding: 8px 8px;
+    gap: 8px;
+  }
+
+  .sessionIcon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+
+  .sessionLogout {
+    width: 24px;
+    height: 24px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 1px 8px;
+  }
+
+  .toast {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+  }
+}

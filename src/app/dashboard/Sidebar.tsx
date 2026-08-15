@@ -19,6 +19,7 @@ import {
   Check,
   ShoppingBag,
   User,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -57,6 +58,12 @@ const NAV_LINKS: NavLink[] = [
     label: "Branches",
     icon: Building2,
     permission: "branches.view",
+  },
+  {
+    href: "/dashboard/audit",
+    label: "Audit Logs",
+    icon: FileText,
+    permission: "audit.logs.view",
   },
   {
     href: "/dashboard/billing",
@@ -281,57 +288,6 @@ export default function Sidebar() {
         >
           <ChevronsLeft size={14} color="currentColor" />
         </button>
-      </div>
-
-      {/* Organization Switcher */}
-      <div className={styles.orgSwitcherWrap} ref={orgMenuRef}>
-        <button
-          className={styles.contextRow}
-          onClick={handleOrgToggle}
-          disabled={switchingOrg}
-          title={switchingOrg ? "Switching..." : "Switch organization"}
-        >
-          <span className={styles.contextIcon}>
-            {activeOrganization.name.charAt(0).toUpperCase()}
-          </span>
-          <span className={styles.contextText}>
-            <span className={styles.contextLabel}>
-              {switchingOrg ? "Switching..." : "Organization"}
-            </span>
-            <span className={styles.contextValue}>
-              {switchingOrg ? "Please wait..." : activeOrganization.name}
-            </span>
-          </span>
-          <ArrowUpDown size={13} color="currentColor" className={styles.toggleIcon} />
-        </button>
-
-        {orgMenuOpen && !switchingOrg && (
-          <div className={styles.orgPopover}>
-            <div className={styles.orgPopoverHeader}>
-              <span>Switch Organization</span>
-            </div>
-            <div className={styles.orgPopoverList}>
-              {organizations.map((org) => {
-                const isActive = org.id === activeOrganization.id;
-                return (
-                  <button
-                    key={org.id}
-                    className={`${styles.orgOption} ${isActive ? styles.orgOptionActive : ""}`}
-                    onClick={() => handleSwitchOrg(org.id)}
-                  >
-                    <div className={styles.orgOptionIcon}>
-                      {org.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className={styles.orgOptionText}>
-                      <span className={styles.orgOptionName}>{org.name}</span>
-                    </div>
-                    {isActive && <Check size={16} className={styles.orgOptionCheck} />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className={styles.divider} />
