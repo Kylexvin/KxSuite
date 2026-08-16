@@ -5,7 +5,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
-import { Shield, Edit2, Trash2, X, Loader2, AlertCircle, Plus } from "lucide-react";
+import { AxiosError } from "axios";
+import { Shield, Edit2, Trash2, X, Loader2, AlertCircle } from "lucide-react";
 import styles from "../page.module.css";
 import RoleModal from "./RoleModal";
 
@@ -41,6 +42,40 @@ type Props = {
   setToast: (toast: { type: "success" | "error"; message: string } | null) => void;
 };
 
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  // Handle Axios errors
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  
+  // Handle standard errors
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // Handle string errors
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return fallback;
+}
+
 export default function RolesTab({ roles, permissions = [], branches = [], onRefresh, setToast }: Props) {
   const { activeOrganization } = useAuth();
 
@@ -74,10 +109,11 @@ export default function RolesTab({ roles, permissions = [], branches = [], onRef
       onRefresh();
       setToast({ type: "success", message: "Role deleted successfully" });
       setShowDeleteConfirm(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to delete role");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to delete role",
+        message,
       });
     } finally {
       setSaving(false);
@@ -88,8 +124,6 @@ export default function RolesTab({ roles, permissions = [], branches = [], onRef
 
   return (
     <>
-
-
       <div className={styles.memberList}>
         <div className={styles.memberListHeader}>
           <span>Role</span>

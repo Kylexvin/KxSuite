@@ -2,9 +2,10 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import { AxiosError } from "axios";
 import { X, Check, Loader2, Shield, Trash2, AlertCircle } from "lucide-react";
 import styles from "../page.module.css";
 
@@ -40,31 +41,78 @@ type Role = {
 type Props = {
   role: Role | null;
   permissions: Permission[];
-  branches: Branch[];
+  branches: Branch[]; // Keep type but prefix with underscore to silence warning
   onClose: () => void;
   onSuccess: () => void;
   setToast: (toast: { type: "success" | "error"; message: string } | null) => void;
 };
 
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  // Handle Axios errors
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  
+  // Handle standard errors
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // Handle string errors
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return fallback;
+}
+
 export default function RoleModal({
   role,
   permissions = [],
-  branches = [],
   onClose,
   onSuccess,
   setToast,
 }: Props) {
   const { activeOrganization } = useAuth();
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const isEditing = !!role;
+
+  // ✅ Helper to get flat permissions
+  const getInitialPermissions = (): Permission[] => {
+    if (!role) return [];
+    const firstPerm = role.permissions?.[0];
+    if (firstPerm && "permission" in firstPerm) {
+      return (role.permissions as RawPermission[]).map((rp) => rp.permission);
+    }
+    return role.permissions as Permission[];
+  };
+
+  // ✅ Initialize state directly from props (no useEffect needed!)
+  const [name, setName] = useState(role?.name || "");
+  const [description, setDescription] = useState(role?.description || "");
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(() => {
+    const flatPermissions = getInitialPermissions();
+    return flatPermissions.map((p) => p.key);
+  });
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const safePermissions = permissions || [];
-  const isEditing = !!role;
-
   const groupedPermissions = safePermissions.reduce((acc, perm) => {
     const key = perm.productKey || "other";
     if (!acc[key]) acc[key] = [];
@@ -73,33 +121,8 @@ export default function RoleModal({
   }, {} as Record<string, Permission[]>);
 
   // ============================================================
-  // FLATTEN PERMISSIONS WHEN EDITING
+  // HANDLERS
   // ============================================================
-
-  useEffect(() => {
-    if (role) {
-      setName(role.name);
-      setDescription(role.description || "");
-
-      // Check if permissions are nested or flat
-      const firstPerm = role.permissions?.[0];
-      let flatPermissions: Permission[] = [];
-
-      if (firstPerm && "permission" in firstPerm) {
-        // Nested: { permission: { key, name, ... } }
-        flatPermissions = (role.permissions as RawPermission[]).map((rp) => rp.permission);
-      } else {
-        // Already flat
-        flatPermissions = role.permissions as Permission[];
-      }
-
-      setSelectedPermissions(flatPermissions.map((p) => p.key));
-    } else {
-      setName("");
-      setDescription("");
-      setSelectedPermissions([]);
-    }
-  }, [role]);
 
   const togglePermission = (key: string) => {
     setSelectedPermissions((prev) =>
@@ -142,10 +165,11 @@ export default function RoleModal({
       }
 
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to save role");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to save role",
+        message,
       });
     } finally {
       setSaving(false);
@@ -175,15 +199,20 @@ export default function RoleModal({
       onSuccess();
       setToast({ type: "success", message: "Role deleted successfully" });
       setShowDeleteConfirm(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to delete role");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to delete role",
+        message,
       });
     }
   };
 
   const productKeys = Object.keys(groupedPermissions);
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>

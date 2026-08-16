@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
@@ -71,6 +71,38 @@ type CreateOrganizationResponse = {
   };
 };
 
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return fallback;
+}
+
+// ============================================================
+// MAIN PAGE
+// ============================================================
+
 export default function SelectOrganizationPage() {
   const router = useRouter();
   const {
@@ -92,19 +124,22 @@ export default function SelectOrganizationPage() {
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({ name: "", country: "KE" });
   const [redirecting, setRedirecting] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  // ✅ REMOVED: const [initialLoadDone, setInitialLoadDone] = useState(false);
   
   const hasLoaded = useRef(false);
+  const isMounted = useRef(true);
 
   // ============================================================
   // LOAD DATA
   // ============================================================
 
   useEffect(() => {
-    if (hasLoaded.current) return;
-    hasLoaded.current = true;
+    isMounted.current = true;
 
     const loadData = async () => {
+      if (hasLoaded.current || !isMounted.current) return;
+      hasLoaded.current = true;
+
       setChecking(true);
       setError("");
 
@@ -114,6 +149,8 @@ export default function SelectOrganizationPage() {
           api.get<OrganizationsResponse>("/api/v1/organizations"),
           api.get("/api/v1/invitations/my"),
         ]);
+
+        if (!isMounted.current) return;
 
         let freshOrgs: Organization[] = [];
         if (orgsRes.status === "fulfilled") {
@@ -137,10 +174,14 @@ export default function SelectOrganizationPage() {
         try {
           const archivedRes = await api.get("/api/v1/organizations/archived");
           archivedOrgsData = archivedRes.data.organizations || [];
-          setArchivedOrgs(archivedOrgsData);
-        } catch (err) {
+          if (isMounted.current) {
+            setArchivedOrgs(archivedOrgsData);
+          }
+        } catch (err: unknown) {
           console.error("Failed to fetch archived orgs:", err);
         }
+
+        if (!isMounted.current) return;
 
         // ─── DECISION LOGIC ─────────────────────────────────────────────
 
@@ -148,7 +189,7 @@ export default function SelectOrganizationPage() {
         if (freshOrgs.length === 0 && freshInvites.length === 0) {
           setShowCreateForm(true);
           setChecking(false);
-          setInitialLoadDone(true);
+          // ✅ REMOVED: setInitialLoadDone(true);
           return;
         }
 
@@ -156,7 +197,7 @@ export default function SelectOrganizationPage() {
         if (freshInvites.length > 0) {
           setShowCreateForm(false);
           setChecking(false);
-          setInitialLoadDone(true);
+          // ✅ REMOVED: setInitialLoadDone(true);
           return;
         }
 
@@ -164,7 +205,7 @@ export default function SelectOrganizationPage() {
         if (archivedOrgsData.length > 0) {
           setShowCreateForm(false);
           setChecking(false);
-          setInitialLoadDone(true);
+          // ✅ REMOVED: setInitialLoadDone(true);
           console.log("📦 Archived orgs found, showing selection page");
           return;
         }
@@ -178,12 +219,12 @@ export default function SelectOrganizationPage() {
             await loadSuiteContext(org.id);
             await loadBranches(org.id);
             router.push("/dashboard");
-          } catch (err) {
+          } catch (err: unknown) {
             console.error("Auto-redirect failed:", err);
             setRedirecting(false);
             setShowCreateForm(false);
             setChecking(false);
-            setInitialLoadDone(true);
+            // ✅ REMOVED: setInitialLoadDone(true);
           }
           return;
         }
@@ -191,26 +232,30 @@ export default function SelectOrganizationPage() {
         // Multiple orgs → show selection
         setShowCreateForm(false);
         setChecking(false);
-        setInitialLoadDone(true);
+        // ✅ REMOVED: setInitialLoadDone(true);
 
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Failed to load data:", err);
         toast.error("Could not load your organizations");
         setShowCreateForm(true);
         setChecking(false);
-        setInitialLoadDone(true);
+        // ✅ REMOVED: setInitialLoadDone(true);
       }
     };
 
     loadData();
+
+    return () => {
+      isMounted.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ============================================================
-  // HANDLERS
+  // HANDLERS - Memoized
   // ============================================================
 
-  const handleSelect = async (orgId: string) => {
+  const handleSelect = useCallback(async (orgId: string) => {
     setError("");
     setRedirecting(true);
     try {
@@ -225,14 +270,15 @@ export default function SelectOrganizationPage() {
       await loadSuiteContext(org.id);
       await loadBranches(org.id);
       router.push("/dashboard");
-    } catch (err) {
-      toast.error("Failed to select organization");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to select organization");
+      toast.error(message);
       console.error(err);
       setRedirecting(false);
     }
-  };
+  }, [organizations, setActiveOrganizationDirect, loadSuiteContext, loadBranches, router]);
 
-  const handleRestoreOrganization = async (orgId: string) => {
+  const handleRestoreOrganization = useCallback(async (orgId: string) => {
     setRestoring(orgId);
     try {
       await api.patch(`/api/v1/organizations/${orgId}/restore`);
@@ -249,15 +295,16 @@ export default function SelectOrganizationPage() {
       }
       
       toast.success("Organization restored successfully!");
-    } catch (err) {
-      toast.error("Failed to restore organization");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to restore organization");
+      toast.error(message);
       console.error(err);
     } finally {
       setRestoring(null);
     }
-  };
+  }, [user, setAuth]);
 
-  const handleAcceptInvite = async (token: string) => {
+  const handleAcceptInvite = useCallback(async (token: string) => {
     setError("");
     try {
       await api.post("/api/v1/invitations/accept", { token });
@@ -286,13 +333,14 @@ export default function SelectOrganizationPage() {
         await loadBranches(org.id);
         router.push("/dashboard");
       }
-    } catch (err) {
-      toast.error("Failed to accept invitation");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to accept invitation");
+      toast.error(message);
       console.error(err);
     }
-  };
+  }, [user, pendingInvites, archivedOrgs, setAuth, setActiveOrganizationDirect, loadSuiteContext, loadBranches, router]);
 
-  const handleRejectInvite = async (token: string) => {
+  const handleRejectInvite = useCallback(async (token: string) => {
     setError("");
     try {
       await api.post("/api/v1/invitations/reject", { token });
@@ -313,19 +361,21 @@ export default function SelectOrganizationPage() {
       }
       
       toast.info("Invitation declined");
-    } catch (err) {
-      toast.error("Failed to reject invitation");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to reject invitation");
+      toast.error(message);
       console.error(err);
     }
-  };
+  }, [pendingInvites, organizations, archivedOrgs, setActiveOrganizationDirect, loadSuiteContext, loadBranches, router]);
 
-  const handleCreateChange = (
+  // ✅ Fixed with functional update
+  const handleCreateChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  }, []);
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleCreateSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setCreating(true);
@@ -365,34 +415,27 @@ export default function SelectOrganizationPage() {
       router.push("/dashboard");
 
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        toast.error(err.response?.data?.message || "Failed to create organization");
-      } else if (err instanceof Error) {
-        toast.error(err.message);
-      } else {
-        toast.error("Something went wrong. Please try again.");
-      }
+      const message = getErrorMessage(err, "Failed to create organization");
+      toast.error(message);
       setCreating(false);
     }
-  };
+  }, [formData, organizations, user, setAuth, setActiveOrganizationDirect, loadSuiteContext, loadBranches, router]);
 
-  type OrgShape = {
-    ownerId?: string;
-    owner?: { id?: string } | null;
-    [key: string]: unknown;
-  };
+  // ============================================================
+  // HELPERS - Memoized
+  // ============================================================
 
-  const getOrgRole = (org: OrgShape): string => {
+  const getOrgRole = useCallback((org: { ownerId?: string; owner?: { id?: string } | null; [key: string]: unknown }): string => {
     if (!user) return "MEMBER";
-    const ownerId = org.ownerId ?? org.owner?.id;
+    const ownerId = org.ownerId ?? (org.owner?.id as string | undefined);
     return ownerId === user.id ? "OWNER" : "MEMBER";
-  };
+  }, [user]);
 
-  const hasFullAccess = (org: OrgShape): boolean => {
+  const hasFullAccess = useCallback((org: { ownerId?: string; owner?: { id?: string } | null; [key: string]: unknown }): boolean => {
     if (!user) return false;
-    const ownerId = org.ownerId ?? org.owner?.id;
+    const ownerId = org.ownerId ?? (org.owner?.id as string | undefined);
     return ownerId === user.id;
-  };
+  }, [user]);
 
   // ============================================================
   // LOADING / REDIRECTING

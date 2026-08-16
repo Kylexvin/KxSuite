@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,20 +11,14 @@ import {
   Building2,
   CreditCard,
   Settings,
-  Store,
-  ArrowUpDown,
   ChevronDown,
   ChevronsLeft,
   LogOut,
-  Check,
   ShoppingBag,
-  User,
   FileText,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
-
-
 
 type NavLink = {
   href: string;
@@ -84,19 +78,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const {
     activeOrganization,
-    organizations,
-    setActiveOrganization,
     suiteContext,
     logout,
-    loadBranches,
   } = useAuth();
 
-  const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
-  const [switchingOrg, setSwitchingOrg] = useState(false);
-
-  const orgMenuRef = useRef<HTMLDivElement>(null);
 
   const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 1024;
 
@@ -147,12 +134,10 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (orgMenuRef.current && !orgMenuRef.current.contains(event.target as Node)) {
-        setOrgMenuOpen(false);
-        if (isSmallScreen && !collapsed) {
-          setTimeout(() => setCollapsed(true), 300);
-        }
+    const handleClickOutside = () => {
+      // Just collapse on small screens when clicking outside
+      if (isSmallScreen && !collapsed) {
+        setTimeout(() => setCollapsed(true), 300);
       }
     };
 
@@ -168,45 +153,9 @@ export default function Sidebar() {
 
   const isKxProduct = pathname.startsWith("/kx/") && pathname !== "/kx";
 
-  const handleSwitchOrg = async (orgId: string) => {
-    if (orgId === activeOrganization.id) {
-      setOrgMenuOpen(false);
-      if (isSmallScreen) {
-        setTimeout(() => setCollapsed(true), 300);
-      }
-      return;
-    }
-
-    setSwitchingOrg(true);
-    try {
-      await setActiveOrganization(orgId);
-      await loadBranches(orgId);
-      setOrgMenuOpen(false);
-      if (isSmallScreen) {
-        setTimeout(() => setCollapsed(true), 300);
-      }
-      router.push("/dashboard");
-    } catch (err) {
-      console.error("Failed to switch organization:", err);
-    } finally {
-      setSwitchingOrg(false);
-    }
-  };
-
   const handleLogout = () => {
     logout();
     router.push("/login");
-  };
-
-  const handleOrgToggle = () => {
-    if (collapsed && isSmallScreen) {
-      setCollapsed(false);
-      setTimeout(() => {
-        setOrgMenuOpen((v) => !v);
-      }, 300);
-    } else {
-      setOrgMenuOpen((v) => !v);
-    }
   };
 
   const handleProductsToggle = () => {

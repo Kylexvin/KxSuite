@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import { AxiosError } from "axios"; // Import AxiosError
 import {
   User,
   Mail,
@@ -11,12 +11,12 @@ import {
   LogOut,
   Smartphone,
   Monitor,
-  AlertCircle,
+
   Check,
   Loader2,
   Eye,
   EyeOff,
-  ChevronRight,
+
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -33,14 +33,41 @@ type Session = {
   isRevoked: boolean;
 };
 
-type UserProfile = {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  isEmailVerified: boolean;
-  isActive: boolean;
+
+
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
 };
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  // Handle Axios errors
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  
+  // Handle standard errors
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // Handle string errors
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return fallback;
+}
 
 // ============================================================
 // TOAST
@@ -65,8 +92,8 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
 // ============================================================
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user, logout } = useAuth();
+ 
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -137,10 +164,11 @@ export default function ProfilePage() {
       setToast({ type: "success", message: "Profile updated successfully" });
       // Refresh user context
       await api.get("/api/v1/auth/me");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to update profile");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to update profile",
+        message,
       });
     } finally {
       setSaving(false);
@@ -168,11 +196,9 @@ export default function ProfilePage() {
       });
       setToast({ type: "success", message: "Password changed successfully" });
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err: any) {
-      setToast({
-        type: "error",
-        message: err.response?.data?.message || "Failed to change password",
-      });
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to change password");
+      setToast({ type: "error", message });
     } finally {
       setSaving(false);
     }
@@ -183,11 +209,9 @@ export default function ProfilePage() {
       await api.post(`/api/v1/auth/sessions/${sessionId}/revoke`);
       setSessions(sessions.filter((s) => s.id !== sessionId));
       setToast({ type: "success", message: "Session logged out" });
-    } catch (err: any) {
-      setToast({
-        type: "error",
-        message: err.response?.data?.message || "Failed to logout session",
-      });
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to logout session");
+      setToast({ type: "error", message });
     }
   };
 
@@ -200,31 +224,16 @@ export default function ProfilePage() {
       // Refresh sessions
       const res = await api.get("/api/v1/auth/sessions");
       setSessions(res.data.sessions || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to logout all devices");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to logout all devices",
+        message,
       });
     }
   };
 
-  const handleDeactivateAccount = async () => {
-    if (!confirm("Are you sure you want to deactivate your account? This can be reversed by contacting support.")) return;
 
-    try {
-      await api.patch("/api/v1/auth/deactivate");
-      setToast({ type: "success", message: "Account deactivated" });
-      setTimeout(() => {
-        logout();
-        router.push("/login");
-      }, 1500);
-    } catch (err: any) {
-      setToast({
-        type: "error",
-        message: err.response?.data?.message || "Failed to deactivate account",
-      });
-    }
-  };
 
   // ============================================================
   // HELPERS
@@ -250,11 +259,7 @@ export default function ProfilePage() {
     return d.toLocaleDateString("en-KE", { day: "2-digit", month: "short", year: "numeric" });
   };
 
-  const isCurrentSession = (session: Session) => {
-    // Current session is the one created most recently (or we can track via cookie)
-    // For simplicity, assume the most recent session is current
-    return sessions.length > 0 && session.id === sessions[0]?.id;
-  };
+
 
   // ============================================================
   // LOADING
@@ -343,8 +348,7 @@ export default function ProfilePage() {
               <label>Email</label>
               <div className={styles.emailDisplay}>
                 <Mail size={16} />
-                <span>{profileData.email}</span>
-               
+                <span>{profileData.email}</span>               
               </div>
             </div>
 

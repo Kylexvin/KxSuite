@@ -18,7 +18,6 @@ import {
   Loader2,
   Check,
   X,
-  RefreshCw,
   ArrowLeft,
 } from "lucide-react";
 import styles from "./page.module.css";
@@ -80,46 +79,51 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
 // ============================================================
 
 export default function SettingsPage() {
-  const router = useRouter();
   const { activeOrganization, loadSuiteContext } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [isFetching, setIsFetching] = useState(false); // Add this flag
 
-  // ============================================================
-  // FETCH DATA
-  // ============================================================
+  const router = useRouter();
 
   const fetchData = useCallback(async () => {
-    if (!activeOrganization) return;
-
+    if (!activeOrganization || isFetching) return; // Prevent multiple calls
+    
+    setIsFetching(true);
     setLoading(true);
+    
     try {
       const orgId = activeOrganization.id;
       const orgRes = await api.get(`/api/v1/organizations/${orgId}`);
       const org = orgRes.data.organization || orgRes.data;
       setOrganization(org);
 
-      // ✅ If organization is archived, redirect to onboarding immediately
       if (org.isArchived) {
         localStorage.removeItem("suiteContext");
         localStorage.removeItem("activeOrganization");
         localStorage.removeItem("activeOrganizationDetail");
         localStorage.removeItem("branches");
         localStorage.removeItem("activeBranch");
-        window.location.href = "/onboarding/select-organization";
+        router.push("/onboarding/select-organization");
       }
     } catch (err) {
       console.error("Failed to load settings:", err);
       setToast({ type: "error", message: "Failed to load settings. Please try again." });
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
-  }, [activeOrganization]);
+  }, [activeOrganization, router, isFetching]);
 
   useEffect(() => {
-    fetchData();
+    // Avoid calling setState synchronously in the effect body — invoke async helper
+    const run = async () => {
+      await fetchData();
+    };
+
+    run();
   }, [fetchData]);
 
   // ============================================================
@@ -135,10 +139,11 @@ export default function SettingsPage() {
       await fetchData();
       await loadSuiteContext(activeOrganization.id);
       setToast({ type: "success", message: "Organization updated successfully" });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? (err instanceof Error ? err.message : String(err));
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to update organization",
+        message: message || "Failed to update organization",
       });
     } finally {
       setSaving(false);
@@ -164,12 +169,13 @@ export default function SettingsPage() {
       localStorage.removeItem("activeBranch");
       
       setTimeout(() => {
-        window.location.href = "/onboarding/select-organization";
+        router.push("/onboarding/select-organization");
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? (err instanceof Error ? err.message : String(err));
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to archive organization",
+        message: message || "Failed to archive organization",
       });
     } finally {
       setSaving(false);
@@ -182,7 +188,7 @@ export default function SettingsPage() {
     localStorage.removeItem("activeOrganizationDetail");
     localStorage.removeItem("branches");
     localStorage.removeItem("activeBranch");
-    window.location.href = "/onboarding/select-organization";
+    router.push("/onboarding/select-organization");
   };
 
   // ============================================================

@@ -11,7 +11,6 @@ import {
   RefreshCw,
   Bot,
   X,
-  ChevronRight,
   CheckCircle2,
   Circle,
   AlertTriangle,

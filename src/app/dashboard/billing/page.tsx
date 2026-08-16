@@ -2,10 +2,11 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import { AxiosError } from "axios";
 import {
   CreditCard,
   Package,
@@ -33,6 +34,14 @@ import styles from "./page.module.css";
 
 type SubscriptionStatus = "TRIAL" | "ACTIVE" | "GRACE" | "EXPIRED" | "CANCELLED";
 
+type PlanLimits = {
+  maxUsers?: number;
+  maxBranches?: number;
+  maxProducts?: number;
+  storage?: number;
+  [key: string]: unknown;
+};
+
 type Subscription = {
   id: string;
   organizationId: string;
@@ -59,7 +68,7 @@ type Subscription = {
     interval: string;
     trialDays: number;
     features: string[];
-    limits: any;
+    limits: PlanLimits;
   };
   remainingDays?: number;
   isActive: boolean;
@@ -87,6 +96,34 @@ type Payment = {
   paidAt: string;
   createdAt: string;
 };
+
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return fallback;
+}
 
 // ============================================================
 // TOAST
@@ -122,10 +159,10 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
 }
 
 // ============================================================
-// STATUS BADGE
+// STATUS BADGE - Memoized
 // ============================================================
 
-function StatusBadge({ status }: { status: SubscriptionStatus }) {
+const StatusBadge = React.memo(function StatusBadge({ status }: { status: SubscriptionStatus }) {
   const configs = {
     TRIAL: { label: "Trial", icon: Clock, className: styles.statusTrial },
     ACTIVE: { label: "Active", icon: CheckCircle, className: styles.statusActive },
@@ -141,7 +178,148 @@ function StatusBadge({ status }: { status: SubscriptionStatus }) {
       {config.label}
     </span>
   );
-}
+});
+
+// ============================================================
+// SUBSCRIPTION CARD - Memoized
+// ============================================================
+
+const SubscriptionCard = React.memo(function SubscriptionCard({
+  subscription,
+  product,
+  onViewDetails,
+  onCancel,
+  onRenew,
+  onManage,
+  isRenewing,
+  formatCurrency,
+  formatDate,
+}: {
+  subscription: Subscription;
+  product?: Product;
+  onViewDetails: (sub: Subscription) => void;
+  onCancel: (sub: Subscription) => void;
+  onRenew: (productKey: string) => void;
+  onManage: (productKey: string) => void;
+  isRenewing: boolean;
+  formatCurrency: (amount: number, currency: string) => string;
+  formatDate: (date: string) => string;
+}) {
+  const productName = product?.name || subscription.productKey;
+  const isExpiring = subscription.status === "ACTIVE" && subscription.remainingDays && subscription.remainingDays < 30;
+
+  return (
+    <div className={styles.subscriptionCard}>
+      <div className={styles.subscriptionHeader}>
+        <div className={styles.subscriptionProduct}>
+          <span className={styles.subscriptionIcon}>
+            {productName.charAt(0)}
+          </span>
+          <div>
+            <div className={styles.subscriptionName}>{productName}</div>
+            <div className={styles.subscriptionPlan}>
+              {subscription.plan?.name || subscription.plan?.key || "Plan"} Plan
+            </div>
+          </div>
+        </div>
+        <StatusBadge status={subscription.status} />
+      </div>
+
+      <div className={styles.subscriptionDetails}>
+        <div className={styles.subscriptionRow}>
+          <span className={styles.subscriptionLabel}>Amount</span>
+          <span className={styles.subscriptionValue}>
+            {formatCurrency(subscription.plan?.price || 0, subscription.plan?.currency || "KES")}
+            <span className={styles.subscriptionCycle}>
+              /{subscription.plan?.interval?.toLowerCase() || "monthly"}
+            </span>
+          </span>
+        </div>
+        <div className={styles.subscriptionRow}>
+          <span className={styles.subscriptionLabel}>Period</span>
+          <span className={styles.subscriptionValue}>
+            {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+          </span>
+        </div>
+        {subscription.remainingDays !== undefined && subscription.remainingDays > 0 && (
+          <div className={styles.subscriptionRow}>
+            <span className={styles.subscriptionLabel}>Remaining</span>
+            <span className={styles.subscriptionValue}>
+              {subscription.remainingDays} days
+            </span>
+          </div>
+        )}
+        {isExpiring && (
+          <div className={styles.expiringWarning}>
+            <AlertTriangle size={14} />
+            Expires in {subscription.remainingDays} days
+          </div>
+        )}
+        {subscription.status === "GRACE" && (
+          <div className={styles.graceWarning}>
+            <AlertTriangle size={14} />
+            Grace period ends {formatDate(subscription.graceEnd || subscription.currentPeriodEnd)}
+          </div>
+        )}
+      </div>
+
+      <div className={styles.subscriptionActions}>
+        <button
+          className={styles.subscriptionAction}
+          onClick={() => onViewDetails(subscription)}
+        >
+          <Eye size={14} />
+          Details
+        </button>
+
+        <button
+          className={styles.subscriptionAction}
+          onClick={() => onManage(subscription.productKey)}
+        >
+          <ArrowRight size={14} />
+          Manage
+        </button>
+
+        {(subscription.status === "TRIAL" || subscription.status === "ACTIVE") && (
+          <button
+            className={`${styles.subscriptionAction} ${styles.subscriptionActionDanger}`}
+            onClick={() => onCancel(subscription)}
+          >
+            <Ban size={14} />
+            {subscription.status === "TRIAL" ? "Deactivate" : "Cancel"}
+          </button>
+        )}
+
+        {(subscription.status === "ACTIVE" || subscription.status === "GRACE") && (
+          <button
+            className={subscription.status === "GRACE" ? styles.subscriptionActionPrimary : styles.subscriptionAction}
+            onClick={() => onRenew(subscription.productKey)}
+            disabled={isRenewing}
+          >
+            {isRenewing ? (
+              <Loader2 size={14} className={styles.spinnerSmall} />
+            ) : (
+              <>
+                <RefreshCw size={14} />
+                {subscription.status === "GRACE" ? "Renew Now" : "Renew"}
+              </>
+            )}
+          </button>
+        )}
+
+        {subscription.status === "EXPIRED" && (
+          <button
+            className={styles.subscriptionActionPrimary}
+            onClick={() => onManage(subscription.productKey)}
+          >
+            <ArrowRight size={14} />
+            Reactivate
+          </button>
+        )}
+      </div>
+    </div>
+  );
+});
 
 // ============================================================
 // MAIN PAGE
@@ -163,6 +341,34 @@ export default function BillingPage() {
   const [renewing, setRenewing] = useState<string | null>(null);
 
   // ============================================================
+  // REFS
+  // ============================================================
+
+  const isMounted = useRef(true);
+  const hasFetched = useRef(false);
+
+  // ============================================================
+  // HELPERS - Memoized
+  // ============================================================
+
+  const formatCurrency = useCallback((amount: number, currency: string) => {
+    return new Intl.NumberFormat("en-KE", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }, []);
+
+  const formatDate = useCallback((date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }, []);
+
+  // ============================================================
   // FETCH DATA
   // ============================================================
 
@@ -172,7 +378,7 @@ export default function BillingPage() {
   }, [activeOrganization, loadSuiteContext]);
 
   const fetchData = useCallback(async () => {
-    if (!activeOrganization) return;
+    if (!activeOrganization || !isMounted.current) return;
 
     setLoading(true);
     try {
@@ -181,41 +387,68 @@ export default function BillingPage() {
         api.get("/api/v1/products"),
       ]);
 
+      if (!isMounted.current) return;
+
       const allProducts = productsRes.data.products || [];
       setProducts(allProducts);
 
-      // ✅ CRITICAL: Only show subscriptions where the product EXISTS and is ACTIVE in the org
       const allSubs = subsRes.data.subscriptions || [];
       const activeSubs = allSubs.filter((sub: Subscription) => {
         const product = allProducts.find((p: Product) => p.key === sub.productKey);
-        // ✅ Product must exist AND be active in the organization
         return product !== undefined && product.isActive === true;
       });
       setSubscriptions(activeSubs);
 
       try {
         const paymentsRes = await api.get(`/api/v1/organizations/${activeOrganization.id}/payments`);
-        setPayments(paymentsRes.data.payments || []);
+        if (isMounted.current) {
+          setPayments(paymentsRes.data.payments || []);
+        }
       } catch {
-        setPayments([]);
+        if (isMounted.current) {
+          setPayments([]);
+        }
       }
-    } catch (err) {
-      console.error("Failed to load billing data:", err);
-      setToast({ type: "error", message: "Failed to load subscriptions. Please try again." });
+    } catch (err: unknown) {
+      if (isMounted.current) {
+        console.error("Failed to load billing data:", err);
+        setToast({ type: "error", message: "Failed to load subscriptions. Please try again." });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   }, [activeOrganization]);
 
+  // ============================================================
+  // EFFECTS - FIXED with isMounted and async wrapper
+  // ============================================================
+
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    isMounted.current = true;
+    hasFetched.current = false;
+
+    const loadData = async () => {
+      if (!activeOrganization || !isMounted.current) return;
+      if (hasFetched.current) return;
+      
+      hasFetched.current = true;
+      await fetchData();
+    };
+
+    loadData();
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [activeOrganization, fetchData]);
 
   // ============================================================
   // HANDLERS
   // ============================================================
 
-  const handleCancelSubscription = async (subscriptionId: string) => {
+  const handleCancelSubscription = useCallback(async (subscriptionId: string) => {
     if (!activeOrganization) return;
 
     setCancelling(true);
@@ -223,7 +456,6 @@ export default function BillingPage() {
       const sub = subscriptions.find((s) => s.id === subscriptionId);
       if (!sub) return;
 
-      // ✅ Deactivate product using the same endpoint as Marketplace
       await api.delete(
         `/api/v1/products/organizations/${activeOrganization.id}/products/${sub.productKey}`
       );
@@ -233,17 +465,18 @@ export default function BillingPage() {
       setToast({ type: "success", message: "Subscription cancelled successfully" });
       setShowCancelModal(false);
       setSelectedSubscription(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to cancel subscription");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to cancel subscription",
+        message,
       });
     } finally {
       setCancelling(false);
     }
-  };
+  }, [activeOrganization, subscriptions, fetchData, refreshEverything]);
 
-  const handleRenew = async (productKey: string) => {
+  const handleRenew = useCallback(async (productKey: string) => {
     if (!activeOrganization) return;
 
     setRenewing(productKey);
@@ -254,61 +487,51 @@ export default function BillingPage() {
       await fetchData();
       await refreshEverything();
       setToast({ type: "success", message: "Subscription renewed successfully" });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to renew subscription");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to renew subscription",
+        message,
       });
     } finally {
       setRenewing(null);
     }
-  };
+  }, [activeOrganization, fetchData, refreshEverything]);
 
   // ============================================================
-  // FILTERS
+  // MEMOIZED COMPUTATIONS
   // ============================================================
 
-  const filteredSubscriptions = subscriptions.filter((sub) => {
-    const product = products.find((p) => p.key === sub.productKey);
-    const productName = product?.name || sub.productKey;
-    const matchesSearch = productName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
-
-  // ============================================================
-  // STATS
-  // ============================================================
-
-  const totalSubscriptions = subscriptions.length;
-  const activeCount = subscriptions.filter((s) => s.status === "ACTIVE").length;
-  const trialCount = subscriptions.filter((s) => s.status === "TRIAL").length;
-  const graceCount = subscriptions.filter((s) => s.status === "GRACE").length;
-
-  const totalSpent = payments
-    .filter((p) => p.status === "COMPLETED")
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const lastPayment = payments.find((p) => p.status === "COMPLETED");
-  const nextPayment = subscriptions
-    .filter((s) => s.status === "ACTIVE" || s.status === "TRIAL")
-    .reduce((sum, s) => sum + (s.plan?.price || 0), 0);
-
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("en-KE", {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+  const filteredSubscriptions = useMemo(() => {
+    const search = searchQuery.toLowerCase();
+    return subscriptions.filter((sub) => {
+      const product = products.find((p) => p.key === sub.productKey);
+      const productName = product?.name || sub.productKey;
+      return productName.toLowerCase().includes(search);
     });
-  };
+  }, [subscriptions, products, searchQuery]);
+
+  const stats = useMemo(() => ({
+    total: subscriptions.length,
+    active: subscriptions.filter((s) => s.status === "ACTIVE").length,
+    trial: subscriptions.filter((s) => s.status === "TRIAL").length,
+    grace: subscriptions.filter((s) => s.status === "GRACE").length,
+  }), [subscriptions]);
+
+  const paymentStats = useMemo(() => {
+    const completedPayments = payments.filter((p) => p.status === "COMPLETED");
+    const totalSpent = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const lastPayment = completedPayments[completedPayments.length - 1];
+    const nextPayment = subscriptions
+      .filter((s) => s.status === "ACTIVE" || s.status === "TRIAL")
+      .reduce((sum, s) => sum + (s.plan?.price || 0), 0);
+
+    return { totalSpent, lastPayment, nextPayment };
+  }, [payments, subscriptions]);
+
+  const productMap = useMemo(() => {
+    return new Map(products.map((p) => [p.key, p]));
+  }, [products]);
 
   // ============================================================
   // LOADING
@@ -350,7 +573,7 @@ export default function BillingPage() {
             <div className={styles.orgNameRow}>
               <h1 className={styles.orgName}>Billing & Subscriptions</h1>
               <span className={`${styles.statusPill} ${styles.statusActive}`}>
-                {totalSubscriptions} products
+                {stats.total} products
               </span>
             </div>
             <div className={styles.orgMeta}>Manage your subscriptions and billing information</div>
@@ -361,19 +584,19 @@ export default function BillingPage() {
       {/* ===== STATS ===== */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{activeCount}</div>
+          <div className={styles.statValue}>{stats.active}</div>
           <div className={styles.statLabel}>Active</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{trialCount}</div>
+          <div className={styles.statValue}>{stats.trial}</div>
           <div className={styles.statLabel}>Trial</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{graceCount}</div>
+          <div className={styles.statValue}>{stats.grace}</div>
           <div className={styles.statLabel}>Expiring Soon</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statValue}>{formatCurrency(totalSpent, "KES")}</div>
+          <div className={styles.statValue}>{formatCurrency(paymentStats.totalSpent, "KES")}</div>
           <div className={styles.statLabel}>Total Spent</div>
         </div>
       </div>
@@ -394,19 +617,19 @@ export default function BillingPage() {
           <div className={styles.paymentStatusItem}>
             <span className={styles.paymentStatusLabel}>Last Payment</span>
             <span className={styles.paymentStatusValue}>
-              {lastPayment ? formatCurrency(lastPayment.amount, lastPayment.currency) : "—"}
+              {paymentStats.lastPayment ? formatCurrency(paymentStats.lastPayment.amount, paymentStats.lastPayment.currency) : "—"}
             </span>
           </div>
           <div className={styles.paymentStatusItem}>
             <span className={styles.paymentStatusLabel}>Last Payment Date</span>
             <span className={styles.paymentStatusValue}>
-              {lastPayment ? formatDate(lastPayment.paidAt) : "—"}
+              {paymentStats.lastPayment ? formatDate(paymentStats.lastPayment.paidAt) : "—"}
             </span>
           </div>
           <div className={styles.paymentStatusItem}>
             <span className={styles.paymentStatusLabel}>Next Payment</span>
             <span className={styles.paymentStatusValue}>
-              {nextPayment > 0 ? formatCurrency(nextPayment, "KES") : "—"}
+              {paymentStats.nextPayment > 0 ? formatCurrency(paymentStats.nextPayment, "KES") : "—"}
             </span>
           </div>
         </div>
@@ -418,7 +641,19 @@ export default function BillingPage() {
           <Package size={18} />
           Your Products
         </h2>
-        <span className={styles.sectionCount}>{totalSubscriptions}</span>
+        <span className={styles.sectionCount}>{stats.total}</span>
+      </div>
+
+      {/* Search */}
+      <div className={styles.searchWrap}>
+        <Search size={16} className={styles.searchIcon} />
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder="Search products..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       {filteredSubscriptions.length === 0 ? (
@@ -437,156 +672,28 @@ export default function BillingPage() {
       ) : (
         <div className={styles.subscriptionGrid}>
           {filteredSubscriptions.map((sub) => {
-            const product = products.find((p) => p.key === sub.productKey);
-            const productName = product?.name || sub.productKey;
-            const isExpiring = sub.status === "ACTIVE" && sub.remainingDays && sub.remainingDays < 30;
-            const isRenewing = renewing === sub.productKey;
+            const product = productMap.get(sub.productKey);
+            const isRenewingProduct = renewing === sub.productKey;
 
             return (
-              <div key={sub.id} className={styles.subscriptionCard}>
-                <div className={styles.subscriptionHeader}>
-                  <div className={styles.subscriptionProduct}>
-                    <span className={styles.subscriptionIcon}>
-                      {productName.charAt(0)}
-                    </span>
-                    <div>
-                      <div className={styles.subscriptionName}>{productName}</div>
-                      <div className={styles.subscriptionPlan}>
-                        {sub.plan?.name || sub.plan?.key || "Plan"} Plan
-                      </div>
-                    </div>
-                  </div>
-                  <StatusBadge status={sub.status} />
-                </div>
-
-                <div className={styles.subscriptionDetails}>
-                  <div className={styles.subscriptionRow}>
-                    <span className={styles.subscriptionLabel}>Amount</span>
-                    <span className={styles.subscriptionValue}>
-                      {formatCurrency(sub.plan?.price || 0, sub.plan?.currency || "KES")}
-                      <span className={styles.subscriptionCycle}>
-                        /{sub.plan?.interval?.toLowerCase() || "monthly"}
-                      </span>
-                    </span>
-                  </div>
-                  <div className={styles.subscriptionRow}>
-                    <span className={styles.subscriptionLabel}>Period</span>
-                    <span className={styles.subscriptionValue}>
-                      {formatDate(sub.currentPeriodStart)} - {formatDate(sub.currentPeriodEnd)}
-                    </span>
-                  </div>
-                  {sub.remainingDays !== undefined && sub.remainingDays > 0 && (
-                    <div className={styles.subscriptionRow}>
-                      <span className={styles.subscriptionLabel}>Remaining</span>
-                      <span className={styles.subscriptionValue}>
-                        {sub.remainingDays} days
-                      </span>
-                    </div>
-                  )}
-                  {isExpiring && (
-                    <div className={styles.expiringWarning}>
-                      <AlertTriangle size={14} />
-                      Expires in {sub.remainingDays} days
-                    </div>
-                  )}
-                  {sub.status === "GRACE" && (
-                    <div className={styles.graceWarning}>
-                      <AlertTriangle size={14} />
-                      Grace period ends {formatDate(sub.graceEnd || sub.currentPeriodEnd)}
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.subscriptionActions}>
-                  <button
-                    className={styles.subscriptionAction}
-                    onClick={() => {
-                      setSelectedSubscription(sub);
-                      setShowDetailModal(true);
-                    }}
-                  >
-                    <Eye size={14} />
-                    Details
-                  </button>
-
-                  <button
-                    className={styles.subscriptionAction}
-                    onClick={() => router.push(`/kx/${sub.productKey}`)}
-                  >
-                    <ArrowRight size={14} />
-                    Manage
-                  </button>
-
-                  {sub.status === "TRIAL" && (
-                    <button
-                      className={`${styles.subscriptionAction} ${styles.subscriptionActionDanger}`}
-                      onClick={() => {
-                        setSelectedSubscription(sub);
-                        setShowCancelModal(true);
-                      }}
-                    >
-                      <Ban size={14} />
-                      Deactivate
-                    </button>
-                  )}
-
-                  {sub.status === "ACTIVE" && (
-                    <>
-                      <button
-                        className={`${styles.subscriptionAction} ${styles.subscriptionActionDanger}`}
-                        onClick={() => {
-                          setSelectedSubscription(sub);
-                          setShowCancelModal(true);
-                        }}
-                      >
-                        <Ban size={14} />
-                        Cancel
-                      </button>
-                      <button
-                        className={styles.subscriptionAction}
-                        onClick={() => handleRenew(sub.productKey)}
-                        disabled={isRenewing}
-                      >
-                        {isRenewing ? (
-                          <Loader2 size={14} className={styles.spinnerSmall} />
-                        ) : (
-                          <>
-                            <RefreshCw size={14} />
-                            Renew
-                          </>
-                        )}
-                      </button>
-                    </>
-                  )}
-
-                  {sub.status === "GRACE" && (
-                    <button
-                      className={styles.subscriptionActionPrimary}
-                      onClick={() => handleRenew(sub.productKey)}
-                      disabled={isRenewing}
-                    >
-                      {isRenewing ? (
-                        <Loader2 size={14} className={styles.spinnerSmall} />
-                      ) : (
-                        <>
-                          <RefreshCw size={14} />
-                          Renew Now
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {sub.status === "EXPIRED" && (
-                    <button
-                      className={styles.subscriptionActionPrimary}
-                      onClick={() => router.push("/dashboard/marketplace")}
-                    >
-                      <ArrowRight size={14} />
-                      Reactivate
-                    </button>
-                  )}
-                </div>
-              </div>
+              <SubscriptionCard
+                key={sub.id}
+                subscription={sub}
+                product={product}
+                onViewDetails={(s) => {
+                  setSelectedSubscription(s);
+                  setShowDetailModal(true);
+                }}
+                onCancel={(s) => {
+                  setSelectedSubscription(s);
+                  setShowCancelModal(true);
+                }}
+                onRenew={handleRenew}
+                onManage={(productKey) => router.push(`/kx/${productKey}`)}
+                isRenewing={isRenewingProduct}
+                formatCurrency={formatCurrency}
+                formatDate={formatDate}
+              />
             );
           })}
         </div>
@@ -612,7 +719,7 @@ export default function BillingPage() {
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Product</span>
                   <span className={styles.detailValue}>
-                    {products.find((p) => p.key === selectedSubscription.productKey)?.name ||
+                    {productMap.get(selectedSubscription.productKey)?.name ||
                       selectedSubscription.productKey}
                   </span>
                 </div>
@@ -722,7 +829,7 @@ export default function BillingPage() {
               <div className={styles.deleteIcon}>
                 <AlertCircle size={48} />
               </div>
-              <h3>Cancel {products.find((p) => p.key === selectedSubscription.productKey)?.name || selectedSubscription.productKey}?</h3>
+              <h3>Cancel {productMap.get(selectedSubscription.productKey)?.name || selectedSubscription.productKey}?</h3>
               <p>
                 This will cancel your subscription and you will lose access to this product on{" "}
                 <strong>{formatDate(selectedSubscription.currentPeriodEnd)}</strong>.

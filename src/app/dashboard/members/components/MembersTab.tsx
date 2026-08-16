@@ -5,6 +5,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import { AxiosError } from "axios";
 import {
   Users,
   Search,
@@ -45,16 +46,58 @@ type Member = {
   joinedAt: string;
 };
 
+type Permission = {
+  id: string;
+  key: string;
+  name: string;
+  productKey: string;
+  description?: string;
+};
+
 type Props = {
   members: Member[];
   roles: Role[];
   branches: Branch[];
-  permissions: any[];
+  permissions: Permission[]; // ✅ Fixed: Changed from any[] to Permission[]
   onRefresh: () => void;
   refreshRoles: () => void;
   refreshMembers: () => void;
   setToast: (toast: { type: "success" | "error"; message: string } | null) => void;
 };
+
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  // Handle Axios errors
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  
+  // Handle standard errors
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // Handle string errors
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return fallback;
+}
 
 export default function MembersTab({
   members,
@@ -134,10 +177,11 @@ export default function MembersTab({
       setToast({ type: "success", message: "Invitation sent successfully" });
       setShowInviteModal(false);
       setInviteForm({ email: "", roleId: "", branchIds: [], message: "" });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to send invitation");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to send invitation",
+        message,
       });
     } finally {
       setSaving(false);
@@ -197,14 +241,12 @@ export default function MembersTab({
       setToast({ type: "success", message: "Member updated successfully" });
       setShowEditModal(false);
       setSelectedMember(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Update error:", err);
+      const message = getErrorMessage(err, "Failed to update member");
       setToast({
         type: "error",
-        message:
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          "Failed to update member",
+        message,
       });
     } finally {
       setSaving(false);
@@ -237,10 +279,11 @@ export default function MembersTab({
       setToast({ type: "success", message: "Member removed successfully" });
       setShowDeleteModal(false);
       setSelectedMember(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to remove member");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to remove member",
+        message,
       });
     } finally {
       setSaving(false);

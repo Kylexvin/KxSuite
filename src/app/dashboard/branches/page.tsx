@@ -3,9 +3,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import { AxiosError } from "axios";
 import {
   Building2,
   Plus,
@@ -74,7 +74,49 @@ type BranchFormData = {
   email: string;
 };
 
-const COLORS = ["#ff6a2b", "#4caf82", "#62636e", "#ef5350"];
+type ActivityItem = {
+  branch: string;
+  activity: number;
+};
+
+type ActivityData = {
+  branchActivity: ActivityItem[];
+};
+
+type ChartDataItem = {
+  name: string;
+  value: number;
+  color: string;
+};
+
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return fallback;
+}
+
 
 // ============================================================
 // TOAST
@@ -114,7 +156,6 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
 // ============================================================
 
 export default function BranchesPage() {
-  const router = useRouter();
   const { activeOrganization, loadSuiteContext } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -122,7 +163,7 @@ export default function BranchesPage() {
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchMembers, setBranchMembers] = useState<BranchMember[]>([]);
-  const [activityData, setActivityData] = useState<any>(null);
+  const [activityData, setActivityData] = useState<ActivityData | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   // UI States
@@ -172,7 +213,7 @@ export default function BranchesPage() {
         })
       );
       setBranches(branchesWithMembers);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to fetch branches:", err);
       setToast({ type: "error", message: "Failed to load branches. Please try again." });
       setTimeout(() => setToast(null), 4000);
@@ -188,18 +229,77 @@ export default function BranchesPage() {
       const res = await api.get(
         `/api/v1/organizations/${activeOrganization.id}/branches/activity?days=7`
       );
-      setActivityData(res.data);
-    } catch (err) {
+      setActivityData(res.data as ActivityData);
+    } catch (err: unknown) {
       console.error("Failed to fetch activity:", err);
     } finally {
       setLoadingActivity(false);
     }
   }, [activeOrganization]);
 
+  // ============================================================
+  // EFFECT WITH ISMOUNTED FLAG
+  // ============================================================
+
   useEffect(() => {
-    refreshData();
-    fetchActivity();
-  }, [refreshData, fetchActivity]);
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (!activeOrganization || !isMounted) return;
+
+      setLoading(true);
+      setLoadingActivity(true);
+      
+      try {
+        const orgId = activeOrganization.id;
+
+        // Fetch both in parallel for better performance
+        const [branchesRes, activityRes] = await Promise.all([
+          api.get(`/api/v1/organizations/${orgId}/branches`),
+          api.get(`/api/v1/organizations/${orgId}/branches/activity?days=7`),
+        ]);
+
+        if (!isMounted) return;
+
+        // Process branches
+        const branchesData = branchesRes.data.items || branchesRes.data.branches || [];
+        
+        const branchesWithMembers = await Promise.all(
+          branchesData.map(async (branch: Branch) => {
+            try {
+              const membersRes = await api.get(
+                `/api/v1/organizations/${orgId}/branches/${branch.id}/members`
+              );
+              return { ...branch, members: membersRes.data.members || [] };
+            } catch {
+              return { ...branch, members: [] };
+            }
+          })
+        );
+
+        if (!isMounted) return;
+        
+        setBranches(branchesWithMembers);
+        setActivityData(activityRes.data as ActivityData);
+      } catch (err: unknown) {
+        if (isMounted) {
+          console.error("Failed to fetch data:", err);
+          setToast({ type: "error", message: "Failed to load branches. Please try again." });
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          setLoadingActivity(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeOrganization]);
 
   // ============================================================
   // HANDLERS
@@ -219,10 +319,11 @@ export default function BranchesPage() {
       setShowCreateModal(false);
       setFormData({ name: "", code: "", address: "", phone: "", email: "" });
       setTimeout(() => setToast(null), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to create branch");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to create branch",
+        message,
       });
       setTimeout(() => setToast(null), 4000);
     } finally {
@@ -247,10 +348,11 @@ export default function BranchesPage() {
       setSelectedBranch(null);
       setFormData({ name: "", code: "", address: "", phone: "", email: "" });
       setTimeout(() => setToast(null), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to update branch");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to update branch",
+        message,
       });
       setTimeout(() => setToast(null), 4000);
     } finally {
@@ -276,10 +378,11 @@ export default function BranchesPage() {
       setShowArchiveModal(false);
       setSelectedBranch(null);
       setTimeout(() => setToast(null), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Failed to update branch status");
       setToast({
         type: "error",
-        message: err.response?.data?.message || "Failed to update branch status",
+        message,
       });
       setTimeout(() => setToast(null), 4000);
     } finally {
@@ -315,7 +418,7 @@ export default function BranchesPage() {
       );
       setBranchMembers(membersRes.data.members || []);
       setShowMembersModal(true);
-    } catch (err) {
+    } catch {
       setToast({ type: "error", message: "Failed to load branch members" });
       setTimeout(() => setToast(null), 4000);
     } finally {
@@ -343,10 +446,10 @@ export default function BranchesPage() {
   const totalBranches = branches.length;
   const activeBranches = branches.filter(b => b.isActive).length;
   const inactiveBranches = branches.filter(b => !b.isActive).length;
-  const totalMembers = branches.reduce((sum, b) => sum + (b.members?.length || 0), 0);
+  
 
   // Chart data
-  const statusChartData = [
+  const statusChartData: ChartDataItem[] = [
     { name: "Active", value: activeBranches, color: "#4caf82" },
     { name: "Archived", value: inactiveBranches, color: "#62636e" },
   ];
@@ -395,7 +498,7 @@ export default function BranchesPage() {
               </span>
             </div>
             <div className={styles.orgMeta}>
-              Manage your organization's branches and locations
+              Manage your organization&apos;s branches and locations
             </div>
           </div>
         </div>
@@ -427,8 +530,8 @@ export default function BranchesPage() {
               </div>
             ) : activityData && activityData.branchActivity.length > 0 ? (
               <div className={styles.barChart}>
-                {activityData.branchActivity.map((item: any) => {
-                  const max = Math.max(...activityData.branchActivity.map((b: any) => b.activity), 1);
+                {activityData.branchActivity.map((item: ActivityItem) => {
+                  const max = Math.max(...activityData.branchActivity.map((b: ActivityItem) => b.activity), 1);
                   const percent = (item.activity / max) * 100;
                   return (
                     <div key={item.branch} className={styles.barRow}>
@@ -478,7 +581,7 @@ export default function BranchesPage() {
                         stroke="none"
                         paddingAngle={2}
                       >
-                        {statusChartData.map((entry, index) => (
+                        {statusChartData.map((entry: ChartDataItem, index: number) => (
                           <Cell key={index} fill={entry.color} />
                         ))}
                       </Pie>
@@ -498,7 +601,7 @@ export default function BranchesPage() {
                   </div>
                 </div>
                 <div className={styles.donutLegend}>
-                  {statusChartData.map((item) => (
+                  {statusChartData.map((item: ChartDataItem) => (
                     <div key={item.name} className={styles.legendRow}>
                       <span className={styles.legendDot} style={{ background: item.color }} />
                       <span className={styles.legendName}>{item.name}</span>

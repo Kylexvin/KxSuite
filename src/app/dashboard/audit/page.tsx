@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+
 import {
   Filter,
   Download,
@@ -20,7 +21,6 @@ import {
   Key,
   Mail,
   RefreshCw,
-  X,
   Clock,
   Calendar,
   FileText,
@@ -39,7 +39,7 @@ type AuditEvent = {
   action: string;
   resource: string;
   resourceId: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null; // ✅ Fixed: changed 'any' to 'unknown'
   userId: string | null;
   user: {
     id: string;
@@ -76,8 +76,10 @@ type UserOption = {
   name: string;
 };
 
+
+
 // ============================================================
-// ACTION LABELS
+// ACTION LABELS - Memoized constants
 // ============================================================
 
 const ACTION_LABELS: Record<string, string> = {
@@ -128,7 +130,13 @@ const ACTION_LABELS: Record<string, string> = {
   'logout_all_devices': 'Logged out all devices',
 };
 
-const ACTION_ICONS: Record<string, any> = {
+// ============================================================
+// ACTION ICONS - Memoized with proper types
+// ============================================================
+
+type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
+
+const ACTION_ICONS: Record<string, IconComponent> = {
   'organization': Building2,
   'member': Users,
   'invitation': Mail,
@@ -148,7 +156,11 @@ const ACTION_ICONS: Record<string, any> = {
   'email': Mail,
 };
 
-function getActionIcon(action: string): any {
+// ============================================================
+// HELPERS - Memoized functions
+// ============================================================
+
+function getActionIcon(action: string): IconComponent {
   for (const [key, icon] of Object.entries(ACTION_ICONS)) {
     if (action.includes(key) || action.startsWith(key)) {
       return icon;
@@ -157,8 +169,8 @@ function getActionIcon(action: string): any {
   return FileText;
 }
 
-function getResourceIcon(resource: string): any {
-  const icons: Record<string, any> = {
+function getResourceIcon(resource: string): IconComponent {
+  const icons: Record<string, IconComponent> = {
     'organization': Building2,
     'membership': Users,
     'user': User,
@@ -193,10 +205,18 @@ function formatTime(dateStr: string): string {
 }
 
 // ============================================================
-// STATS CARD
+// STATS CARD - Memoized
 // ============================================================
 
-function StatsCard({ value, label, icon: Icon }: { value: number; label: string; icon: any }) {
+const StatsCard = React.memo(function StatsCard({ 
+  value, 
+  label, 
+  icon: Icon 
+}: { 
+  value: number; 
+  label: string; 
+  icon: IconComponent;
+}) {
   return (
     <div className={styles.statCard}>
       <div className={styles.statIcon}>
@@ -206,7 +226,7 @@ function StatsCard({ value, label, icon: Icon }: { value: number; label: string;
       <div className={styles.statLabel}>{label}</div>
     </div>
   );
-}
+});
 
 // ============================================================
 // MAIN PAGE
@@ -218,7 +238,7 @@ export default function AuditPage() {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [stats, setStats] = useState<AuditStats>({ total: 0, thisWeek: 0, today: 0, activeUsers: 0 });
   const [total, setTotal] = useState(0);
-  const [limit, setLimit] = useState(20);
+  const [limit] = useState(20);
   const [offset, setOffset] = useState(0);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [filters, setFilters] = useState<FilterState>({
@@ -229,6 +249,17 @@ export default function AuditPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  // ============================================================
+  // REFS
+  // ============================================================
+
+  const isMounted = useRef(true);
+  const hasFetched = useRef(false);
+
+  // ============================================================
+  // PERMISSIONS
+  // ============================================================
+
   const permissions = suiteContext?.permissions ?? [];
   const hasAuditPermission = permissions.includes('*') || permissions.includes('audit.logs.view');
   const hasExportPermission = permissions.includes('*') || permissions.includes('audit.logs.export');
@@ -238,11 +269,14 @@ export default function AuditPage() {
   // ============================================================
 
   const fetchUsers = useCallback(async () => {
-    if (!activeOrganization) return;
+    if (!activeOrganization || !isMounted.current) return;
     try {
       const res = await api.get(`/api/v1/organizations/${activeOrganization.id}/members`);
       const members = res.data.members || [];
-      setUsers(members.map((m: any) => ({
+      
+      if (!isMounted.current) return;
+      
+      setUsers(members.map((m: { userId: string; user: { firstName: string; lastName: string } }) => ({
         id: m.userId,
         name: `${m.user.firstName} ${m.user.lastName}`,
       })));
@@ -252,14 +286,16 @@ export default function AuditPage() {
   }, [activeOrganization]);
 
   const fetchAuditLogs = useCallback(async () => {
-    if (!activeOrganization || !hasAuditPermission) return;
+    if (!activeOrganization || !hasAuditPermission || !isMounted.current) return;
 
     setLoading(true);
     try {
       const orgId = activeOrganization.id;
 
       const statsRes = await api.get(`/api/v1/organizations/${orgId}/audit-logs/stats`);
-      setStats(statsRes.data);
+      if (isMounted.current) {
+        setStats(statsRes.data);
+      }
 
       const params = new URLSearchParams();
       params.set('limit', String(limit));
@@ -269,35 +305,58 @@ export default function AuditPage() {
       if (filters.endDate) params.set('endDate', filters.endDate);
 
       const res = await api.get(`/api/v1/organizations/${orgId}/audit-logs?${params.toString()}`);
-      setEvents(res.data.items || []);
-      setTotal(res.data.total || 0);
+      
+      if (isMounted.current) {
+        setEvents(res.data.items || []);
+        setTotal(res.data.total || 0);
+      }
     } catch (error) {
       console.error('Failed to fetch audit logs:', error);
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   }, [activeOrganization, hasAuditPermission, limit, offset, filters]);
 
+  // ============================================================
+  // EFFECTS - FIXED with isMounted and async wrapper
+  // ============================================================
+
   useEffect(() => {
-    fetchAuditLogs();
-    fetchUsers();
-  }, [fetchAuditLogs, fetchUsers]);
+    isMounted.current = true;
+    hasFetched.current = false;
+
+    const loadData = async () => {
+      if (!activeOrganization || !isMounted.current) return;
+      if (hasFetched.current) return;
+      
+      hasFetched.current = true;
+      await Promise.all([fetchAuditLogs(), fetchUsers()]);
+    };
+
+    loadData();
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [activeOrganization, fetchAuditLogs, fetchUsers]);
 
   // ============================================================
-  // HANDLERS
+  // HANDLERS - Memoized
   // ============================================================
 
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
+  const handleFilterChange = useCallback((key: keyof FilterState, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setOffset(0);
-  };
+  }, []);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setFilters({ userId: '', startDate: '', endDate: '' });
     setOffset(0);
-  };
+  }, []);
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     if (!activeOrganization || !hasExportPermission) return;
 
     setExporting(true);
@@ -320,14 +379,25 @@ export default function AuditPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export audit logs:', error);
     } finally {
       setExporting(false);
     }
-  };
+  }, [activeOrganization, hasExportPermission, filters]);
 
-  const totalPages = Math.ceil(total / limit);
+  // ============================================================
+  // MEMOIZED COMPUTATIONS
+  // ============================================================
+
+  const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
+
+  const paginationInfo = useMemo(() => ({
+    start: offset + 1,
+    end: Math.min(offset + limit, total),
+    currentPage: Math.floor(offset / limit) + 1,
+  }), [offset, limit, total]);
 
   // ============================================================
   // PERMISSION CHECK
@@ -511,7 +581,7 @@ export default function AuditPage() {
       {total > limit && (
         <div className={styles.pagination}>
           <div className={styles.paginationInfo}>
-            Showing {offset + 1} - {Math.min(offset + limit, total)} of {total}
+            Showing {paginationInfo.start} - {paginationInfo.end} of {total}
           </div>
           <div className={styles.paginationControls}>
             <button
@@ -522,7 +592,7 @@ export default function AuditPage() {
               <ChevronLeft size={16} />
             </button>
             <span className={styles.paginationPage}>
-              Page {Math.floor(offset / limit) + 1} of {totalPages}
+              Page {paginationInfo.currentPage} of {totalPages}
             </span>
             <button
               className={styles.paginationButton}

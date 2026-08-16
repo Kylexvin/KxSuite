@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import { AxiosError } from "axios";
 import {
   ShoppingBag,
   Package,
@@ -55,6 +56,40 @@ type OrganizationProduct = {
 };
 
 type ProductStatus = "active" | "trial" | "expired" | "available";
+
+// ============================================================
+// API ERROR TYPE
+// ============================================================
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+// ============================================================
+// HELPER: Get error message from unknown error
+// ============================================================
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  // Handle Axios errors
+  if (error instanceof AxiosError) {
+    const data = error.response?.data as ApiErrorResponse;
+    return data?.message || data?.error || fallback;
+  }
+  
+  // Handle standard errors
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // Handle string errors
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return fallback;
+}
 
 // ============================================================
 // TOAST
@@ -166,7 +201,7 @@ export default function MarketplacePage() {
       );
 
       setOrgProducts(productsWithStatus);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to refresh org products:", err);
     }
   }, [activeOrganization]);
@@ -215,7 +250,7 @@ export default function MarketplacePage() {
           })
         );
         setOrgProducts(productsWithStatus);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Failed to load products:", err);
         setToast({ type: "error", message: "Failed to load products. Please try again." });
       } finally {
@@ -277,17 +312,19 @@ export default function MarketplacePage() {
         type: "success",
         message: `${productKey} activated successfully!`,
       });
-    } catch (err: any) {
-      if (err.response?.status === 400) {
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      if (error.response?.status === 400) {
         await refreshEverything();
         setToast({
           type: "info",
           message: `${productKey} is already activated.`,
         });
       } else {
+        const message = getErrorMessage(err, `Failed to activate ${productKey}`);
         setToast({
           type: "error",
-          message: err.response?.data?.message || `Failed to activate ${productKey}`,
+          message,
         });
       }
     } finally {
@@ -316,10 +353,11 @@ export default function MarketplacePage() {
         type: "info",
         message: `${productKey} deactivated successfully.`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, `Failed to deactivate ${productKey}`);
       setToast({
         type: "error",
-        message: err.response?.data?.message || `Failed to deactivate ${productKey}`,
+        message,
       });
     } finally {
       setActivating(null);

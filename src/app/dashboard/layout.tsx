@@ -9,6 +9,7 @@ import Sidebar from "./Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import styles from "./layout.module.css";
 
+
 export default function DashboardLayout({
   children,
 }: {
@@ -18,11 +19,6 @@ export default function DashboardLayout({
   const { isAuthenticated, isLoading, organizations, activeOrganization, user, accessToken } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
-  // ✅ Prevent hydration mismatch
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   // Debug
   console.log('DashboardLayout - isAuthenticated:', isAuthenticated);
   console.log('DashboardLayout - isLoading:', isLoading);
@@ -31,7 +27,15 @@ export default function DashboardLayout({
   console.log('DashboardLayout - organizations:', organizations);
   console.log('DashboardLayout - activeOrganization:', activeOrganization);
 
+  // mark mounted asynchronously to avoid synchronous setState in effect
   useEffect(() => {
+    const id = requestAnimationFrame(() => setIsMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // handle redirects after mount and when auth/loading/org state changes
+  useEffect(() => {
+    if (!isMounted) return;
     if (isLoading) return;
 
     if (!isAuthenticated) {
@@ -45,7 +49,7 @@ export default function DashboardLayout({
       router.push("/onboarding/select-organization");
       return;
     }
-  }, [isLoading, isAuthenticated, organizations, activeOrganization, router]);
+  }, [isMounted, isLoading, isAuthenticated, organizations, activeOrganization, router]);
 
   if (!isMounted || isLoading) {
     return (

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
@@ -12,6 +12,12 @@ import {
   Loader2,
 } from "lucide-react";
 import styles from "./page.module.css";
+import MembersTab from "./components/MembersTab";
+import RolesTab from "./components/RolesTab";
+
+// ============================================================
+// TYPES
+// ============================================================
 
 type Permission = {
   id: string;
@@ -54,8 +60,33 @@ type Member = {
   joinedAt: string;
 };
 
-import MembersTab from "./components/MembersTab";
-import RolesTab from "./components/RolesTab";
+// ============================================================
+// API RESPONSE TYPES
+// ============================================================
+
+type MembersApiResponse = {
+  members: Member[];
+};
+
+type RolesApiResponse = {
+  roles: Role[];
+};
+
+type BranchesApiResponse = {
+  items: Branch[];
+};
+
+type PermissionsApiResponse = {
+  permissions: Permission[];
+};
+
+type MemberBranchesApiResponse = {
+  branches: Branch[];
+};
+
+// ============================================================
+// MAIN PAGE
+// ============================================================
 
 export default function MembersPage() {
   const { activeOrganization } = useAuth();
@@ -70,7 +101,11 @@ export default function MembersPage() {
 
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const fetchData = async () => {
+  // ============================================================
+  // FETCH DATA
+  // ============================================================
+
+  const fetchData = useCallback(async () => {
     if (!activeOrganization) return;
 
     setLoading(true);
@@ -84,16 +119,16 @@ export default function MembersPage() {
         api.get(`/api/v1/permissions`),
       ]);
 
-      const membersData = membersRes.data.members || [];
-      const rolesData = rolesRes.data.roles || [];
-      const branchesData = branchesRes.data.items || [];
-      const permissionsData = permissionsRes.data.permissions || [];
+      const membersData = (membersRes.data as MembersApiResponse).members || [];
+      const rolesData = (rolesRes.data as RolesApiResponse).roles || [];
+      const branchesData = (branchesRes.data as BranchesApiResponse).items || [];
+      const permissionsData = (permissionsRes.data as PermissionsApiResponse).permissions || [];
 
       setBranches(branchesData);
       setPermissions(permissionsData);
 
       const membersWithBranches = await Promise.all(
-        membersData.map(async (member: any) => {
+        membersData.map(async (member: Member) => {
           try {
             const branchRes = await api.get(
               `/api/v1/organizations/${orgId}/branches/members/${member.userId}/branches`
@@ -102,7 +137,7 @@ export default function MembersPage() {
             return {
               ...member,
               role: role,
-              branches: branchRes.data.branches || [],
+              branches: (branchRes.data as MemberBranchesApiResponse).branches || [],
             };
           } catch {
             return {
@@ -118,7 +153,7 @@ export default function MembersPage() {
 
       const rolesWithCount = rolesData.map((role: Role) => ({
         ...role,
-        memberCount: membersData.filter((m: any) => m.roleId === role.id).length,
+        memberCount: membersData.filter((m: Member) => m.roleId === role.id).length,
       }));
       setRoles(rolesWithCount);
     } catch (err) {
@@ -127,35 +162,35 @@ export default function MembersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeOrganization]);
 
   // ✅ Refresh only roles (keeps invite modal open)
-  const refreshRoles = async () => {
+  const refreshRoles = useCallback(async () => {
     if (!activeOrganization) return;
     try {
       const orgId = activeOrganization.id;
       const rolesRes = await api.get(`/api/v1/organizations/${orgId}/roles`);
-      const rolesData = rolesRes.data.roles || [];
-      const rolesWithCount = rolesData.map((role: any) => ({
+      const rolesData = (rolesRes.data as RolesApiResponse).roles || [];
+      const rolesWithCount = rolesData.map((role: Role) => ({
         ...role,
-        memberCount: members.filter((m) => m.roleId === role.id).length,
+        memberCount: members.filter((m: Member) => m.roleId === role.id).length,
       }));
       setRoles(rolesWithCount);
     } catch (err) {
       console.error("Failed to refresh roles:", err);
     }
-  };
+  }, [activeOrganization, members]);
 
   // ✅ Refresh only members (keeps other modals open)
-  const refreshMembers = async () => {
+  const refreshMembers = useCallback(async () => {
     if (!activeOrganization) return;
     try {
       const orgId = activeOrganization.id;
       const membersRes = await api.get(`/api/v1/organizations/${orgId}/members`);
-      const membersData = membersRes.data.members || [];
+      const membersData = (membersRes.data as MembersApiResponse).members || [];
 
       const membersWithBranches = await Promise.all(
-        membersData.map(async (member: any) => {
+        membersData.map(async (member: Member) => {
           try {
             const branchRes = await api.get(
               `/api/v1/organizations/${orgId}/branches/members/${member.userId}/branches`
@@ -164,7 +199,7 @@ export default function MembersPage() {
             return {
               ...member,
               role: role,
-              branches: branchRes.data.branches || [],
+              branches: (branchRes.data as MemberBranchesApiResponse).branches || [],
             };
           } catch {
             return {
@@ -179,15 +214,101 @@ export default function MembersPage() {
     } catch (err) {
       console.error("Failed to refresh members:", err);
     }
-  };
+  }, [activeOrganization, roles]);
 
+  // ============================================================
+  // EFFECTS
+  // ============================================================
+
+  // ✅ Fixed: Use mounted flag to prevent state updates after unmount
   useEffect(() => {
-    fetchData();
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (!activeOrganization) return;
+      
+      setLoading(true);
+      try {
+        const orgId = activeOrganization.id;
+
+        const [membersRes, rolesRes, branchesRes, permissionsRes] = await Promise.all([
+          api.get(`/api/v1/organizations/${orgId}/members`),
+          api.get(`/api/v1/organizations/${orgId}/roles`),
+          api.get(`/api/v1/organizations/${orgId}/branches`),
+          api.get(`/api/v1/permissions`),
+        ]);
+
+        // Only update state if component is still mounted
+        if (!isMounted) return;
+
+        const membersData = (membersRes.data as MembersApiResponse).members || [];
+        const rolesData = (rolesRes.data as RolesApiResponse).roles || [];
+        const branchesData = (branchesRes.data as BranchesApiResponse).items || [];
+        const permissionsData = (permissionsRes.data as PermissionsApiResponse).permissions || [];
+
+        setBranches(branchesData);
+        setPermissions(permissionsData);
+
+        const membersWithBranches = await Promise.all(
+          membersData.map(async (member: Member) => {
+            try {
+              const branchRes = await api.get(
+                `/api/v1/organizations/${orgId}/branches/members/${member.userId}/branches`
+              );
+              const role = rolesData.find((r: Role) => r.id === member.roleId) || null;
+              return {
+                ...member,
+                role: role,
+                branches: (branchRes.data as MemberBranchesApiResponse).branches || [],
+              };
+            } catch {
+              return {
+                ...member,
+                role: null,
+                branches: [],
+              };
+            }
+          })
+        );
+
+        if (!isMounted) return;
+        setMembers(membersWithBranches);
+
+        const rolesWithCount = rolesData.map((role: Role) => ({
+          ...role,
+          memberCount: membersData.filter((m: Member) => m.roleId === role.id).length,
+        }));
+        setRoles(rolesWithCount);
+      } catch (err) {
+        if (isMounted) {
+          console.error("Failed to fetch data:", err);
+          setToast({ type: "error", message: "Failed to load data" });
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [activeOrganization]);
 
+  // ============================================================
+  // COMPUTED VALUES
+  // ============================================================
+
   const totalMembers = members.length;
-  const activeMembers = members.filter((m) => m.isActive).length;
+  const activeMembers = members.filter((m: Member) => m.isActive).length;
   const totalRoles = roles.length;
+
+  // ============================================================
+  // LOADING STATE
+  // ============================================================
 
   if (loading) {
     return (
@@ -199,6 +320,10 @@ export default function MembersPage() {
       </div>
     );
   }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <div className={styles.page}>
