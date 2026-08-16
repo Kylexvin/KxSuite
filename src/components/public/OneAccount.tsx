@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import {
-  Sparkles,
+
   ArrowRight,
 
   Users,
@@ -14,8 +14,6 @@ import {
   Shield,
   Rocket,
 
-  ShoppingBag,
-  FileText,
 } from "lucide-react";
 import styles from "./OneAccount.module.css";
 
@@ -58,10 +56,7 @@ export default function OneAccount() {
       <div className={styles.container}>
         {/* Heading */}
         <div className={styles.heading}>
-          <div className={styles.badge}>
-            <Sparkles size={12} />
-            Why KXBYTE Suite
-          </div>
+ 
           <h2>
             Built around your business,{" "}
             <span className={styles.accent}>not around a single tool.</span>
@@ -70,35 +65,6 @@ export default function OneAccount() {
             Your business shouldn&apos;t have to operate through a collection of disconnected systems.
             KXBYTE Suite brings your business tools together — so you can focus on what matters.
           </p>
-        </div>
-
-        {/* Ecosystem Visual */}
-        <div className={styles.ecosystemVisual}>
-          <div className={styles.ecosystemCenter}>
-            <div className={styles.ecosystemLogo}>
-              <span className={styles.ecosystemLogoText}>KXBYTE</span>
-              <span className={styles.ecosystemLogoSub}>Suite</span>
-            </div>
-            <span className={styles.ecosystemLabel}>One connected platform</span>
-          </div>
-
-          <div className={styles.ecosystemProducts}>
-            <div className={`${styles.ecosystemProduct} ${styles.productReady}`}>
-              <ShoppingBag size={20} className={styles.productIcon} />
-              <span className={styles.productName}>KxTill</span>
-              <span className={styles.productStatusLive}>Live</span>
-            </div>
-            <div className={`${styles.ecosystemProduct} ${styles.productSoon}`}>
-              <FileText size={20} className={styles.productIcon} />
-              <span className={styles.productName}>KxInvoice</span>
-              <span className={styles.productStatusSoon}>Soon</span>
-            </div>
-            <div className={`${styles.ecosystemProduct} ${styles.productSoon}`}>
-              <Users size={20} className={styles.productIcon} />
-              <span className={styles.productName}>KxCRM</span>
-              <span className={styles.productStatusSoon}>Soon</span>
-            </div>
-          </div>
         </div>
 
         {/* Benefits Grid */}

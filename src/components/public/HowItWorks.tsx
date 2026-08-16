@@ -9,8 +9,7 @@ import {
   Store,
   Eye,
   Users,
-  ArrowRight,
-  Sparkles,
+
 } from "lucide-react";
 import styles from "./HowItWorks.module.css";
 
@@ -55,14 +54,9 @@ export default function HowItWorks() {
       <div className={styles.container}>
         {/* Heading */}
         <div className={styles.heading}>
-          <div className={styles.badge}>
-            <Sparkles size={12} />
-            How Suite Helps
-          </div>
           <h2>Run your business with <span className={styles.accent}>better visibility and control.</span></h2>
           <p className={styles.subtitle}>
-            Every KXBYTE product is designed to solve a real business challenge — 
-            so you can stop juggling tools and start growing.
+            Every KXBYTE product is designed to solve a real business challenge so you can stop juggling tools and start growing.
           </p>
         </div>
 
@@ -76,9 +70,7 @@ export default function HowItWorks() {
               <div key={item.id} className={styles.row}>
                 {/* Left: Number + Line */}
                 <div className={styles.markerCol}>
-                  <div className={styles.markerCircle}>
-                    <span className={styles.number}>{item.id}</span>
-                  </div>
+
                   {!isLast && <span className={styles.line} />}
                 </div>
 
@@ -107,11 +99,7 @@ export default function HowItWorks() {
                     </div>
                   </div>
 
-                  {/* CTA Link */}
-                  <Link href="/products" className={styles.learnMore}>
-                    See how it works
-                    <ArrowRight size={14} />
-                  </Link>
+
                 </div>
               </div>
             );

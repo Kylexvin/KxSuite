@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2, ShoppingBag, FileText, Users, Globe, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, ShoppingBag, FileText, Users, Globe } from "lucide-react";
 import { getAllProducts } from "@/lib/products";
 import styles from "./Products.module.css";
 
@@ -36,15 +36,8 @@ export default function Products() {
       <div className={styles.container}>
         {/* Heading */}
         <div className={styles.heading}>
-          <div className={styles.badge}>
-            <Sparkles size={12} />
-            Products
-          </div>
           <h2>Whatever your business needs to get done, there&apos;s a tool for it.</h2>
-          <p className={styles.subtitle}>
-            Each product is built to solve a specific business challenge — 
-            so you can focus on what matters most.
-          </p>
+          
         </div>
 
         {/* Product Grid */}

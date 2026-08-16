@@ -4,34 +4,13 @@
 
 import Link from "next/link";
 import {
-  Sparkles,
   ArrowRight,
-  Package,
-  Plus,
-  Layers,
   ShoppingBag,
   FileText,
   Users,
 } from "lucide-react";
 import styles from "./ModularApproach.module.css";
 
-const steps = [
-  {
-    icon: Package,
-    title: "Start with one product",
-    description: "Choose the tool that solves your most urgent need. No need to adopt everything at once.",
-  },
-  {
-    icon: Plus,
-    title: "Add more when you need them",
-    description: "Your business grows. Your software stack should grow with it — seamlessly.",
-  },
-  {
-    icon: Layers,
-    title: "Everything stays connected",
-    description: "New products join your workspace automatically. No new accounts, no complex setup.",
-  },
-];
 
 const products = [
   { name: "KxTill", icon: ShoppingBag, ready: true },
@@ -45,10 +24,6 @@ export default function ModularApproach() {
       <div className={styles.container}>
         {/* Heading */}
         <div className={styles.heading}>
-          <div className={styles.badge}>
-            <Sparkles size={12} />
-            Modular by Design
-          </div>
           <h2>
             Start with what you need.{" "}
             <span className={styles.accent}>Add more when you need it.</span>
@@ -83,21 +58,6 @@ export default function ModularApproach() {
           </div>
         </div>
 
-        {/* Steps */}
-        <div className={styles.grid}>
-          {steps.map((step) => {
-            const Icon = step.icon;
-            return (
-              <div key={step.title} className={styles.card}>
-                <div className={styles.cardIcon}>
-                  <Icon size={20} />
-                </div>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Bottom CTA */}
         <div className={styles.footer}>
