@@ -1,0 +1,496 @@
+/* components/Navbar.module.css */
+
+/* ============================================================
+   NAV - Neomorphism + Liquid Glass
+   ============================================================ */
+
+.nav {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1100px;
+  margin: 20px auto 0;
+  padding: 12px 24px;
+  
+  /* 🔮 Liquid Glass Effect */
+  background: rgba(249, 249, 249, 0.04);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  
+  /* 🧊 Neomorphism */
+  border: 0.6px solid rgba(249, 249, 249, 0.12);
+  border-radius: 999px;
+  box-shadow: 
+    /* Outer shadow - dark */
+    8px 8px 20px rgba(0, 0, 0, 0.6),
+    /* Inner shadow - light glow */
+    inset -2px -2px 8px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 8px rgba(249, 249, 249, 0.05),
+    /* Ambient glow */
+    0 0 40px rgba(217, 91, 45, 0.05);
+}
+
+/* Liquid glass shimmer effect */
+.nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(249, 249, 249, 0.15) 0%,
+    rgba(249, 249, 249, 0.02) 40%,
+    rgba(217, 91, 45, 0.08) 60%,
+    rgba(249, 249, 249, 0.05) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: shimmer 6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Nav item liquid glass hover */
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(249, 249, 249, 0.7);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 999px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: pointer;
+}
+
+.navLink:hover {
+  color: #f9f9f9;
+  background: rgba(249, 249, 249, 0.06);
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    inset 0 1px 0 rgba(249, 249, 249, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.navLinkActive {
+  color: #f9f9f9;
+  background: rgba(217, 91, 45, 0.12);
+  box-shadow: 
+    inset 0 1px 0 rgba(217, 91, 45, 0.2),
+    0 4px 16px rgba(217, 91, 45, 0.1);
+}
+
+.navLink:any-link {
+  text-decoration: none;
+}
+
+/* ---- Logo ---- */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  color: #f9f9f9;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  background: rgba(249, 249, 249, 0.05);
+  text-decoration: none;
+}
+
+.logoImg {
+  border-radius: 8px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(217, 91, 45, 0.2));
+}
+
+.logoSuite {
+  color: #d95b2d;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chevron {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   DROPDOWN - Fixed disappearing issue
+   ============================================================ */
+
+.navDropdown {
+  position: relative;
+}
+
+.dropdownPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px) scale(0.95);
+  min-width: 220px;
+  padding: 8px;
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 0.6px solid rgba(249, 249, 249, 0.08);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(217, 91, 45, 0.03),
+    inset 0 1px 0 rgba(249, 249, 249, 0.04);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 200;
+}
+
+.dropdownOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* Bridge to prevent gap */
+.navDropdown::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
+  z-index: 199;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: rgba(249, 249, 249, 0.8);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.dropdownItem:hover {
+  background: rgba(217, 91, 45, 0.1);
+  color: #f9f9f9;
+  transform: translateX(4px);
+  text-decoration: none;
+}
+
+.dropdownIcon {
+  opacity: 0.6;
+  color: #d95b2d;
+}
+
+.dropdownBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #4caf82;
+  background: rgba(76, 175, 130, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dropdownItemDisabled {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: rgba(249, 249, 249, 0.3);
+  cursor: not-allowed;
+}
+
+.soonBadge {
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #d95b2d;
+  background: rgba(217, 91, 45, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   NAV ACTIONS
+   ============================================================ */
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navLogin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(249, 249, 249, 0.7);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 999px;
+  transition: all 0.3s ease;
+}
+
+.navLogin:hover {
+  color: #f9f9f9;
+  background: rgba(249, 249, 249, 0.06);
+  text-decoration: none;
+}
+
+.navCta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #d95b2d, #c44a1f);
+  color: #f9f9f9;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(217, 91, 45, 0.25);
+}
+
+.navCta:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(217, 91, 45, 0.35);
+  text-decoration: none;
+}
+
+/* ============================================================
+   MOBILE MENU TOGGLE
+   ============================================================ */
+
+.menuToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(249, 249, 249, 0.04);
+  border: 0.6px solid rgba(249, 249, 249, 0.08);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #f9f9f9;
+  transition: all 0.3s ease;
+}
+
+.menuToggle:hover {
+  background: rgba(249, 249, 249, 0.08);
+}
+
+/* ============================================================
+   MOBILE MENU
+   ============================================================ */
+
+.mobileMenu {
+  position: relative;
+  z-index: 99;
+  max-width: 1100px;
+  margin: 8px auto 0;
+  padding: 0 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  opacity: 0;
+}
+
+.mobileMenuOpen {
+  max-height: 600px;
+  opacity: 1;
+}
+
+.mobileMenuInner {
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(249, 249, 249, 0.04);
+}
+
+.mobileSection {
+  margin-bottom: 8px;
+}
+
+.mobileSectionTitle {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(249, 249, 249, 0.3);
+  padding: 8px 4px 4px;
+}
+
+.mobileLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px;
+  font-size: 0.95rem;
+  color: rgba(249, 249, 249, 0.8);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(249, 249, 249, 0.04);
+  transition: all 0.2s ease;
+}
+
+.mobileLink:hover {
+  color: #f9f9f9;
+  background: rgba(249, 249, 249, 0.04);
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.mobileLinkDisabled {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px;
+  font-size: 0.95rem;
+  color: rgba(249, 249, 249, 0.3);
+  border-bottom: 1px solid rgba(249, 249, 249, 0.04);
+}
+
+.mobileDivider {
+  height: 1px;
+  background: rgba(249, 249, 249, 0.06);
+  margin: 8px 0;
+}
+
+.mobileCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, #d95b2d, #c44a1f);
+  color: #f9f9f9;
+  padding: 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.mobileCta:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .nav {
+    margin: 12px 12px 0;
+    padding: 10px 16px;
+    border-radius: 20px;
+  }
+
+  .navLinks,
+  .navActions {
+    display: none;
+  }
+
+  .menuToggle {
+    display: flex;
+  }
+
+  .mobileMenu {
+    margin: 6px 12px 0;
+    padding: 0 12px;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobileMenu {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.dropdownOpen {
+  animation: fadeSlideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Liquid glass shimmer on mobile menu */
+.mobileMenuInner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(249, 249, 249, 0.08) 0%,
+    transparent 50%,
+    rgba(217, 91, 45, 0.05) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}

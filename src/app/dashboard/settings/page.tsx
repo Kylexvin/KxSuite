@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
@@ -84,16 +84,18 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
-  const [isFetching, setIsFetching] = useState(false); // Add this flag
 
   const router = useRouter();
+  const hasFetched = useRef(false);
+
+  // ============================================================
+  // FETCH DATA
+  // ============================================================
 
   const fetchData = useCallback(async () => {
-    if (!activeOrganization || isFetching) return; // Prevent multiple calls
-    
-    setIsFetching(true);
+    if (!activeOrganization) return;
+
     setLoading(true);
-    
     try {
       const orgId = activeOrganization.id;
       const orgRes = await api.get(`/api/v1/organizations/${orgId}`);
@@ -113,17 +115,14 @@ export default function SettingsPage() {
       setToast({ type: "error", message: "Failed to load settings. Please try again." });
     } finally {
       setLoading(false);
-      setIsFetching(false);
     }
-  }, [activeOrganization, router, isFetching]);
+  }, [activeOrganization, router]);
 
   useEffect(() => {
-    // Avoid calling setState synchronously in the effect body — invoke async helper
-    const run = async () => {
-      await fetchData();
-    };
-
-    run();
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchData();
+    }
   }, [fetchData]);
 
   // ============================================================
@@ -158,16 +157,15 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await api.delete(`/api/v1/organizations/${activeOrganization.id}`);
-      
+
       setToast({ type: "success", message: "Organization archived successfully" });
-      
-      // ✅ Clear state and redirect to onboarding
+
       localStorage.removeItem("suiteContext");
       localStorage.removeItem("activeOrganization");
       localStorage.removeItem("activeOrganizationDetail");
       localStorage.removeItem("branches");
       localStorage.removeItem("activeBranch");
-      
+
       setTimeout(() => {
         router.push("/onboarding/select-organization");
       }, 1500);

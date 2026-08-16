@@ -1,318 +1,461 @@
-/* ---- Section wrapper ---- */
+/* components/public/HowSuiteHelps.module.css */
+
 .section {
+  padding: 80px 20px;
   background: #020202;
-  padding: 72px 0;
+  color: #f9f9f9;
+  border-top: 0.6px solid rgba(249, 249, 249, 0.04);
+  border-bottom: 0.6px solid rgba(249, 249, 249, 0.04);
 }
 
-/* ---- Inner container ---- */
 .container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0 24px;
 }
 
+/* ===== Heading ===== */
 .heading {
   text-align: center;
-  margin-bottom: 56px;
+  max-width: 700px;
+  margin: 0 auto 56px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(217, 91, 45, 0.1);
+  color: #d95b2d;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 0.6px solid rgba(217, 91, 45, 0.1);
+  margin-bottom: 16px;
 }
 
 .heading h2 {
-  font-size: clamp(1.9rem, 4vw, 2.75rem);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
   font-weight: 600;
-  color: #f9f9f9;
-  letter-spacing: -0.03em;
-  line-height: 1.12;
-  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 12px;
 }
 
-/* ---- Timeline layout ---- */
+.heading h2 .accent {
+  color: #d95b2d;
+}
+
+.heading .subtitle {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(249, 249, 249, 0.6);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* ===== Timeline ===== */
 .timeline {
   display: flex;
   flex-direction: column;
   gap: 0;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 60px 1fr;
-  gap: 24px;
-  padding: 24px 0;
   position: relative;
 }
 
-.row:not(:last-child) {
-  border-bottom: 0.6px solid rgba(249, 249, 249, 0.08);
+.row {
+  display: flex;
+  gap: 32px;
+  padding: 20px 0;
 }
 
-/* ---- Marker column ---- */
+/* ===== Marker Column ===== */
 .markerCol {
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
-  padding-top: 2px;
+  flex-shrink: 0;
+  width: 52px;
+  padding-top: 4px;
 }
 
-.number {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #f9f9f9;
-  opacity: 0.5;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  background: #020202;
-  padding: 0 4px;
+.markerCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(217, 91, 45, 0.12);
+  border: 0.6px solid rgba(217, 91, 45, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   position: relative;
   z-index: 2;
 }
 
-.line {
-  flex: 1;
-  width: 0.6px;
-  background: rgba(249, 249, 249, 0.1);
-  margin: 4px 0;
-  min-height: 20px;
-}
-
-.row:last-child .line {
-  display: none;
-}
-
-/* ---- Content column ---- */
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.content h3 {
-  font-size: clamp(1.1rem, 1.4vw, 1.3rem);
-  font-weight: 600;
-  color: #f9f9f9;
-  letter-spacing: -0.02em;
-  margin: 0 0 4px 0;
-}
-
-.content > p {
-  font-size: 0.95rem;
-  color: #f9f9f9;
-  opacity: 0.65;
-  line-height: 1.55;
-  margin: 0 0 12px 0;
-}
-
-/* ---- Preview cards (mini UI snippets) ---- */
-.previewCard {
-  background: rgba(249, 249, 249, 0.03);
-  border: 0.6px solid rgba(249, 249, 249, 0.08);
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-top: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.checkRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-  color: #f9f9f9;
-  opacity: 0.75;
-}
-
-.checkRowMuted {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-  color: #f9f9f9;
-  opacity: 0.35;
-}
-
-.dotActive {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d95b2d;
-  flex-shrink: 0;
-}
-
-.dotMuted {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(249, 249, 249, 0.2);
-  flex-shrink: 0;
-}
-
-/* ---- Organization preview ---- */
-.orgName {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #f9f9f9;
-  opacity: 0.9;
-}
-
-.orgLocation {
+.number {
   font-size: 0.8rem;
-  color: #f9f9f9;
-  opacity: 0.5;
+  font-weight: 700;
+  color: #d95b2d;
+  letter-spacing: -0.02em;
 }
 
-/* ---- Dashboard card (step 4) ---- */
-.dashboardCard {
-  background: rgba(249, 249, 249, 0.03);
-  border: 0.6px solid rgba(249, 249, 249, 0.08);
-  border-radius: 10px;
-  padding: 16px;
-  margin-top: 4px;
+.line {
+  width: 1.5px;
+  flex: 1;
+  min-height: 40px;
+  background: rgba(249, 249, 249, 0.06);
+  margin: 4px 0;
 }
 
-.dashboardHeader {
-  display: flex;
-  justify-content: space-between;
+/* ===== Content ===== */
+.content {
+  flex: 1;
+  padding-top: 4px;
+}
+
+/* Pain Badge */
+.painBadge {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(249, 249, 249, 0.04);
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  margin-bottom: 10px;
 }
 
-.dashboardGreeting {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #f9f9f9;
+.painIcon {
+  color: #d95b2d;
   opacity: 0.8;
 }
 
-.dashboardOrg {
-  font-size: 0.75rem;
-  color: #f9f9f9;
-  opacity: 0.4;
-  background: rgba(249, 249, 249, 0.05);
-  padding: 2px 10px;
-  border-radius: 999px;
-  border: 0.6px solid rgba(249, 249, 249, 0.06);
+.painText {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(249, 249, 249, 0.7);
 }
 
-.dashboardMetrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.dashboardMetric {
-  display: flex;
-  flex-direction: column;
-}
-
-.metricValue {
-  font-size: 1.1rem;
+/* Solution */
+.solutionText {
+  font-size: 1.15rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
   color: #f9f9f9;
-  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+  max-width: 500px;
 }
 
-.metricLabel {
-  font-size: 0.7rem;
-  color: #f9f9f9;
-  opacity: 0.4;
+/* ===== Mockup ===== */
+.mockupWrapper {
+  max-width: 580px;
+  margin-bottom: 16px;
+}
+
+.mockupFrame {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 0.6px solid rgba(249, 249, 249, 0.08);
+  box-shadow: 
+    0 1px 0 rgba(249, 249, 249, 0.06) inset,
+    0 -20px 40px -28px rgba(249, 249, 249, 0.06),
+    0 20px 40px -22px rgba(0, 0, 0, 0.6);
+}
+
+.mockupImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.mockupOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, transparent 0%, #020202 100%);
+  pointer-events: none;
+  border-radius: 0 0 12px 12px;
+}
+
+/* ===== Learn More Link ===== */
+.learnMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #d95b2d;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.learnMore:hover {
+  gap: 10px;
+  text-decoration: none;
+}
+
+/* ===== Footer ===== */
+.footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 0.6px solid rgba(249, 249, 249, 0.04);
+}
+
+.footerText {
+  font-size: 0.9rem;
+  color: rgba(249, 249, 249, 0.4);
+}
+
+.footerLink {
+  color: #d95b2d;
+  text-decoration: none;
   font-weight: 500;
 }
 
-/* ---- Sparkline ---- */
-.sparkline {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 40px;
-  margin-bottom: 4px;
+.footerLink:hover {
+  text-decoration: underline;
 }
 
-.bar {
-  flex: 1;
-  min-width: 4px;
-  background: #d95b2d;
-  border-radius: 2px 2px 0 0;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-.bar:hover {
-  opacity: 0.9;
-}
-
-.sparklineLabel {
-  font-size: 0.7rem;
-  color: #f9f9f9;
-  opacity: 0.3;
-  font-weight: 500;
-}
-
-/* ---- Mobile ---- */
-@media (max-width: 720px) {
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
   .section {
-    padding: 48px 0;
-  }
-
-  .container {
-    padding: 0 20px;
-  }
-
-  .heading {
-    margin-bottom: 40px;
+    padding: 60px 16px;
   }
 
   .row {
-    grid-template-columns: 40px 1fr;
-    gap: 16px;
-    padding: 20px 0;
-  }
-
-  .number {
-    font-size: 0.85rem;
-  }
-
-  .content h3 {
-    font-size: 1rem;
-  }
-
-  .content > p {
-    font-size: 0.88rem;
-  }
-
-  .previewCard,
-  .dashboardCard {
-    padding: 10px 14px;
-  }
-
-  .dashboardMetrics {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .metricValue {
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .row {
-    grid-template-columns: 32px 1fr;
+    flex-direction: column;
     gap: 12px;
     padding: 16px 0;
   }
 
+  .markerCol {
+    flex-direction: row;
+    width: 100%;
+    padding-top: 0;
+    gap: 12px;
+  }
+
+  .markerCircle {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
   .number {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
-  .previewCard {
-    padding: 8px 12px;
+  .line {
+    width: auto;
+    height: 1.5px;
+    min-height: 0;
+    flex: 1;
+    margin: 0;
   }
 
-  .checkRow,
-  .checkRowMuted {
+  .content {
+    padding-top: 0;
+  }
+
+  .solutionText {
+    font-size: 1rem;
+    max-width: 100%;
+  }
+
+  .mockupWrapper {
+    max-width: 100%;
+  }
+
+  .heading h2 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .painBadge {
+    flex-wrap: wrap;
+  }
+
+  .painText {
     font-size: 0.8rem;
+  }
+
+  .solutionText {
+    font-size: 0.95rem;
+  }
+}
+/* Add these to your existing HowItWorks.module.css */
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(217, 91, 45, 0.1);
+  color: #d95b2d;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 0.6px solid rgba(217, 91, 45, 0.1);
+  margin-bottom: 16px;
+}
+
+.heading h2 .accent {
+  color: #d95b2d;
+}
+
+.heading .subtitle {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(249, 249, 249, 0.6);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* Pain Badge */
+.painBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(249, 249, 249, 0.04);
+  border: 0.6px solid rgba(249, 249, 249, 0.06);
+  margin-bottom: 10px;
+}
+
+.painIcon {
+  color: #d95b2d;
+  opacity: 0.8;
+}
+
+.painText {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(249, 249, 249, 0.7);
+}
+
+/* Solution */
+.solutionText {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: #f9f9f9;
+  margin: 0 0 16px;
+  max-width: 500px;
+}
+
+/* Mockup */
+.mockupWrapper {
+  max-width: 580px;
+  margin-bottom: 16px;
+}
+
+.mockupFrame {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 0.6px solid rgba(249, 249, 249, 0.08);
+  box-shadow: 
+    0 1px 0 rgba(249, 249, 249, 0.06) inset,
+    0 -20px 40px -28px rgba(249, 249, 249, 0.06),
+    0 20px 40px -22px rgba(0, 0, 0, 0.6);
+}
+
+.mockupImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.mockupOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, transparent 0%, #020202 100%);
+  pointer-events: none;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Learn More Link */
+.learnMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #d95b2d;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.learnMore:hover {
+  gap: 10px;
+  text-decoration: none;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 0.6px solid rgba(249, 249, 249, 0.04);
+}
+
+.footerText {
+  font-size: 0.9rem;
+  color: rgba(249, 249, 249, 0.4);
+}
+
+.footerLink {
+  color: #d95b2d;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+
+/* Responsive additions */
+@media (max-width: 768px) {
+  .solutionText {
+    font-size: 1rem;
+    max-width: 100%;
+  }
+
+  .mockupWrapper {
+    max-width: 100%;
+  }
+
+  .heading h2 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .painBadge {
+    flex-wrap: wrap;
+  }
+
+  .painText {
+    font-size: 0.8rem;
+  }
+
+  .solutionText {
+    font-size: 0.95rem;
   }
 }

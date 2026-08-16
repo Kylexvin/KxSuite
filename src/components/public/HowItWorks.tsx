@@ -1,122 +1,128 @@
+// components/public/HowItWorks.tsx
+
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
+import {
+  Building2,
+  Store,
+  Eye,
+  Users,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 import styles from "./HowItWorks.module.css";
 
-const steps = [
+const painPoints = [
   {
-    number: "01",
-    title: "Create your account",
-    description: "Your KXBYTE identity gives you access to the Suite.",
+    id: "01",
+    icon: Building2,
+    pain: "Managing multiple branches?",
+    solution: "See your branches, sales and performance from one place.",
+    image: "/assets/dashboard.jpg",
+    imageAlt: "KXBYTE Suite dashboard showing multiple branches",
   },
   {
-    number: "02",
-    title: "Create your organization",
-    description: "Set up the business you want to manage.",
+    id: "02",
+    icon: Store,
+    pain: "Running multiple selling counters?",
+    solution: "Manage two or more counters in the same business without losing track.",
+    image: "/assets/dashboard.jpg",
+    imageAlt: "KXBYTE Suite counter management view",
   },
   {
-    number: "03",
-    title: "Choose your products",
-    description: "Activate the tools your business needs.",
+    id: "03",
+    icon: Eye,
+    pain: "Need real-time visibility?",
+    solution: "See what's happening across your business without waiting for end-of-day reports.",
+    image: "/assets/dashboard.jpg",
+    imageAlt: "KXBYTE Suite real-time analytics dashboard",
   },
   {
-    number: "04",
-    title: "Run your business",
-    description: "Everything stays connected as you grow.",
+    id: "04",
+    icon: Users,
+    pain: "Growing your team?",
+    solution: "Give employees the access they need while keeping control over your business.",
+    image: "/assets/dashboard.jpg",
+    imageAlt: "KXBYTE Suite team management interface",
   },
 ];
-
-const sparkline = [28, 42, 36, 58, 50, 68, 60, 82];
 
 export default function HowItWorks() {
   return (
     <section className={styles.section}>
       <div className={styles.container}>
+        {/* Heading */}
         <div className={styles.heading}>
-          <h2>Get started in minutes.</h2>
+          <div className={styles.badge}>
+            <Sparkles size={12} />
+            How Suite Helps
+          </div>
+          <h2>Run your business with <span className={styles.accent}>better visibility and control.</span></h2>
+          <p className={styles.subtitle}>
+            Every KXBYTE product is designed to solve a real business challenge — 
+            so you can stop juggling tools and start growing.
+          </p>
         </div>
 
+        {/* Pain → Solution Timeline */}
         <div className={styles.timeline}>
-          {steps.map((step, i) => (
-            <div key={step.number} className={styles.row}>
-              <div className={styles.markerCol}>
-                <span className={styles.number}>{step.number}</span>
-                {i < steps.length - 1 && <span className={styles.line} />}
+          {painPoints.map((item, index) => {
+            const Icon = item.icon;
+            const isLast = index === painPoints.length - 1;
+
+            return (
+              <div key={item.id} className={styles.row}>
+                {/* Left: Number + Line */}
+                <div className={styles.markerCol}>
+                  <div className={styles.markerCircle}>
+                    <span className={styles.number}>{item.id}</span>
+                  </div>
+                  {!isLast && <span className={styles.line} />}
+                </div>
+
+                {/* Right: Content */}
+                <div className={styles.content}>
+                  {/* Pain */}
+                  <div className={styles.painBadge}>
+                    <Icon size={16} className={styles.painIcon} />
+                    <span className={styles.painText}>{item.pain}</span>
+                  </div>
+
+                  {/* Solution */}
+                  <h3 className={styles.solutionText}>{item.solution}</h3>
+
+                  {/* Mockup Image */}
+                  <div className={styles.mockupWrapper}>
+                    <div className={styles.mockupFrame}>
+                      <Image
+                        src={item.image}
+                        alt={item.imageAlt}
+                        width={600}
+                        height={340}
+                        className={styles.mockupImage}
+                      />
+                      <div className={styles.mockupOverlay} />
+                    </div>
+                  </div>
+
+                  {/* CTA Link */}
+                  <Link href="/products" className={styles.learnMore}>
+                    See how it works
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
               </div>
+            );
+          })}
+        </div>
 
-              <div className={styles.content}>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-
-                {i === 0 && (
-                  <div className={styles.previewCard}>
-                    <div className={styles.checkRow}>
-                      <span className={styles.dotActive} />
-                      <span>Identity created</span>
-                    </div>
-                    <div className={styles.checkRow}>
-                      <span className={styles.dotActive} />
-                      <span>Secure access</span>
-                    </div>
-                  </div>
-                )}
-
-                {i === 1 && (
-                  <div className={styles.previewCard}>
-                    <span className={styles.orgName}>Acme Stores</span>
-                    <span className={styles.orgLocation}>Nairobi · Kenya</span>
-                  </div>
-                )}
-
-                {i === 2 && (
-                  <div className={styles.previewCard}>
-                    <div className={styles.checkRow}>
-                      <span className={styles.dotActive} />
-                      <span>KxTill</span>
-                    </div>
-                    <div className={styles.checkRowMuted}>
-                      <span className={styles.dotMuted} />
-                      <span>KxInvoice</span>
-                    </div>
-                    <div className={styles.checkRowMuted}>
-                      <span className={styles.dotMuted} />
-                      <span>KxCRM</span>
-                    </div>
-                  </div>
-                )}
-
-                {i === 3 && (
-                  <div className={styles.dashboardCard}>
-                    <div className={styles.dashboardHeader}>
-                      <span className={styles.dashboardGreeting}>Good morning</span>
-                      <span className={styles.dashboardOrg}>Acme Stores</span>
-                    </div>
-
-                    <div className={styles.dashboardMetrics}>
-                      <div className={styles.dashboardMetric}>
-                        <span className={styles.metricValue}>84,500</span>
-                        <span className={styles.metricLabel}>Sales (KSh)</span>
-                      </div>
-                      <div className={styles.dashboardMetric}>
-                        <span className={styles.metricValue}>342</span>
-                        <span className={styles.metricLabel}>Stock</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.sparkline}>
-                      {sparkline.map((h, idx) => (
-                        <span
-                          key={idx}
-                          className={styles.bar}
-                          style={{ height: `${h}%` }}
-                        />
-                      ))}
-                    </div>
-                    <span className={styles.sparklineLabel}>Sales overview</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+        {/* Bottom CTA */}
+        <div className={styles.footer}>
+          <p className={styles.footerText}>
+            Ready to solve these challenges? <Link href="/signup" className={styles.footerLink}>Start your free trial</Link>
+          </p>
         </div>
       </div>
     </section>
