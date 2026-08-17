@@ -5,50 +5,106 @@
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
+  ShoppingCart,
+  ArrowLeft,
   Package,
-  Users,
+  ClipboardList,
+  FileText,
   Settings,
+  Building2,
+  Users,
   LogOut,
   ChevronsLeft,
-  ShoppingCart,
-  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import styles from "../styles/KxTillSidebar.module.css";
-
-const APP_VERSION = "v1.0.0";
 
 type NavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
+  permission?: string;
+  requiresOwner?: boolean;
 };
 
 const NAV_LINKS: NavLink[] = [
-  { href: "/kx/kxtill", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/kx/kxtill/pos", label: "POS", icon: ShoppingCart },
-  { href: "/kx/kxtill/inventory", label: "Inventory", icon: Package },
-  { href: "/kx/kxtill/reports", label: "Reports", icon: BarChart3 },
-  { href: "/kx/kxtill/settings", label: "Settings", icon: Settings },
+  // Always visible
+  { href: "/kx/kxtill", label: "Overview", icon: LayoutDashboard },
+  { href: "/kx/kxtill/sales", label: "Sales", icon: ShoppingCart, permission: "kxtill.sales.view" },
+  { href: "/kx/kxtill/returns", label: "Returns", icon: ArrowLeft, permission: "kxtill.sales.view" },
+  
+  // Inventory section - renamed from "Products" to "Inventory"
+  { href: "/kx/kxtill/inventory", label: "Inventory", icon: Package, permission: "kxtill.inventory.view" },
+  { href: "/kx/kxtill/stock", label: "Stock", icon: ClipboardList, permission: "kxtill.inventory.view" },
+  
+  { href: "/kx/kxtill/reports", label: "Reports", icon: FileText, permission: "kxtill.reports.view" },
+  { href: "/kx/kxtill/settings", label: "Settings", icon: Settings, permission: "kxtill.settings.view" },
+  
+  // Owner only
+  { href: "/kx/kxtill/branches", label: "Branches", icon: Building2, requiresOwner: true },
+  { href: "/kx/kxtill/staff", label: "Staff", icon: Users, requiresOwner: true },
 ];
 
 export default function KxTillSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { suiteContext, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+
+  // ============================================================
+  // PERMISSION HELPERS
+  // ============================================================
+
+  const permissions = suiteContext?.permissions ?? [];
+  const isOwner = permissions.includes("*");
+
+  const hasPermission = (permission?: string): boolean => {
+    if (!permission) return true;
+    if (isOwner) return true;
+    return permissions.includes(permission);
+  };
+
+  // ============================================================
+  // HANDLERS
+  // ============================================================
 
   const handleNavClick = (href: string) => {
     router.push(href);
   };
 
+  const handleBackToSuite = () => {
+    router.push("/dashboard");
+  };
+
   const handleLogout = () => {
-    // Clear auth and redirect
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    logout();
     router.push("/login");
   };
+
+  const isLinkActive = (href: string) => {
+    if (href === "/kx/kxtill") {
+      return pathname === href;
+    }
+    return pathname.startsWith(href);
+  };
+
+  // ============================================================
+  // FILTER NAV LINKS
+  // ============================================================
+
+  const visibleLinks = NAV_LINKS.filter((link) => {
+    if (link.requiresOwner && !isOwner) {
+      return false;
+    }
+    return hasPermission(link.permission);
+  });
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
@@ -76,9 +132,9 @@ export default function KxTillSidebar() {
 
       {/* Navigation */}
       <nav className={styles.nav}>
-        {NAV_LINKS.map((link) => {
+        {visibleLinks.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.href;
+          const isActive = isLinkActive(link.href);
           return (
             <button
               key={link.href}
@@ -95,12 +151,24 @@ export default function KxTillSidebar() {
 
       <div className={styles.spacer} />
 
+      {/* Divider */}
+      <div className={styles.divider} />
+
+      {/* Back to Suite */}
+      <button
+        className={styles.backToSuiteRow}
+        onClick={handleBackToSuite}
+        title="Back to KXBYTE Suite"
+      >
+        <ArrowLeft size={15} />
+        <span className={styles.navLabel}>Back to Suite</span>
+      </button>
+
       {/* Logout */}
       <button className={styles.logoutRow} onClick={handleLogout} title="Logout">
         <LogOut size={15} />
         <span className={styles.navLabel}>Logout</span>
       </button>
-      <span className={styles.version}>{APP_VERSION}</span>
     </aside>
   );
 }

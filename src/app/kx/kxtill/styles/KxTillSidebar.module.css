@@ -1,6 +1,7 @@
 /* app/kx/kxtill/styles/KxTillSidebar.module.css */
 
 .sidebar {
+  --bg: #0e0f13;
   --panel: #16171d;
   --raised: #1b1c23;
   --raised-hi: #24252e;
@@ -22,6 +23,7 @@
   padding: 14px 12px;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: sticky;
   top: 0;
   transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
@@ -29,8 +31,8 @@
 }
 
 .sidebar.collapsed {
-  width: 64px;
-  min-width: 64px;
+  width: 76px;
+  min-width: 76px;
   padding: 14px 10px;
 }
 
@@ -38,7 +40,7 @@
 .logoRow {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   padding: 4px 6px 16px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 12px;
@@ -116,11 +118,12 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
 }
 
 .navLink {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -132,6 +135,7 @@
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
+  overflow: hidden;
   cursor: pointer;
   width: 100%;
   text-align: left;
@@ -147,7 +151,7 @@
 .navLinkActive {
   composes: navLink;
   color: #ffffff;
-  border-color: rgba(255, 107, 43, 0.12);
+  border-color: rgba(255, 107, 43, 0.121);
   background: linear-gradient(
       90deg,
       rgba(0, 0, 0, 0) 0%,
@@ -200,9 +204,47 @@
   gap: 0;
 }
 
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
 /* Spacer */
 .spacer {
   flex: 1;
+}
+
+/* Back to Suite */
+.backToSuiteRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 4px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.backToSuiteRow:hover {
+  background: var(--raised-hi);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.collapsed .backToSuiteRow {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
 }
 
 /* Logout */
@@ -219,7 +261,7 @@
   color: var(--danger);
   font-size: 14px;
   font-weight: 500;
-  margin-top: 6px;
+  margin-top: 4px;
   box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
   transition: background 0.15s, border-color 0.15s;
 }
@@ -229,24 +271,14 @@
   border-color: rgba(239, 83, 80, 0.3);
 }
 
+.logoutRow svg {
+  flex-shrink: 0;
+}
+
 .collapsed .logoutRow {
   justify-content: center;
   padding: 10px;
   gap: 0;
-}
-
-/* Version */
-.version {
-  display: block;
-  font-size: 11px;
-  color: var(--text-faint);
-  padding: 8px 12px 0;
-  margin-top: 4px;
-  text-align: left;
-}
-
-.collapsed .version {
-  display: none;
 }
 
 /* Scrollbar */
@@ -284,7 +316,150 @@
     padding: 7px 10px;
   }
 
+  .backToSuiteRow {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
   .logoutRow {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+}
+
+/* Collapsed state for tablet */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 76px;
+    min-width: 76px;
+    padding: 14px 10px;
+  }
+
+  .sidebar .logoText {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+  }
+
+  .sidebar .navLabel {
+    opacity: 0;
+    width: 0;
+  }
+
+  .sidebar .navLink {
+    justify-content: center;
+    padding: 10px;
+    gap: 0;
+  }
+
+  .sidebar .backToSuiteRow {
+    justify-content: center;
+    padding: 10px;
+    gap: 0;
+  }
+
+  .sidebar .logoutRow {
+    justify-content: center;
+    padding: 10px;
+    gap: 0;
+  }
+
+  .sidebar .collapseBtn {
+    transform: rotate(180deg);
+    margin-left: 0;
+  }
+
+  .sidebar .logoRow {
+    justify-content: center;
+  }
+
+  .sidebar .logoWrapper {
+    gap: 0;
+  }
+
+  .sidebar .logoImage {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* When user manually expands */
+  .sidebar:not(.collapsed) {
+    width: 220px;
+    min-width: 220px;
+    padding: 14px 12px;
+  }
+
+  .sidebar:not(.collapsed) .logoText {
+    opacity: 1;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  .sidebar:not(.collapsed) .navLabel {
+    opacity: 1;
+    width: auto;
+  }
+
+  .sidebar:not(.collapsed) .navLink {
+    justify-content: flex-start;
+    padding: 9px 12px;
+    gap: 11px;
+  }
+
+  .sidebar:not(.collapsed) .backToSuiteRow {
+    justify-content: flex-start;
+    padding: 9px 12px;
+    gap: 9px;
+  }
+
+  .sidebar:not(.collapsed) .logoutRow {
+    justify-content: flex-start;
+    padding: 9px 12px;
+    gap: 9px;
+  }
+
+  .sidebar:not(.collapsed) .collapseBtn {
+    transform: rotate(0deg);
+    margin-left: auto;
+  }
+
+  .sidebar:not(.collapsed) .logoRow {
+    justify-content: space-between;
+  }
+
+  .sidebar:not(.collapsed) .logoWrapper {
+    gap: 10px;
+  }
+
+  .sidebar:not(.collapsed) .logoImage {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* On very small screens */
+@media (max-width: 768px) {
+  .sidebar:not(.collapsed) {
+    width: 200px;
+    min-width: 200px;
+    padding: 12px 8px;
+  }
+
+  .sidebar:not(.collapsed) .logoText {
+    font-size: 15px;
+  }
+
+  .sidebar:not(.collapsed) .navLink {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  .sidebar:not(.collapsed) .backToSuiteRow {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+
+  .sidebar:not(.collapsed) .logoutRow {
     font-size: 13px;
     padding: 7px 10px;
   }

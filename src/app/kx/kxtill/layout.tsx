@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import KxTillSidebar from "./components/KxTillSidebar";
-import TopBar from "@/components/layout/TopBar";
+import KxTillTopBar from "./components/KxTillTopBar";
 import styles from "./layout.module.css";
 
 export default function KxTillLayout({
@@ -45,7 +45,7 @@ export default function KxTillLayout({
     <div className={styles.layout}>
       <KxTillSidebar />
       <div className={styles.main}>
-        <TopBar />
+        <KxTillTopBar />
         <main className={styles.content}>{children}</main>
       </div>
     </div>

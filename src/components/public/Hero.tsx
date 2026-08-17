@@ -73,7 +73,7 @@ export default function Hero() {
             <Image
               src="/assets/mobilev.png"
               alt="KXBYTE Suite mobile dashboard"
-              width={400}
+              width={300}
               height={800}
               priority
               className={styles.phoneImage}

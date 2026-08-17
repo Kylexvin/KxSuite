@@ -182,6 +182,7 @@
   flex-shrink: 0;
   width: 200px;
   display: none;
+  margin-left: 20px;
   align-items: stretch;
 }
 
@@ -208,7 +209,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 22px;
+  border-radius: 0;
   display: block;
 }
 
