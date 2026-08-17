@@ -68,15 +68,34 @@ type TopProduct = {
   stock: number;
 };
 
-type InventoryAlert = {
-  id: string;
-  productName: string;
-  sku: string;
-  currentStock: number;
-  minStock: number;
-  status: string;
-  branch: string;
-  branchId: string;
+type PaymentMethod = {
+  name: string;
+  value: number;
+  amount: number;
+};
+
+type PaymentMethodsResponse = {
+  paymentMethods: PaymentMethod[];
+  total: number;
+};
+
+// ===== MOCK DATA =====
+const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
+  { name: "M-Pesa", value: 45, amount: 405000 },
+  { name: "Cash", value: 30, amount: 270000 },
+  { name: "Card", value: 20, amount: 180000 },
+  { name: "Other", value: 5, amount: 45000 },
+];
+
+const getPaymentColor = (name: string): string => {
+  const colors: Record<string, string> = {
+    'Cash': '#4caf82',
+    'M-Pesa': '#ff6a2b',
+    'Card': '#ff8c42',
+    'Bank Transfer': '#f5b324',
+    'Other': '#62636e',
+  };
+  return colors[name] || '#62636e';
 };
 
 export default function KxTillOverview() {
@@ -85,13 +104,9 @@ export default function KxTillOverview() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [salesData, setSalesData] = useState<{ date: string; value: number }[]>([]);
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
-  const [inventoryAlerts, setInventoryAlerts] = useState<InventoryAlert[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-
-  const permissions = suiteContext?.permissions ?? [];
-  const isOwner = permissions.includes("*");
-  const canViewSales = permissions.some(p => p.startsWith('kxtill.sales.view'));
-  const canViewInventory = permissions.some(p => p.startsWith('kxtill.inventory.view'));
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(MOCK_PAYMENT_METHODS);
+  const [paymentTotal, setPaymentTotal] = useState(900000);
 
   // ============================================================
   // FETCH DATA
@@ -136,12 +151,13 @@ export default function KxTillOverview() {
       );
       setTopProducts(topRes.data || []);
 
-      // Fetch inventory alerts
-      const alertsRes = await api.get<{ alerts: InventoryAlert[] }>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/inventory-alerts`,
-        { params }
+      // Fetch payment methods
+      const paymentRes = await api.get<PaymentMethodsResponse>(
+        `/api/v1/organizations/${orgId}/kxtill/dashboard/payment-methods`,
+        { params: { ...params, period: '30d' } }
       );
-      setInventoryAlerts(alertsRes.data.alerts || []);
+      setPaymentMethods(paymentRes.data.paymentMethods || MOCK_PAYMENT_METHODS);
+      setPaymentTotal(paymentRes.data.total || 0);
 
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
@@ -335,44 +351,76 @@ export default function KxTillOverview() {
 
       {/* ===== BOTTOM ROW ===== */}
       <div className={styles.twoCol}>
+        {/* Payment Methods Donut Chart */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
-            <div className={styles.chartTitle}><PieChartIcon size={16} /> <span>Product Distribution</span></div>
+            <div className={styles.chartTitle}>
+              <PieChartIcon size={16} /> 
+              <span>Payment Methods</span>
+            </div>
+            <span className={styles.chartMeta}>
+              Total: KSh {paymentTotal.toLocaleString()}
+            </span>
           </div>
           <div className={styles.pieContainer}>
-            {categories.length > 0 ? (
+            {paymentMethods.length > 0 ? (
               <>
                 <div className={styles.pieChart}>
-                  <ResponsiveContainer width={120} height={120}>
+                  <ResponsiveContainer width={130} height={130}>
                     <PieChart>
-                      <Pie data={categories} dataKey="value" innerRadius={35} outerRadius={55} stroke="none" paddingAngle={3}>
-                        {categories.map((entry, index) => (
-                          <Cell key={index} fill={entry.color} />
+                      <Pie 
+                        data={paymentMethods} 
+                        dataKey="value" 
+                        nameKey="name"
+                        innerRadius={40} 
+                        outerRadius={58} 
+                        stroke="none" 
+                        paddingAngle={3}
+                      >
+                        {paymentMethods.map((entry, index) => (
+                          <Cell key={index} fill={getPaymentColor(entry.name)} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ background: "#1b1c23", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px", fontSize: "12px" }} />
+                      <Tooltip 
+                        formatter={(value: number, name: string) => [`${value}%`, name]}
+                        contentStyle={{ 
+                          background: "#1b1c23", 
+                          border: "1px solid rgba(255,255,255,0.07)", 
+                          borderRadius: "8px", 
+                          fontSize: "12px" 
+                        }} 
+                      />
                     </PieChart>
                   </ResponsiveContainer>
+                  <div className={styles.pieCenter}>
+                    <span className={styles.pieCenterValue}>{paymentMethods.length}</span>
+                    <span className={styles.pieCenterLabel}>Methods</span>
+                  </div>
                 </div>
                 <div className={styles.pieLegend}>
-                  {categories.map((item) => (
+                  {paymentMethods.map((item) => (
                     <div key={item.name} className={styles.legendRow}>
-                      <span className={styles.legendDot} style={{ background: item.color }} />
+                      <span className={styles.legendDot} style={{ background: getPaymentColor(item.name) }} />
                       <span className={styles.legendName}>{item.name}</span>
                       <span className={styles.legendValue}>{item.value}%</span>
+                      <span className={styles.legendAmount}>KSh {item.amount.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <div className={styles.chartEmpty}>No product data</div>
+              <div className={styles.chartEmpty}>No payment data available</div>
             )}
           </div>
         </div>
 
+        {/* Recent Activity */}
         <div className={styles.activityCard}>
           <div className={styles.chartHeader}>
-            <div className={styles.chartTitle}><RefreshCw size={16} /> <span>Recent Activity</span></div>
+            <div className={styles.chartTitle}>
+              <RefreshCw size={16} /> 
+              <span>Recent Activity</span>
+            </div>
             <span className={styles.chartMeta}>Recent sales</span>
           </div>
           <div className={styles.activityList}>

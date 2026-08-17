@@ -404,3 +404,40 @@
     display: none;
   }
 }
+/* Add to page.module.css */
+
+.pieChart {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pieCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.pieCenterValue {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.pieCenterLabel {
+  display: block;
+  font-size: 9px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.legendAmount {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-left: auto;
+  font-weight: 400;
+}

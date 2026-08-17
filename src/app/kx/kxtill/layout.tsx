@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import KxTillSidebar from "./components/KxTillSidebar";
@@ -16,6 +16,11 @@ export default function KxTillLayout({
 }) {
   const router = useRouter();
   const { isAuthenticated, isLoading, organizations, activeOrganization } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
@@ -29,10 +34,29 @@ export default function KxTillLayout({
     }
   }, [isLoading, isAuthenticated, organizations, activeOrganization, router]);
 
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className={styles.layout}>
+        <div className={styles.main}>
+          <div className={styles.content}>
+            <div className={styles.loading} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
-      <div className={styles.loading}>
-        <div className={styles.spinner} />
+      <div className={styles.layout}>
+        <div className={styles.main}>
+          <div className={styles.content}>
+            <div className={styles.loading}>
+              <div className={styles.spinner} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
