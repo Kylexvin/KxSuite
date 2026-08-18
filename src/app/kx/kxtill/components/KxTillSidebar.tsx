@@ -11,7 +11,6 @@ import {
   ShoppingCart,
   ArrowLeft,
   Package,
-  ClipboardList,
   FileText,
   Settings,
   Building2,
@@ -34,11 +33,10 @@ const NAV_LINKS: NavLink[] = [
   // Always visible
   { href: "/kx/kxtill", label: "Overview", icon: LayoutDashboard },
   { href: "/kx/kxtill/sales", label: "Sales", icon: ShoppingCart, permission: "kxtill.sales.view" },
-  { href: "/kx/kxtill/returns", label: "Returns", icon: ArrowLeft, permission: "kxtill.sales.view" },
+  { href: "/kx/kxtill/refunds", label: "Refunds", icon: ArrowLeft, permission: "kxtill.sales.view" },
   
-  // Inventory section - renamed from "Products" to "Inventory"
+  // Inventory
   { href: "/kx/kxtill/inventory", label: "Inventory", icon: Package, permission: "kxtill.inventory.view" },
-  { href: "/kx/kxtill/stock", label: "Stock", icon: ClipboardList, permission: "kxtill.inventory.view" },
   
   { href: "/kx/kxtill/reports", label: "Reports", icon: FileText, permission: "kxtill.reports.view" },
   { href: "/kx/kxtill/settings", label: "Settings", icon: Settings, permission: "kxtill.settings.view" },

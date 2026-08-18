@@ -21,6 +21,8 @@ import {
   Receipt,
   TrendingUp,
   AlertCircle,
+  AlertTriangle,
+  Check,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -33,7 +35,7 @@ import {
 } from "recharts";
 import styles from "./page.module.css";
 
-// ===== TYPES - EXACT MATCH TO API =====
+// ===== TYPES =====
 type DashboardSummary = {
   totalSales: number;
   totalRevenue: number;
@@ -182,18 +184,136 @@ type TransactionDetailResponse = {
   sale: Transaction;
 };
 
-// ===== COMPONENTS =====
+type RefundResponse = {
+  message: string;
+  sale: {
+    id: string;
+    organizationId: string;
+    userId: string;
+    branchId: string;
+    reference: string;
+    customerName: string;
+    refundedBy: string;
+    refundedAt: string;
+    subtotal: string;
+    taxAmount: string;
+    discount: string;
+    totalAmount: string;
+    status: string;
+    paymentStatus: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+};
+
+// ============================================================
+// TOAST NOTIFICATION
+// ============================================================
+function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`${styles.toast} ${type === 'success' ? styles.toastSuccess : styles.toastError}`}>
+      <div className={styles.toastContent}>
+        {type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
+        <span>{message}</span>
+      </div>
+      <button className={styles.toastClose} onClick={onClose}>
+        <X size={16} />
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// REFUND CONFIRMATION MODAL
+// ============================================================
+function RefundConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  transaction,
+  loading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  transaction: Transaction | null;
+  loading: boolean;
+}) {
+  if (!isOpen || !transaction) return null;
+
+  return (
+    <div className={styles.confirmOverlay} onClick={onClose}>
+      <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.confirmIcon}>
+          <AlertTriangle size={48} />
+        </div>
+        <h3 className={styles.confirmTitle}>Refund this sale?</h3>
+        <div className={styles.confirmDetails}>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>Sale</span>
+            <span className={styles.confirmValue}>#{transaction.id.slice(0, 8).toUpperCase()}</span>
+          </div>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>Amount</span>
+            <span className={styles.confirmValue}>KES {Number(transaction.totalAmount).toLocaleString()}</span>
+          </div>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>Customer</span>
+            <span className={styles.confirmValue}>Walk-in</span>
+          </div>
+        </div>
+        <p className={styles.confirmMessage}>
+          This will mark the sale as refunded and restore the sold items to inventory.
+        </p>
+        <div className={styles.confirmActions}>
+          <button className={styles.confirmCancel} onClick={onClose} disabled={loading}>
+            Cancel
+          </button>
+          <button
+            className={styles.confirmDanger}
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? "Refunding..." : "Confirm Refund"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SALE DETAIL MODAL
+// ============================================================
 function SaleDetailModal({
   transaction,
   onClose,
   orgId,
+  onRefundSuccess,
 }: {
   transaction: Transaction | null;
   onClose: () => void;
   orgId: string;
+  onRefundSuccess: () => void;
 }) {
   const [detail, setDetail] = useState<TransactionDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refunding, setRefunding] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isRefunded, setIsRefunded] = useState(false);
+
+  const { suiteContext } = useAuth();
+  const permissions = suiteContext?.permissions ?? [];
+  const isOwner = permissions.includes("*");
+  const canRefund = isOwner || permissions.includes("kxtill.sales.refund");
 
   useEffect(() => {
     if (transaction) {
@@ -209,10 +329,45 @@ function SaleDetailModal({
         `/api/v1/organizations/${orgId}/kxtill/sales/${transaction.id}`
       );
       setDetail(res.data);
+      setIsRefunded(res.data.sale.status === "REFUNDED");
     } catch (error) {
       console.error("Failed to fetch transaction detail:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefund = async () => {
+    if (!transaction) return;
+
+    setRefunding(true);
+    setShowConfirm(false);
+
+    try {
+      const res = await api.post<RefundResponse>(
+        `/api/v1/organizations/${orgId}/kxtill/sales/${transaction.id}/refund`
+      );
+
+      if (res.data.message) {
+        setIsRefunded(true);
+        setToast({ 
+          message: res.data.message || "Sale refunded successfully! Inventory has been restored.", 
+          type: 'success' 
+        });
+        
+        // Refresh parent data after delay
+        setTimeout(() => {
+          onRefundSuccess();
+          // Close modal after refresh
+          onClose();
+        }, 1500);
+      }
+    } catch (error: any) {
+      console.error("Failed to refund sale:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to process refund. Please try again.";
+      setToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setRefunding(false);
     }
   };
 
@@ -236,143 +391,194 @@ function SaleDetailModal({
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <div className={styles.modalHeaderLeft}>
-            <div className={styles.modalInvoice}>
-              <Receipt size={18} />
-              <span>Sale #{transaction.id.slice(0, 8).toUpperCase()}</span>
+    <>
+      {/* Toast - rendered at root level with higher z-index */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Refund Confirmation Modal */}
+      <RefundConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleRefund}
+        transaction={transaction}
+        loading={refunding}
+      />
+
+      {/* Sale Detail Modal */}
+      <div className={styles.modalOverlay} onClick={onClose}>
+        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <div className={styles.modalHeaderLeft}>
+              <div className={styles.modalInvoice}>
+                <Receipt size={18} />
+                <span>Sale #{transaction.id.slice(0, 8).toUpperCase()}</span>
+              </div>
+              <span className={`${styles.statusBadge} ${styles[status.className]}`}>
+                {status.label}
+              </span>
             </div>
-            <span className={`${styles.statusBadge} ${styles[status.className]}`}>
-              {status.label}
-            </span>
+            <div className={styles.modalHeaderRight}>
+              <button className={styles.modalActionBtn} onClick={() => console.log("Print")}>
+                <Printer size={16} />
+              </button>
+              <button className={styles.modalActionBtn} onClick={() => console.log("Share")}>
+                <Share2 size={16} />
+              </button>
+              <button className={styles.modalCloseBtn} onClick={onClose}>
+                <X size={18} />
+              </button>
+            </div>
           </div>
-          <div className={styles.modalHeaderRight}>
-            <button className={styles.modalActionBtn} onClick={() => console.log("Print")}>
-              <Printer size={16} />
-            </button>
-            <button className={styles.modalActionBtn} onClick={() => console.log("Share")}>
-              <Share2 size={16} />
-            </button>
-            <button className={styles.modalCloseBtn} onClick={onClose}>
-              <X size={18} />
-            </button>
-          </div>
-        </div>
 
-        {loading ? (
-          <div className={styles.modalLoading}>
-            <div className={styles.spinner} />
-            <p>Loading sale details...</p>
-          </div>
-        ) : sale ? (
-          <>
-            <div className={styles.modalBody}>
-              <div className={styles.modalMeta}>
-                <div className={styles.modalMetaItem}>
-                  <span className={styles.modalMetaLabel}>Date & Time</span>
-                  <span className={styles.modalMetaValue}>
-                    {new Date(sale.createdAt).toLocaleDateString()}, {new Date(sale.createdAt).toLocaleTimeString()}
-                  </span>
-                </div>
-                <div className={styles.modalMetaItem}>
-                  <span className={styles.modalMetaLabel}>Customer</span>
-                  <span className={styles.modalMetaValue}>Walk-in Customer</span>
-                </div>
-                <div className={styles.modalMetaItem}>
-                  <span className={styles.modalMetaLabel}>Sold by</span>
-                  <span className={styles.modalMetaValue}>{getUserName(sale.user)}</span>
-                </div>
-                <div className={styles.modalMetaItem}>
-                  <span className={styles.modalMetaLabel}>Payment</span>
-                  <span className={styles.modalMetaValue}>
-                    <CreditCard size={14} />
-                    {sale.payments?.[0]?.method || "N/A"}
-                  </span>
-                </div>
-                <div className={styles.modalMetaItem}>
-                  <span className={styles.modalMetaLabel}>Status</span>
-                  <span className={styles.modalMetaValue}>{sale.paymentStatus || "N/A"}</span>
-                </div>
-              </div>
-
-              <div className={styles.modalItems}>
-                <div className={styles.modalItemsHeader}>
-                  <span>Product</span>
-                  <span>Qty</span>
-                  <span>Price</span>
-                  <span>Total</span>
-                </div>
-                {sale.items?.map((item, idx) => (
-                  <div key={idx} className={styles.modalItemRow}>
-                    <span className={styles.modalItemName}>{item.product?.name || "Unknown"}</span>
-                    <span>{Number(item.quantity) || 0}</span>
-                    <span>KES {Number(item.unitPrice) || 0}</span>
-                    <span>KES {Number(item.total) || 0}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className={styles.modalTotals}>
-                <div className={styles.modalTotalRow}>
-                  <span>Subtotal</span>
-                  <span>KES {Number(sale.subtotal) || 0}</span>
-                </div>
-                <div className={styles.modalTotalRow}>
-                  <span>Discount</span>
-                  <span>KES {Number(sale.discount) || 0}</span>
-                </div>
-                <div className={styles.modalTotalRow}>
-                  <span>Tax</span>
-                  <span>KES {Number(sale.taxAmount) || 0}</span>
-                </div>
-                <div className={`${styles.modalTotalRow} ${styles.modalTotalRowGrand}`}>
-                  <span>Total</span>
-                  <span>KES {Number(sale.totalAmount) || 0}</span>
-                </div>
-              </div>
-
-              <div className={styles.modalPayment}>
-                <div className={styles.modalPaymentMethod}>
-                  <CreditCard size={14} />
-                  <span>{sale.payments?.[0]?.method || "N/A"}</span>
-                </div>
-                {sale.payments?.[0]?.reference && (
-                  <div className={styles.modalTransactionId}>
-                    <span>Ref: {sale.payments[0].reference}</span>
+          {loading ? (
+            <div className={styles.modalLoading}>
+              <div className={styles.spinner} />
+              <p>Loading sale details...</p>
+            </div>
+          ) : sale ? (
+            <>
+              <div className={styles.modalBody}>
+                {/* Refund Badge */}
+                {isRefunded && (
+                  <div className={styles.refundedBadge}>
+                    <AlertCircle size={16} />
+                    <span>This sale has been refunded</span>
                   </div>
                 )}
-              </div>
-            </div>
 
-            <div className={styles.modalFooter}>
-              <button className={styles.modalFooterBtn} onClick={() => console.log("Print Receipt")}>
-                <Printer size={16} />
-                Print Receipt
-              </button>
-              <button className={styles.modalFooterBtn} onClick={() => console.log("Share Receipt")}>
-                <Share2 size={16} />
-                Share Receipt
-              </button>
-              <button className={`${styles.modalFooterBtn} ${styles.modalFooterBtnDanger}`}>
-                <RefreshCw size={16} />
-                Refund
-              </button>
+                <div className={styles.modalMeta}>
+                  <div className={styles.modalMetaItem}>
+                    <span className={styles.modalMetaLabel}>Date & Time</span>
+                    <span className={styles.modalMetaValue}>
+                      {new Date(sale.createdAt).toLocaleDateString()}, {new Date(sale.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className={styles.modalMetaItem}>
+                    <span className={styles.modalMetaLabel}>Customer</span>
+                    <span className={styles.modalMetaValue}>Walk-in Customer</span>
+                  </div>
+                  <div className={styles.modalMetaItem}>
+                    <span className={styles.modalMetaLabel}>Sold by</span>
+                    <span className={styles.modalMetaValue}>{getUserName(sale.user)}</span>
+                  </div>
+                  <div className={styles.modalMetaItem}>
+                    <span className={styles.modalMetaLabel}>Payment</span>
+                    <span className={styles.modalMetaValue}>
+                      <CreditCard size={14} />
+                      {sale.payments?.[0]?.method || "N/A"}
+                    </span>
+                  </div>
+                  <div className={styles.modalMetaItem}>
+                    <span className={styles.modalMetaLabel}>Status</span>
+                    <span className={styles.modalMetaValue}>{sale.paymentStatus || "N/A"}</span>
+                  </div>
+                </div>
+
+                <div className={styles.modalItems}>
+                  <div className={styles.modalItemsHeader}>
+                    <span>Product</span>
+                    <span>Qty</span>
+                    <span>Price</span>
+                    <span>Total</span>
+                  </div>
+                  {sale.items?.map((item, idx) => (
+                    <div key={idx} className={styles.modalItemRow}>
+                      <span className={styles.modalItemName}>{item.product?.name || "Unknown"}</span>
+                      <span>{Number(item.quantity) || 0}</span>
+                      <span>KES {Number(item.unitPrice) || 0}</span>
+                      <span>KES {Number(item.total) || 0}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={styles.modalTotals}>
+                  <div className={styles.modalTotalRow}>
+                    <span>Subtotal</span>
+                    <span>KES {Number(sale.subtotal) || 0}</span>
+                  </div>
+                  <div className={styles.modalTotalRow}>
+                    <span>Discount</span>
+                    <span>KES {Number(sale.discount) || 0}</span>
+                  </div>
+                  <div className={styles.modalTotalRow}>
+                    <span>Tax</span>
+                    <span>KES {Number(sale.taxAmount) || 0}</span>
+                  </div>
+                  <div className={`${styles.modalTotalRow} ${styles.modalTotalRowGrand}`}>
+                    <span>Total</span>
+                    <span>KES {Number(sale.totalAmount) || 0}</span>
+                  </div>
+                </div>
+
+                <div className={styles.modalPayment}>
+                  <div className={styles.modalPaymentMethod}>
+                    <CreditCard size={14} />
+                    <span>{sale.payments?.[0]?.method || "N/A"}</span>
+                  </div>
+                  {sale.payments?.[0]?.reference && (
+                    <div className={styles.modalTransactionId}>
+                      <span>Ref: {sale.payments[0].reference}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button className={styles.modalFooterBtn} onClick={() => console.log("Print Receipt")}>
+                  <Printer size={16} />
+                  Print Receipt
+                </button>
+                <button className={styles.modalFooterBtn} onClick={() => console.log("Share Receipt")}>
+                  <Share2 size={16} />
+                  Share Receipt
+                </button>
+                {canRefund && !isRefunded && (
+                  <button
+                    className={`${styles.modalFooterBtn} ${styles.modalFooterBtnDanger}`}
+                    onClick={() => setShowConfirm(true)}
+                    disabled={refunding}
+                  >
+                    {refunding ? (
+                      <>
+                        <span className={styles.spinnerSmall} />
+                        Refunding...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw size={16} />
+                        Refund
+                      </>
+                    )}
+                  </button>
+                )}
+                {isRefunded && (
+                  <button className={`${styles.modalFooterBtn} ${styles.modalFooterBtnDisabled}`} disabled>
+                    Already Refunded
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className={styles.modalEmpty}>
+              <AlertCircle size={32} />
+              <p>Failed to load sale details</p>
             </div>
-          </>
-        ) : (
-          <div className={styles.modalEmpty}>
-            <AlertCircle size={32} />
-            <p>Failed to load sale details</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
-// ===== MAIN PAGE =====
+// ============================================================
+// MAIN PAGE
+// ============================================================
 export default function SalesPage() {
   const { activeOrganization, activeBranch, suiteContext } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -380,6 +586,7 @@ export default function SalesPage() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [chartData, setChartData] = useState<SalesChartResponse | null>(null);
@@ -449,7 +656,11 @@ export default function SalesPage() {
 
   useEffect(() => {
     fetchData();
-  }, [orgId, branchId, period]);
+  }, [orgId, branchId, period, refreshKey]);
+
+  const handleRefundSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   const chartFormatted = chartData?.data?.map((d) => ({
     time: d.label,
@@ -726,11 +937,14 @@ export default function SalesPage() {
                         <td>{tx.user ? `${tx.user.firstName} ${tx.user.lastName}` : "Unknown"}</td>
                         <td className={styles.txAmount}>KES {Number(tx.totalAmount)?.toLocaleString() || 0}</td>
                         <td>
-                          <button className={styles.txActionBtn} onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTransaction(tx);
-                            setShowDetail(true);
-                          }}>
+                          <button
+                            className={styles.txActionBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTransaction(tx);
+                              setShowDetail(true);
+                            }}
+                          >
                             <Eye size={14} />
                           </button>
                         </td>
@@ -760,6 +974,7 @@ export default function SalesPage() {
             setSelectedTransaction(null);
           }}
           orgId={orgId}
+          onRefundSuccess={handleRefundSuccess}
         />
       )}
     </>
