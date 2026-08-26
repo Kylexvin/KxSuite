@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Zap,
   RefreshCw,
+  LogOut,
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -97,6 +98,7 @@ export default function SelectOrganizationPage() {
     setActiveOrganizationDirect,
     loadBranches,
     isLoading,
+    logout,
   } = useAuth();
 
   const [pendingInvites, setPendingInvites] = useState<PendingInvitation[]>([]);
@@ -188,6 +190,11 @@ export default function SelectOrganizationPage() {
   // ============================================================
   // HANDLERS
   // ============================================================
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   const handleSelect = useCallback(
     async (orgId: string) => {
@@ -350,21 +357,10 @@ export default function SelectOrganizationPage() {
   );
 
   const getOrgRole = useCallback(
-    (org: { ownerId?: string; owner?: { id?: string } | null; [key: string]: unknown }): string => {
-      if (!user) return "MEMBER";
-      const ownerId = org.ownerId ?? (org.owner?.id as string | undefined);
-      return ownerId === user.id ? "OWNER" : "MEMBER";
+    (org: Organization): string => {
+      return org.role || "MEMBER";
     },
-    [user]
-  );
-
-  const hasFullAccess = useCallback(
-    (org: { ownerId?: string; owner?: { id?: string } | null; [key: string]: unknown }): boolean => {
-      if (!user) return false;
-      const ownerId = org.ownerId ?? (org.owner?.id as string | undefined);
-      return ownerId === user.id;
-    },
-    [user]
+    []
   );
 
   // ============================================================
@@ -463,6 +459,22 @@ export default function SelectOrganizationPage() {
               </div>
             </div>
 
+            {/* Header with Logout */}
+            <div className={styles.pageHeader}>
+              <div className={styles.pageTitle}>
+                <h2>Welcome to KXBYTE Suite</h2>
+                <p className={styles.subtitle}>
+                  {hasOrgs || hasInvites
+                    ? "Select an organization to continue."
+                    : "Get started by creating your first organization."}
+                </p>
+              </div>
+              <button className={styles.logoutBtn} onClick={handleLogout}>
+                <LogOut size={16} />
+                Logout
+              </button>
+            </div>
+
             {showCreateForm ? (
               // ===== CREATE ORGANIZATION FORM =====
               <div className={styles.createSection}>
@@ -540,15 +552,6 @@ export default function SelectOrganizationPage() {
             ) : (
               // ===== SELECT ORGANIZATION =====
               <div className={styles.selectSection}>
-                <div className={styles.selectHeader}>
-                  <h2>Welcome to KXBYTE Suite</h2>
-                  <p className={styles.subtitle}>
-                    {hasOrgs || hasInvites
-                      ? "Select an organization to continue."
-                      : "Get started by creating your first organization."}
-                  </p>
-                </div>
-
                 {error && <div className={styles.error}>{error}</div>}
 
                 {/* Organizations */}
@@ -561,7 +564,7 @@ export default function SelectOrganizationPage() {
                     <div className={styles.orgGrid}>
                       {organizations.map((org) => {
                         const role = getOrgRole(org);
-                        const fullAccess = hasFullAccess(org);
+                        const isOwner = role === "Owner" || role === "OWNER";
 
                         return (
                           <button
@@ -577,7 +580,7 @@ export default function SelectOrganizationPage() {
                               <div className={styles.orgInfo}>
                                 <span className={styles.orgName}>{org.name}</span>
                                 <span className={styles.orgRole}>
-                                  {role === "OWNER" ? (
+                                  {isOwner ? (
                                     <>
                                       <Crown size={12} />
                                       Owner
@@ -589,12 +592,10 @@ export default function SelectOrganizationPage() {
                               </div>
                             </div>
                             <div className={styles.orgCardRight}>
-                              {role === "OWNER" ? (
+                              {isOwner ? (
                                 <span className={styles.badgeOwner}>Full Access</span>
-                              ) : fullAccess ? (
-                                <span className={styles.badge}>All Branches</span>
                               ) : (
-                                <span className={styles.badgeLimited}>Limited</span>
+                                <span className={styles.badgeMember}>Limited</span>
                               )}
                               <ChevronRight size={16} className={styles.orgArrow} />
                             </div>

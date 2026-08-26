@@ -29,7 +29,7 @@ export type Organization = {
   id: string;
   name: string;
   slug: string;
-  role: string;
+  role: string; // "Owner" or "Member" from login response
   hasAllBranches: boolean;
   membershipId?: string;
   branchIds?: string[];

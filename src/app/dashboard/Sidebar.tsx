@@ -1,6 +1,8 @@
+// src/app/dashboard/Sidebar.tsx
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +36,7 @@ const NAV_LINKS: NavLink[] = [
     href: "/dashboard/marketplace",
     label: "Marketplace",
     icon: ShoppingBag,
-    requiresOwner: true, // Only owner can add products
+    requiresOwner: true,
   },
   {
     href: "/kx",
@@ -84,6 +86,7 @@ export default function Sidebar() {
 
   const [productsOpen, setProductsOpen] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 1024;
 
@@ -101,7 +104,7 @@ export default function Sidebar() {
   };
 
   // ============================================================
-  // PRODUCT VISIBILITY — show ONLY products user has permissions for
+  // PRODUCT VISIBILITY
   // ============================================================
 
   const products = suiteContext?.products ?? [];
@@ -112,7 +115,6 @@ export default function Sidebar() {
     return permissions.some((perm) => perm.startsWith(`${p.key}.`));
   });
 
-  // Products tab only shows if user has any visible products OR is owner
   const showProductsTab = visibleProducts.length > 0 || isOwner;
 
   // ============================================================
@@ -133,11 +135,17 @@ export default function Sidebar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // ============================================================
+  // HANDLE CLICK OUTSIDE - ONLY FOR MOBILE
+  // ============================================================
+
   useEffect(() => {
-    const handleClickOutside = () => {
-      // Just collapse on small screens when clicking outside
-      if (isSmallScreen && !collapsed) {
-        setTimeout(() => setCollapsed(true), 300);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isSmallScreen && 
+          sidebarRef.current && 
+          !sidebarRef.current.contains(event.target as Node) &&
+          !collapsed) {
+        setCollapsed(true);
       }
     };
 
@@ -193,17 +201,14 @@ export default function Sidebar() {
   // ============================================================
 
   const visibleLinks = NAV_LINKS.filter((link) => {
-    // Skip Products (/kx) - handled separately
     if (link.href === "/kx") {
       return showProductsTab;
     }
 
-    // Marketplace requires owner
     if (link.requiresOwner && !isOwner) {
       return false;
     }
 
-    // Check permission
     return hasPermission(link.permission);
   });
 
@@ -216,7 +221,11 @@ export default function Sidebar() {
   const sidebarKey = `sidebar-${activeOrganization?.id}-${products.length}`;
 
   return (
-    <aside key={sidebarKey} className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
+    <aside 
+      key={sidebarKey} 
+      ref={sidebarRef}
+      className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}
+    >
       {/* Logo Row */}
       <div className={styles.logoRow}>
         <div className={styles.logoWrapper}>

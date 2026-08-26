@@ -422,3 +422,59 @@
     padding: 14px;
   }
 }
+/* Disabled report card styles */
+.reportCardDisabled {
+  opacity: 0.6;
+  pointer-events: none;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+}
+
+.reportCardDisabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Disabled icon */
+.reportIconDisabled {
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+}
+
+/* Coming Soon badge */
+.comingSoonBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  border-radius: 12px;
+  animation: pulseBadge 2s ease-in-out infinite;
+}
+
+@keyframes pulseBadge {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Disabled export buttons */
+.exportBtnDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
+}
+
+.exportBtnDisabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}

@@ -37,6 +37,8 @@ type ReportOption = {
   description: string;
   endpoint: string;
   requiresOwner?: boolean;
+  disabled?: boolean;
+  comingSoon?: boolean;
 };
 
 const REPORT_OPTIONS: ReportOption[] = [
@@ -76,6 +78,8 @@ const REPORT_OPTIONS: ReportOption[] = [
     description: "Tax collected and tax summary",
     endpoint: "/reports/export/tax",
     requiresOwner: true,
+    disabled: true,
+    comingSoon: true,
   },
   {
     id: "audit",
@@ -136,10 +140,18 @@ export default function ReportsPage() {
   // Filter reports based on permissions
   const visibleReports = REPORT_OPTIONS.filter((report) => {
     if (report.requiresOwner && !isOwner) return false;
+    if (report.disabled) return true; // Still show disabled reports
     return true;
   });
 
   const handleExport = async (reportId: string, endpoint: string, format: ExportFormat) => {
+    // Check if report is disabled
+    const report = REPORT_OPTIONS.find(r => r.id === reportId);
+    if (report?.disabled) {
+      setToast({ message: `${report.label} is coming soon!`, type: 'error' });
+      return;
+    }
+
     if (!orgId) {
       setToast({ message: "Organization not found. Please select an organization.", type: 'error' });
       return;
@@ -251,23 +263,29 @@ export default function ReportsPage() {
             const Icon = report.icon;
             const isExporting = exporting === `${report.id}-csv` || exporting === `${report.id}-pdf`;
             const isLoading = loading === report.id;
+            const isDisabled = report.disabled;
 
             return (
-              <div key={report.id} className={styles.reportCard}>
+              <div key={report.id} className={`${styles.reportCard} ${isDisabled ? styles.reportCardDisabled : ''}`}>
                 <div className={styles.reportCardHeader}>
-                  <div className={styles.reportIcon}>
+                  <div className={`${styles.reportIcon} ${isDisabled ? styles.reportIconDisabled : ''}`}>
                     <Icon size={20} />
                   </div>
                   <div>
-                    <h3 className={styles.reportTitle}>{report.label}</h3>
+                    <h3 className={styles.reportTitle}>
+                      {report.label}
+                      {report.comingSoon && (
+                        <span className={styles.comingSoonBadge}>Coming Soon</span>
+                      )}
+                    </h3>
                     <p className={styles.reportDescription}>{report.description}</p>
                   </div>
                 </div>
                 <div className={styles.reportActions}>
                   <button
-                    className={`${styles.exportBtn} ${styles.exportBtnCsv}`}
+                    className={`${styles.exportBtn} ${styles.exportBtnCsv} ${isDisabled ? styles.exportBtnDisabled : ''}`}
                     onClick={() => handleExport(report.id, report.endpoint, 'csv')}
-                    disabled={isLoading}
+                    disabled={isLoading || isDisabled}
                   >
                     {isExporting && exporting === `${report.id}-csv` ? (
                       <span className={styles.spinnerSmall} />
@@ -277,9 +295,9 @@ export default function ReportsPage() {
                     CSV
                   </button>
                   <button
-                    className={`${styles.exportBtn} ${styles.exportBtnPdf}`}
+                    className={`${styles.exportBtn} ${styles.exportBtnPdf} ${isDisabled ? styles.exportBtnDisabled : ''}`}
                     onClick={() => handleExport(report.id, report.endpoint, 'pdf')}
-                    disabled={isLoading}
+                    disabled={isLoading || isDisabled}
                   >
                     {isExporting && exporting === `${report.id}-pdf` ? (
                       <span className={styles.spinnerSmall} />

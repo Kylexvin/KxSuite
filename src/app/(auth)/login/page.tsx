@@ -47,8 +47,8 @@ export default function LoginPage() {
   alt="KXBYTE" 
   width={48} 
   height={48} 
-  loading="eager"  // ✅ Load immediately
-  priority         // ✅ Tell Next.js this is important
+  loading="eager"  
+  priority        
 />
             
           </div>

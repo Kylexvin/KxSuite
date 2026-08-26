@@ -40,7 +40,7 @@
 .logoRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 4px 6px 16px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 12px;
@@ -114,11 +114,18 @@
   margin-left: 0;
 }
 
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
 /* Navigation */
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
   flex: 1;
 }
 
@@ -128,7 +135,7 @@
   align-items: center;
   gap: 11px;
   padding: 9px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--raised);
   color: var(--text-muted);
@@ -136,9 +143,6 @@
   font-size: 14px;
   font-weight: 500;
   overflow: hidden;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
   box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
   transition: color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
@@ -146,6 +150,7 @@
 .navLink:hover {
   color: var(--text);
   border-color: var(--border-strong);
+  text-decoration: none;
 }
 
 .navLinkActive {
@@ -163,6 +168,7 @@
 
 .navLinkActive:hover {
   color: #ffffff;
+  text-decoration: none;
 }
 
 .navLinkActive::after {
@@ -204,11 +210,107 @@
   gap: 0;
 }
 
-/* Divider */
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 8px 0;
+/* ============================================================
+   EXPANDABLE NAV (like Products in main sidebar)
+   ============================================================ */
+.navLinkExpandable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.navLinkExpandable:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.navLinkExpandableLabel {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-faint);
+  transition: transform 0.2s, opacity 0.15s;
+}
+
+.chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+.collapsed .chevron {
+  opacity: 0;
+  width: 0;
+}
+
+/* ============================================================
+   SUB NAVIGATION (like main sidebar's subNav)
+   ============================================================ */
+.subNav {
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.collapsed .subNav {
+  display: none;
+}
+
+.subLink {
+  display: block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  color: rgb(231, 228, 228);
+  background: linear-gradient(90deg, rgba(255, 106, 43, 0) 0%, rgba(25, 24, 24, 0.9) 0%);
+    text-decoration: none;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.subLink:hover {
+  background: var(--raised);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.subLinkActive {
+  display: block;
+  padding: 6px 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+  color: var(--accent-glow);
+  background: rgba(255, 106, 43, 0.1);
+  border: none;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+
+.subLinkActive:hover {
+  background: rgba(255, 106, 43, 0.16);
 }
 
 /* Spacer */
@@ -216,7 +318,85 @@
   flex: 1;
 }
 
-/* Back to Suite */
+/* ============================================================
+   PROFILE ROW (same as main sidebar)
+   ============================================================ */
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  cursor: pointer;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+}
+
+.profileRow:hover {
+  background: var(--raised-hi);
+  border-color: var(--border-strong);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.profileRow:active {
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.45), inset -3px -3px 6px rgba(255, 255, 255, 0.02);
+}
+
+.collapsed .profileRow {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #17181d;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 106, 43, 0.25);
+}
+
+.collapsed .avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  font-size: 14px;
+}
+
+.profileRow .navLabel {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+
+.collapsed .profileRow .navLabel {
+  opacity: 0;
+  width: 0;
+}
+
+/* ============================================================
+   BACK TO SUITE
+   ============================================================ */
 .backToSuiteRow {
   display: flex;
   align-items: center;
@@ -226,7 +406,7 @@
   border: 1px solid var(--border);
   background: var(--raised);
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--text-muted);
   font-size: 14px;
   font-weight: 500;
@@ -247,7 +427,9 @@
   gap: 0;
 }
 
-/* Logout */
+/* ============================================================
+   LOGOUT
+   ============================================================ */
 .logoutRow {
   display: flex;
   align-items: center;
@@ -257,11 +439,11 @@
   border: 1px solid var(--border);
   background: var(--raised);
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--danger);
   font-size: 14px;
   font-weight: 500;
-  margin-top: 4px;
+  margin-top: 6px;
   box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02), 3px 3px 8px rgba(0, 0, 0, 0.4);
   transition: background 0.15s, border-color 0.15s;
 }
@@ -302,8 +484,8 @@
 /* Mobile */
 @media (max-width: 768px) {
   .sidebar {
-    width: 200px;
-    min-width: 200px;
+    width: 220px;
+    min-width: 220px;
     padding: 12px 8px;
   }
 
@@ -311,23 +493,28 @@
     font-size: 15px;
   }
 
-  .navLink {
+  .navLink,
+  .navLinkExpandable {
     font-size: 13px;
     padding: 7px 10px;
   }
 
-  .backToSuiteRow {
-    font-size: 13px;
-    padding: 7px 10px;
+  .subLink {
+    font-size: 12px;
+    padding: 4px 10px;
   }
 
-  .logoutRow {
+  .logoutRow,
+  .backToSuiteRow,
+  .profileRow {
     font-size: 13px;
     padding: 7px 10px;
   }
 }
 
-/* Collapsed state for tablet */
+/* ============================================================
+   RESPONSIVE AUTO-COLLAPSE (matches main sidebar)
+   ============================================================ */
 @media (max-width: 1024px) {
   .sidebar {
     width: 76px;
@@ -346,22 +533,23 @@
     width: 0;
   }
 
-  .sidebar .navLink {
+  .sidebar .navLink,
+  .sidebar .navLinkExpandable,
+  .sidebar .logoutRow,
+  .sidebar .backToSuiteRow,
+  .sidebar .profileRow {
     justify-content: center;
     padding: 10px;
     gap: 0;
   }
 
-  .sidebar .backToSuiteRow {
-    justify-content: center;
-    padding: 10px;
-    gap: 0;
+  .sidebar .chevron {
+    opacity: 0;
+    width: 0;
   }
 
-  .sidebar .logoutRow {
-    justify-content: center;
-    padding: 10px;
-    gap: 0;
+  .sidebar .subNav {
+    display: none;
   }
 
   .sidebar .collapseBtn {
@@ -400,22 +588,23 @@
     width: auto;
   }
 
-  .sidebar:not(.collapsed) .navLink {
+  .sidebar:not(.collapsed) .navLink,
+  .sidebar:not(.collapsed) .navLinkExpandable,
+  .sidebar:not(.collapsed) .logoutRow,
+  .sidebar:not(.collapsed) .backToSuiteRow,
+  .sidebar:not(.collapsed) .profileRow {
     justify-content: flex-start;
     padding: 9px 12px;
     gap: 11px;
   }
 
-  .sidebar:not(.collapsed) .backToSuiteRow {
-    justify-content: flex-start;
-    padding: 9px 12px;
-    gap: 9px;
+  .sidebar:not(.collapsed) .chevron {
+    opacity: 1;
+    width: auto;
   }
 
-  .sidebar:not(.collapsed) .logoutRow {
-    justify-content: flex-start;
-    padding: 9px 12px;
-    gap: 9px;
+  .sidebar:not(.collapsed) .subNav {
+    display: flex;
   }
 
   .sidebar:not(.collapsed) .collapseBtn {
@@ -440,8 +629,8 @@
 /* On very small screens */
 @media (max-width: 768px) {
   .sidebar:not(.collapsed) {
-    width: 200px;
-    min-width: 200px;
+    width: 220px;
+    min-width: 220px;
     padding: 12px 8px;
   }
 
@@ -449,17 +638,20 @@
     font-size: 15px;
   }
 
-  .sidebar:not(.collapsed) .navLink {
+  .sidebar:not(.collapsed) .navLink,
+  .sidebar:not(.collapsed) .navLinkExpandable {
     font-size: 13px;
     padding: 7px 10px;
   }
 
-  .sidebar:not(.collapsed) .backToSuiteRow {
-    font-size: 13px;
-    padding: 7px 10px;
+  .sidebar:not(.collapsed) .subLink {
+    font-size: 12px;
+    padding: 4px 10px;
   }
 
-  .sidebar:not(.collapsed) .logoutRow {
+  .sidebar:not(.collapsed) .logoutRow,
+  .sidebar:not(.collapsed) .backToSuiteRow,
+  .sidebar:not(.collapsed) .profileRow {
     font-size: 13px;
     padding: 7px 10px;
   }
