@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
@@ -21,7 +21,7 @@ type InventorySummary = {
   totalProducts: number;
   lowStock: number;
   outOfStock: number;
-  stockValue?: number; // Made optional since not always returned
+  stockValue?: number;
 };
 
 type InventoryHealth = {
@@ -129,73 +129,92 @@ export default function InventoryPage() {
   const orgId = activeOrganization?.id || "";
   const branchId = activeBranch?.id;
 
+  // Use ref to prevent re-fetch on every render
+  const isInitialMount = useRef(true);
+
   // ============================================================
-  // FETCH DATA
+  // FETCH DATA - FIXED with isMounted pattern
   // ============================================================
-
-  const fetchData = async () => {
-    if (!orgId) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params: Record<string, string> = {};
-      if (branchId) params.branchId = branchId;
-      if (period) params.period = period;
-
-      // 1. Summary
-      const summaryRes = await api.get<InventorySummary>(
-        `/api/v1/organizations/${orgId}/kxtill/inventory/summary`,
-        { params }
-      );
-      setSummary(summaryRes.data);
-
-      // 2. Health
-      const healthRes = await api.get<InventoryHealth>(
-        `/api/v1/organizations/${orgId}/kxtill/inventory/health`,
-        { params }
-      );
-      setHealth(healthRes.data);
-
-      // 3. Needs Attention
-      const statusParam = filterTab === "all" ? undefined : filterTab;
-      const attentionRes = await api.get<NeedsAttentionResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/inventory/needs-attention`,
-        { params: { ...params, status: statusParam, limit: 20 } }
-      );
-      setNeedsAttention(attentionRes.data);
-
-      // 4. Stock Activity
-      const activityRes = await api.get<ActivityResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/inventory/activity`,
-        { params: { ...params, limit: 10 } }
-      );
-      setActivity(activityRes.data);
-
-      // 5. Branch Stock (Owner only)
-      if (isOwner) {
-        const branchRes = await api.get<BranchStockResponse>(
-          `/api/v1/organizations/${orgId}/kxtill/inventory/branches`,
-          { params: { period } }
-        );
-        setBranchStock(branchRes.data);
-      }
-
-    } catch (err) {
-      console.error("Failed to fetch inventory data:", err);
-      setError("Failed to load inventory data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchData = async () => {
+      if (!orgId) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
+      if (isMounted) {
+        setLoading(true);
+        setError(null);
+      }
+
+      try {
+        const params: Record<string, string> = {};
+        if (branchId) params.branchId = branchId;
+        if (period) params.period = period;
+
+        // 1. Summary
+        const summaryRes = await api.get<InventorySummary>(
+          `/api/v1/organizations/${orgId}/kxtill/inventory/summary`,
+          { params }
+        );
+        if (!isMounted) return;
+        setSummary(summaryRes.data);
+
+        // 2. Health
+        const healthRes = await api.get<InventoryHealth>(
+          `/api/v1/organizations/${orgId}/kxtill/inventory/health`,
+          { params }
+        );
+        if (!isMounted) return;
+        setHealth(healthRes.data);
+
+        // 3. Needs Attention
+        const statusParam = filterTab === "all" ? undefined : filterTab;
+        const attentionRes = await api.get<NeedsAttentionResponse>(
+          `/api/v1/organizations/${orgId}/kxtill/inventory/needs-attention`,
+          { params: { ...params, status: statusParam, limit: 20 } }
+        );
+        if (!isMounted) return;
+        setNeedsAttention(attentionRes.data);
+
+        // 4. Stock Activity
+        const activityRes = await api.get<ActivityResponse>(
+          `/api/v1/organizations/${orgId}/kxtill/inventory/activity`,
+          { params: { ...params, limit: 10 } }
+        );
+        if (!isMounted) return;
+        setActivity(activityRes.data);
+
+        // 5. Branch Stock (Owner only)
+        if (isOwner) {
+          const branchRes = await api.get<BranchStockResponse>(
+            `/api/v1/organizations/${orgId}/kxtill/inventory/branches`,
+            { params: { period } }
+          );
+          if (!isMounted) return;
+          setBranchStock(branchRes.data);
+        }
+
+      } catch (err) {
+        if (!isMounted) return;
+        console.error("Failed to fetch inventory data:", err);
+        setError("Failed to load inventory data. Please try again.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchData();
-  }, [orgId, branchId, period, filterTab, refreshKey]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orgId, branchId, period, filterTab, refreshKey, isOwner]);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
@@ -210,9 +229,8 @@ export default function InventoryPage() {
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.loadingState}>
-          <div className={styles.spinner} />
-          <p>Loading inventory data...</p>
+        <div className={styles.loaderWrapper}>
+          <div className={styles.loader} />
         </div>
       </div>
     );
@@ -224,7 +242,7 @@ export default function InventoryPage() {
         <div className={styles.errorState}>
           <AlertCircle size={32} className={styles.errorIcon} />
           <p className={styles.errorText}>{error}</p>
-          <button className={styles.retryBtn} onClick={fetchData}>
+          <button className={styles.retryBtn} onClick={handleRefresh}>
             <RefreshCw size={16} />
             Retry
           </button>
@@ -292,40 +310,39 @@ export default function InventoryPage() {
         </div>
       </div>
 
-
-{/* ===== SUMMARY CARDS ===== */}
-<div className={styles.summaryGrid}>
-  <div className={styles.summaryCard}>
-    <div className={styles.summaryCardTop}>
-      <span className={styles.summaryCardLabel}>Total Products</span>
-      <span className={styles.summaryCardIcon}>
-        <Package size={16} />
-      </span>
-    </div>
-    <div className={styles.summaryCardValue}>{summary.totalProducts}</div>
-    <div className={styles.summaryCardSub}>Products in your catalog.</div>
-  </div>
-  <div className={styles.summaryCard}>
-    <div className={styles.summaryCardTop}>
-      <span className={styles.summaryCardLabel}>Low Stock</span>
-      <span className={styles.summaryCardIcon} style={{ color: "#ffa726" }}>
-        <AlertTriangle size={16} />
-      </span>
-    </div>
-    <div className={styles.summaryCardValue}>{summary.lowStock}</div>
-    <div className={styles.summaryCardSub}>Below minimum stock level.</div>
-  </div>
-  <div className={styles.summaryCard}>
-    <div className={styles.summaryCardTop}>
-      <span className={styles.summaryCardLabel}>Out of Stock</span>
-      <span className={styles.summaryCardIcon} style={{ color: "#ef5350" }}>
-        <AlertCircle size={16} />
-      </span>
-    </div>
-    <div className={styles.summaryCardValue}>{summary.outOfStock}</div>
-    <div className={styles.summaryCardSub}>Currently unavailable.</div>
-  </div>
-</div>
+      {/* ===== SUMMARY CARDS ===== */}
+      <div className={styles.summaryGrid}>
+        <div className={styles.summaryCard}>
+          <div className={styles.summaryCardTop}>
+            <span className={styles.summaryCardLabel}>Total Products</span>
+            <span className={styles.summaryCardIcon}>
+              <Package size={16} />
+            </span>
+          </div>
+          <div className={styles.summaryCardValue}>{summary.totalProducts}</div>
+          <div className={styles.summaryCardSub}>Products in your catalog.</div>
+        </div>
+        <div className={styles.summaryCard}>
+          <div className={styles.summaryCardTop}>
+            <span className={styles.summaryCardLabel}>Low Stock</span>
+            <span className={styles.summaryCardIcon} style={{ color: "#ffa726" }}>
+              <AlertTriangle size={16} />
+            </span>
+          </div>
+          <div className={styles.summaryCardValue}>{summary.lowStock}</div>
+          <div className={styles.summaryCardSub}>Below minimum stock level.</div>
+        </div>
+        <div className={styles.summaryCard}>
+          <div className={styles.summaryCardTop}>
+            <span className={styles.summaryCardLabel}>Out of Stock</span>
+            <span className={styles.summaryCardIcon} style={{ color: "#ef5350" }}>
+              <AlertCircle size={16} />
+            </span>
+          </div>
+          <div className={styles.summaryCardValue}>{summary.outOfStock}</div>
+          <div className={styles.summaryCardSub}>Currently unavailable.</div>
+        </div>
+      </div>
 
       {/* ===== INVENTORY HEALTH ===== */}
       {health && (

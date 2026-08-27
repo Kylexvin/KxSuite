@@ -18,26 +18,12 @@ import {
   ChevronsLeft,
   ChevronDown,
 
-  type LucideIcon,
 } from "lucide-react";
 import styles from "../styles/KxTillSidebar.module.css";
 
-type NavLink = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  permission?: string;
-  requiresOwner?: boolean;
-};
 
-const NAV_LINKS: NavLink[] = [
-  { href: "/kx/kxtill", label: "Overview", icon: LayoutDashboard },
-  { href: "/kx/kxtill/sales", label: "Sales", icon: ShoppingCart, permission: "kxtill.sales.view" },
-  { href: "/kx/kxtill/refunds", label: "Refunds", icon: ArrowLeft, permission: "kxtill.sales.view" },
-  { href: "/kx/kxtill/reports", label: "Reports", icon: FileText, permission: "kxtill.reports.view" },
-  { href: "/kx/kxtill/settings", label: "Settings", icon: Settings, permission: "kxtill.settings.view" },
-  { href: "/kx/kxtill/staff", label: "Staff", icon: Users, requiresOwner: true },
-];
+
+
 
 export default function KxTillSidebar() {
   const router = useRouter();
@@ -49,22 +35,10 @@ export default function KxTillSidebar() {
 
   const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 1024;
 
-  // ============================================================
-  // PERMISSION HELPERS
-  // ============================================================
-
   const permissions = suiteContext?.permissions ?? [];
   const isOwner = permissions.includes("*");
 
-  const hasPermission = (permission?: string): boolean => {
-    if (!permission) return true;
-    if (isOwner) return true;
-    return permissions.includes(permission);
-  };
 
-  // ============================================================
-  // AUTO-COLLAPSE ON SMALL SCREENS
-  // ============================================================
 
   useEffect(() => {
     const handleResize = () => {
@@ -80,10 +54,6 @@ export default function KxTillSidebar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ============================================================
-  // HANDLE CLICK OUTSIDE - ONLY FOR MOBILE
-  // ============================================================
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (isSmallScreen && 
@@ -97,10 +67,6 @@ export default function KxTillSidebar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSmallScreen, collapsed]);
-
-  // ============================================================
-  // HANDLERS
-  // ============================================================
 
   const handleNavClick = (href: string) => {
     router.push(href);
@@ -127,7 +93,6 @@ export default function KxTillSidebar() {
   };
 
   const handleInventoryToggle = () => {
-    // If collapsed on small screen, expand first then toggle
     if (collapsed && isSmallScreen) {
       setCollapsed(false);
       setTimeout(() => {
@@ -138,29 +103,11 @@ export default function KxTillSidebar() {
     }
   };
 
-  const isLinkActive = (href: string) => {
-    if (href === "/kx/kxtill") {
-      return pathname === href;
-    }
-    return pathname.startsWith(href);
-  };
+
 
   const isInventoryActive = () => {
     return pathname.startsWith("/kx/kxtill/inventory");
   };
-
-  // ============================================================
-  // FILTER NAV LINKS
-  // ============================================================
-
-  const visibleLinks = NAV_LINKS.filter((link) => {
-    if (link.requiresOwner && !isOwner) return false;
-    return hasPermission(link.permission);
-  });
-
-  // ============================================================
-  // RENDER
-  // ============================================================
 
 
   return (
@@ -168,7 +115,6 @@ export default function KxTillSidebar() {
       ref={sidebarRef}
       className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}
     >
-      {/* Logo Row */}
       <div className={styles.logoRow}>
         <div className={styles.logoWrapper}>
           <Image
@@ -192,24 +138,36 @@ export default function KxTillSidebar() {
 
       <div className={styles.divider} />
 
-      {/* Navigation */}
       <nav className={styles.nav}>
-        {visibleLinks.map((link) => {
-          const Icon = link.icon;
-          const isActive = isLinkActive(link.href);
+        {/* Overview */}
+        <button
+          className={pathname === "/kx/kxtill" ? styles.navLinkActive : styles.navLink}
+          onClick={() => handleNavClick("/kx/kxtill")}
+          title="Overview"
+        >
+          <LayoutDashboard size={16} color="currentColor" className={styles.navIcon} />
+          <span className={styles.navLabel}>Overview</span>
+        </button>
 
-          return (
-            <button
-              key={link.href}
-              className={isActive ? styles.navLinkActive : styles.navLink}
-              onClick={() => handleNavClick(link.href)}
-              title={link.label}
-            >
-              <Icon size={16} color="currentColor" className={styles.navIcon} />
-              <span className={styles.navLabel}>{link.label}</span>
-            </button>
-          );
-        })}
+        {/* Sales */}
+        <button
+          className={pathname === "/kx/kxtill/sales" ? styles.navLinkActive : styles.navLink}
+          onClick={() => handleNavClick("/kx/kxtill/sales")}
+          title="Sales"
+        >
+          <ShoppingCart size={16} color="currentColor" className={styles.navIcon} />
+          <span className={styles.navLabel}>Sales</span>
+        </button>
+
+        {/* Refunds */}
+        <button
+          className={pathname === "/kx/kxtill/refunds" ? styles.navLinkActive : styles.navLink}
+          onClick={() => handleNavClick("/kx/kxtill/refunds")}
+          title="Refunds"
+        >
+          <ArrowLeft size={16} color="currentColor" className={styles.navIcon} />
+          <span className={styles.navLabel}>Refunds</span>
+        </button>
 
         {/* Inventory - Expandable */}
         <div>
@@ -247,13 +205,43 @@ export default function KxTillSidebar() {
             </div>
           )}
         </div>
+
+        {/* Reports */}
+        <button
+          className={pathname === "/kx/kxtill/reports" ? styles.navLinkActive : styles.navLink}
+          onClick={() => handleNavClick("/kx/kxtill/reports")}
+          title="Reports"
+        >
+          <FileText size={16} color="currentColor" className={styles.navIcon} />
+          <span className={styles.navLabel}>Reports</span>
+        </button>
+
+        {/* Settings */}
+        <button
+          className={pathname === "/kx/kxtill/settings" ? styles.navLinkActive : styles.navLink}
+          onClick={() => handleNavClick("/kx/kxtill/settings")}
+          title="Settings"
+        >
+          <Settings size={16} color="currentColor" className={styles.navIcon} />
+          <span className={styles.navLabel}>Settings</span>
+        </button>
+
+        {/* Staff - Owner only */}
+        {isOwner && (
+          <button
+            className={pathname === "/kx/kxtill/staff" ? styles.navLinkActive : styles.navLink}
+            onClick={() => handleNavClick("/kx/kxtill/staff")}
+            title="Staff"
+          >
+            <Users size={16} color="currentColor" className={styles.navIcon} />
+            <span className={styles.navLabel}>Staff</span>
+          </button>
+        )}
       </nav>
 
       <div className={styles.spacer} />
 
-      {/* Profile & Logout */}
       <div className={styles.divider} />
-
 
       <button
         className={styles.backToSuiteRow}

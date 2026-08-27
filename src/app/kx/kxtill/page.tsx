@@ -2,7 +2,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
@@ -79,14 +80,6 @@ type PaymentMethodsResponse = {
   total: number;
 };
 
-// ===== MOCK DATA =====
-const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
-  { name: "M-Pesa", value: 45, amount: 405000 },
-  { name: "Cash", value: 30, amount: 270000 },
-  { name: "Card", value: 20, amount: 180000 },
-  { name: "Other", value: 5, amount: 45000 },
-];
-
 const getPaymentColor = (name: string): string => {
   const colors: Record<string, string> = {
     'Cash': '#4caf82',
@@ -99,20 +92,19 @@ const getPaymentColor = (name: string): string => {
 };
 
 export default function KxTillOverview() {
-  const { activeOrganization, activeBranch, suiteContext } = useAuth();
+  const router = useRouter();
+  const { activeOrganization, activeBranch} = useAuth();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [salesData, setSalesData] = useState<{ date: string; value: number }[]>([]);
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(MOCK_PAYMENT_METHODS);
-  const [paymentTotal, setPaymentTotal] = useState(900000);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentTotal, setPaymentTotal] = useState(0);
+  
+  const initialLoadRef = useRef(true);
 
-  // ============================================================
-  // FETCH DATA
-  // ============================================================
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!activeOrganization) return;
 
     setLoading(true);
@@ -123,40 +115,19 @@ export default function KxTillOverview() {
     try {
       const params = branchId ? { branchId } : {};
 
-      // Fetch summary
-      const summaryRes = await api.get<DashboardSummary>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/summary`,
-        { params }
-      );
+      const [summaryRes, chartRes, salesRes, topRes, paymentRes] = await Promise.all([
+        api.get<DashboardSummary>(`/api/v1/organizations/${orgId}/kxtill/dashboard/summary`, { params }),
+        api.get<SalesChartResponse>(`/api/v1/organizations/${orgId}/kxtill/dashboard/sales-chart`, { params: { ...params, period: '30d' } }),
+        api.get<RecentSale[]>(`/api/v1/organizations/${orgId}/kxtill/dashboard/recent-sales`, { params: { ...params, limit: 5 } }),
+        api.get<TopProduct[]>(`/api/v1/organizations/${orgId}/kxtill/dashboard/top-products`, { params: { ...params, limit: 5 } }),
+        api.get<PaymentMethodsResponse>(`/api/v1/organizations/${orgId}/kxtill/dashboard/payment-methods`, { params: { ...params, period: '30d' } }),
+      ]);
+
       setSummary(summaryRes.data);
-
-      // Fetch sales chart
-      const chartRes = await api.get<SalesChartResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/sales-chart`,
-        { params: { ...params, period: '30d' } }
-      );
       setSalesData(chartRes.data.data.map(d => ({ date: d.label, value: d.value })));
-
-      // Fetch recent sales
-      const salesRes = await api.get<RecentSale[]>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/recent-sales`,
-        { params: { ...params, limit: 5 } }
-      );
       setRecentSales(salesRes.data || []);
-
-      // Fetch top products
-      const topRes = await api.get<TopProduct[]>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/top-products`,
-        { params: { ...params, limit: 5 } }
-      );
       setTopProducts(topRes.data || []);
-
-      // Fetch payment methods
-      const paymentRes = await api.get<PaymentMethodsResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/payment-methods`,
-        { params: { ...params, period: '30d' } }
-      );
-      setPaymentMethods(paymentRes.data.paymentMethods || MOCK_PAYMENT_METHODS);
+      setPaymentMethods(paymentRes.data.paymentMethods || []);
       setPaymentTotal(paymentRes.data.total || 0);
 
     } catch (error) {
@@ -164,29 +135,23 @@ export default function KxTillOverview() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeOrganization, activeBranch]);
 
-  // ============================================================
-  // REFRESH ON CONTEXT CHANGE
-  // ============================================================
-
+  // Initial load
   useEffect(() => {
-    if (activeOrganization) {
+    if (activeOrganization && initialLoadRef.current) {
+      fetchDashboardData();
+      initialLoadRef.current = false;
+    }
+  }, [activeOrganization, fetchDashboardData]);
+
+  // Handle branch changes after initial load
+  useEffect(() => {
+    if (activeOrganization && !initialLoadRef.current) {
       fetchDashboardData();
     }
-  }, [activeOrganization?.id, activeBranch?.id]);
-
-  // ============================================================
-  // COMPUTED DATA
-  // ============================================================
-
-  const COLORS = ['#ff6a2b', '#ff8c42', '#4caf82', '#62636e', '#f5b324', '#ef5350'];
-  const totalRevenue = topProducts.reduce((sum, p) => sum + p.total, 0);
-  const categories = topProducts.length > 0 ? topProducts.map((p, i) => ({
-    name: p.name,
-    value: Math.round((p.total / totalRevenue) * 100),
-    color: COLORS[i % COLORS.length],
-  })) : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBranch?.id]);
 
   const activity = recentSales.map((s) => ({
     id: s.id,
@@ -200,18 +165,13 @@ export default function KxTillOverview() {
     }),
   }));
 
-  // ============================================================
-  // RENDER
-  // ============================================================
-
   const contextName = activeBranch?.name || "All Branches";
 
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.loadingState}>
-          <div className={styles.spinner} />
-          <p>Loading dashboard...</p>
+        <div className={styles.loaderWrapper}>
+          <div className={styles.loader} />
         </div>
       </div>
     );
@@ -351,7 +311,6 @@ export default function KxTillOverview() {
 
       {/* ===== BOTTOM ROW ===== */}
       <div className={styles.twoCol}>
-        {/* Payment Methods Donut Chart */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitle}>
@@ -382,7 +341,7 @@ export default function KxTillOverview() {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value: number, name: string) => [`${value}%`, name]}
+                        formatter={(value) => `${value}%`}
                         contentStyle={{ 
                           background: "#1b1c23", 
                           border: "1px solid rgba(255,255,255,0.07)", 
@@ -414,7 +373,6 @@ export default function KxTillOverview() {
           </div>
         </div>
 
-        {/* Recent Activity */}
         <div className={styles.activityCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitle}>
@@ -442,9 +400,13 @@ export default function KxTillOverview() {
         </div>
       </div>
 
-      {/* ===== LOW STOCK ALERT ===== */}
+      {/* ===== LOW STOCK ALERT WITH NAVIGATION ===== */}
       {data.lowStock > 0 && (
-        <div className={styles.alertCard}>
+        <div 
+          className={styles.alertCard}
+          onClick={() => router.push('/kx/kxtill/inventory')}
+          style={{ cursor: 'pointer' }}
+        >
           <div className={styles.alertContent}>
             <AlertTriangle size={16} className={styles.alertIcon} />
             <span className={styles.alertText}>

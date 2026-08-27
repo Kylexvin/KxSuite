@@ -25,7 +25,6 @@
   overflow-y: auto;
 }
 
-/* ===== HEADER ===== */
 .header {
   display: flex;
   align-items: center;
@@ -89,7 +88,6 @@
   box-shadow: 0 4px 16px rgba(255, 106, 43, 0.35);
 }
 
-/* ===== STATS ===== */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -140,7 +138,6 @@
   color: var(--danger);
 }
 
-/* ===== FILTERS ===== */
 .filtersBar {
   display: flex;
   align-items: center;
@@ -179,6 +176,10 @@
   background: var(--raised-hi);
 }
 
+.searchInput::placeholder {
+  color: var(--text-faint);
+}
+
 .filterGroup {
   display: flex;
   gap: 8px;
@@ -204,7 +205,6 @@
   border-color: rgba(255, 106, 43, 0.4);
 }
 
-/* ===== TRANSFERS LIST ===== */
 .transfersCard {
   background: var(--raised);
   border: 1px solid var(--border);
@@ -223,7 +223,7 @@
 
 .transferHeaders {
   display: grid;
-  grid-template-columns: 1.8fr 1.2fr 0.6fr 1fr 1fr 1fr 0.4fr;
+  grid-template-columns: 1.2fr 1.2fr 1.2fr 0.6fr 1fr 1fr 1fr 0.4fr;
   padding: 8px 0;
   font-size: 10px;
   font-weight: 600;
@@ -236,7 +236,7 @@
 
 .transferRow {
   display: grid;
-  grid-template-columns: 1.8fr 1.2fr 0.6fr 1fr 1fr 1fr 0.4fr;
+  grid-template-columns: 1.2fr 1.2fr 1.2fr 0.6fr 1fr 1fr 1fr 0.4fr;
   padding: 10px 0;
   font-size: 13px;
   color: var(--text-muted);
@@ -248,6 +248,16 @@
   border-bottom: none;
 }
 
+.transferRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.transferReference {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 12px;
+}
+
 .transferPath {
   display: flex;
   align-items: center;
@@ -255,12 +265,14 @@
 }
 
 .transferFrom {
-  color: var(--text);
+  color: var(--accent-glow);
   font-weight: 500;
+  font-size: 12px;
 }
 
 .transferTo {
   color: var(--text-muted);
+  font-size: 12px;
 }
 
 .transferArrow {
@@ -270,11 +282,13 @@
 
 .transferProduct {
   color: var(--text);
+  font-size: 13px;
 }
 
 .transferQuantity {
   font-weight: 600;
   color: var(--text);
+  font-size: 13px;
 }
 
 .transferDate {
@@ -306,7 +320,6 @@
   color: var(--text);
 }
 
-/* ===== STATUS BADGES ===== */
 .statusBadge {
   display: inline-flex;
   align-items: center;
@@ -341,6 +354,34 @@
 .statusFailed {
   color: var(--danger);
   background: rgba(239, 83, 80, 0.08);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  grid-column: 1 / -1;
+}
+
+.emptyIcon {
+  color: var(--text-faint);
+  opacity: 0.5;
+  margin-bottom: 12px;
+}
+
+.emptyState p {
+  font-size: 15px;
+  color: var(--text);
+  margin: 0;
+}
+
+.emptySub {
+  font-size: 13px;
+  color: var(--text-faint);
+  margin-top: 4px;
 }
 
 /* ============================================================
@@ -386,10 +427,17 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
-  overflow: hidden;
   animation: slideUp 0.3s ease;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .modalHeader {
@@ -456,342 +504,19 @@
   flex: 1;
 }
 
-.modalPath {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--panel);
-  border-radius: 10px;
-  margin-bottom: 16px;
+.modalBody::-webkit-scrollbar {
+  width: 4px;
 }
 
-.modalBranch {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text);
-  font-weight: 500;
-}
-
-.modalBranch svg {
-  color: var(--text-faint);
-}
-
-.modalPathArrow {
-  color: var(--text-faint);
-}
-
-.modalDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.modalDetailRow {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.modalDetailRow:last-child {
-  border-bottom: none;
-}
-
-.modalDetailLabel {
-  font-size: 12px;
-  color: #62636e;
-}
-
-.modalDetailValue {
-  font-size: 13px;
-  color: #eceef2;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.modalDetailValue svg {
-  color: #62636e;
-}
-
-.modalRejectionReason {
-  display: block;
-  font-size: 11px;
-  color: var(--danger);
-  margin-top: 2px;
-}
-
-.modalRejection {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.modalRejectionLabel {
-  display: block;
-  font-size: 12px;
-  color: #62636e;
-  margin-bottom: 4px;
-}
-
-.modalRejectionInput {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: var(--panel);
-  border-radius: 6px;
-  color: #eceef2;
-  font-size: 13px;
-}
-
-.modalRejectionInput:focus {
-  outline: none;
-  border-color: rgba(255, 106, 43, 0.4);
-}
-
-.modalFooter {
-  display: flex;
-  gap: 8px;
-  padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: #16171d;
-  flex-shrink: 0;
-}
-
-.modalCancelBtn {
-  flex: 1;
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.modalBody::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 8px;
-  color: #a3a5b0;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
-.modalCancelBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #eceef2;
+.modalBody::-webkit-scrollbar-thumb {
+  background: #62636e;
+  border-radius: 999px;
 }
 
-.modalRejectBtn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
-  background: var(--danger);
-  border-radius: 8px;
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.modalRejectBtn:hover {
-  background: #d32f2f;
-}
-
-.modalApproveBtn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
-  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
-  border-radius: 8px;
-  color: #17181d;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.modalApproveBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 106, 43, 0.35);
-}
-
-.modalCompleteBtn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
-  background: var(--success);
-  border-radius: 8px;
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.modalCompleteBtn:hover {
-  background: #388e3c;
-}
-
-/* ============================================================
-   EMPTY STATE
-   ============================================================ */
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: var(--text-muted);
-  grid-column: 1 / -1;
-}
-
-.emptyIcon {
-  color: var(--text-faint);
-  opacity: 0.5;
-  margin-bottom: 12px;
-}
-
-.emptyState p {
-  font-size: 15px;
-  color: var(--text);
-  margin: 0;
-}
-
-.emptySub {
-  font-size: 13px;
-  color: var(--text-faint);
-  margin-top: 4px;
-}
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 1024px) {
-  .statsGrid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .transferHeaders,
-  .transferRow {
-    grid-template-columns: 1.5fr 1fr 0.5fr 0.8fr 0.8fr 0.8fr 0.3fr;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-  .page {
-    padding: 12px 16px 16px;
-  }
-
-  .header {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .headerRight {
-    width: 100%;
-  }
-
-  .primaryBtn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .filtersBar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .statsGrid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .transferHeaders {
-    display: none;
-  }
-
-  .transferRow {
-    grid-template-columns: 1fr;
-    gap: 4px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .transferPath {
-    flex-wrap: wrap;
-  }
-
-  .transferDate,
-  .transferInitiator {
-    font-size: 12px;
-  }
-
-  .transferActionBtn {
-    justify-content: flex-start;
-  }
-
-  .modal {
-    margin: 10px;
-    max-width: 100%;
-  }
-
-  .modalHeader {
-    padding: 14px 16px;
-  }
-
-  .modalBody {
-    padding: 16px;
-  }
-
-  .modalFooter {
-    flex-wrap: wrap;
-    padding: 12px 16px;
-  }
-
-  .modalCancelBtn,
-  .modalRejectBtn,
-  .modalApproveBtn,
-  .modalCompleteBtn {
-    flex: 1;
-    min-width: 80px;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .modalPath {
-    flex-direction: column;
-  }
-
-  .modalPathArrow {
-    transform: rotate(90deg);
-  }
-
-  .modalFooter {
-    flex-direction: column;
-  }
-}
-/* Add to app/kx/kxtill/inventory/transfers/page.module.css */
-
-/* ============================================================
-   FORM STYLES
-   ============================================================ */
 .formGroup {
   display: flex;
   flex-direction: column;
@@ -841,13 +566,79 @@
   min-height: 60px;
 }
 
+.formSelect:disabled,
+.formInput:disabled,
+.formTextarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stockHint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+.autoSelectNotice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(76, 175, 130, 0.08);
+  border: 1px solid rgba(76, 175, 130, 0.15);
+  border-radius: 8px;
+  color: var(--success);
+  font-size: 13px;
+}
+
+.autoSelectNotice svg {
+  flex-shrink: 0;
+  color: var(--success);
+}
+
+.modalFooter {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #16171d;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.modalCancelBtn {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-radius: 8px;
+  color: #a3a5b0;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalCancelBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: #eceef2;
+}
+
+.modalCancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .modalCreateBtn {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border: none;
   background: linear-gradient(135deg, var(--accent-glow), var(--accent));
   border-radius: 8px;
@@ -858,15 +649,206 @@
   transition: all 0.15s ease;
 }
 
-.modalCreateBtn:hover {
+.modalCreateBtn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 106, 43, 0.35);
 }
-/* Add to app/kx/kxtill/inventory/transfers/page.module.css */
 
-/* ============================================================
-   LOADING / ERROR STATES
-   ============================================================ */
+.modalCreateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalBranch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.modalBranch svg {
+  color: var(--text-faint);
+}
+
+.branchCode {
+  color: var(--accent-glow);
+  font-weight: 600;
+}
+
+.branchName {
+  color: var(--text-faint);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.modalPath {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--panel);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.modalPathArrow {
+  color: var(--text-faint);
+}
+
+.modalDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modalDetailRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.modalDetailRow:last-child {
+  border-bottom: none;
+}
+
+.modalDetailLabel {
+  font-size: 12px;
+  color: #62636e;
+}
+
+.modalDetailValue {
+  font-size: 13px;
+  color: #eceef2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-align: right;
+}
+
+.modalDetailValue svg {
+  color: #62636e;
+}
+
+.modalRejectionReason {
+  display: block;
+  font-size: 11px;
+  color: var(--danger);
+  margin-top: 2px;
+}
+
+.modalRejection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.modalRejectionLabel {
+  display: block;
+  font-size: 12px;
+  color: #62636e;
+  margin-bottom: 4px;
+}
+
+.modalRejectionInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--panel);
+  border-radius: 6px;
+  color: #eceef2;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.modalRejectionInput:focus {
+  outline: none;
+  border-color: rgba(255, 106, 43, 0.4);
+}
+
+.modalRejectBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  background: var(--danger);
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalRejectBtn:hover:not(:disabled) {
+  background: #d32f2f;
+}
+
+.modalRejectBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalApproveBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
+  border-radius: 8px;
+  color: #17181d;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalApproveBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 106, 43, 0.35);
+}
+
+.modalApproveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalCompleteBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  background: var(--success);
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalCompleteBtn:hover:not(:disabled) {
+  background: #388e3c;
+}
+
+.modalCompleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .loadingState {
   display: flex;
   flex-direction: column;
@@ -932,4 +914,139 @@
 .retryBtn:hover {
   background: var(--raised-hi);
   border-color: var(--border-strong);
+}
+
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .transferHeaders,
+  .transferRow {
+    grid-template-columns: 1fr 1fr 0.8fr 0.5fr 0.7fr 0.7fr 0.7fr 0.3fr;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 12px 16px 16px;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .headerRight {
+    width: 100%;
+  }
+
+  .primaryBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filtersBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .transferHeaders {
+    display: none;
+  }
+
+  .transferRow {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .transferPath {
+    flex-wrap: wrap;
+  }
+
+  .transferDate,
+  .transferInitiator {
+    font-size: 12px;
+  }
+
+  .transferActionBtn {
+    justify-content: flex-start;
+  }
+
+  .modal {
+    margin: 10px;
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+
+  .modalHeader {
+    padding: 14px 16px;
+  }
+
+  .modalBody {
+    padding: 16px;
+  }
+
+  .modalFooter {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .modalCancelBtn,
+  .modalRejectBtn,
+  .modalApproveBtn,
+  .modalCompleteBtn,
+  .modalCreateBtn {
+    flex: 1;
+    min-width: 80px;
+    justify-content: center;
+  }
+
+  .modalPath {
+    flex-direction: column;
+  }
+
+  .modalPathArrow {
+    transform: rotate(90deg);
+  }
+
+  .modalDetailRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .modalDetailValue {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modalFooter {
+    flex-direction: column;
+  }
+
+  .modalCancelBtn,
+  .modalRejectBtn,
+  .modalApproveBtn,
+  .modalCompleteBtn,
+  .modalCreateBtn {
+    width: 100%;
+  }
+
+  .searchInput {
+    font-size: 12px;
+  }
 }

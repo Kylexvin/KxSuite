@@ -1,6 +1,8 @@
+// app/kx/kxtill/refunds/page.tsx
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
@@ -110,22 +112,31 @@ function RefundDetailModal({
   const [detail, setDetail] = useState<SaleDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // FIXED: fetchDetail declared BEFORE useEffect
   useEffect(() => {
-    if (saleId) fetchDetail();
-  }, [saleId]);
+    let isMounted = true;
 
-  const fetchDetail = async () => {
-    if (!saleId) return;
-    setLoading(true);
-    try {
-      const res = await api.get(`/api/v1/organizations/${orgId}/kxtill/sales/${saleId}`);
-      setDetail(res.data.sale || res.data);
-    } catch (error) {
-      console.error("Failed to fetch sale detail:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchDetail = async () => {
+      if (!saleId) return;
+      if (!isMounted) return;
+      setLoading(true);
+      try {
+        const res = await api.get(`/api/v1/organizations/${orgId}/kxtill/sales/${saleId}`);
+        if (!isMounted) return;
+        setDetail(res.data.sale || res.data);
+      } catch (error) {
+        console.error("Failed to fetch sale detail:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    if (saleId) fetchDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [saleId, orgId]);
 
   const formatDate = (date: string) => {
     if (!date) return "N/A";
@@ -160,7 +171,9 @@ function RefundDetailModal({
 
         {loading ? (
           <div className={styles.modalLoading}>
-            <div className={styles.spinner} />
+            <div className={styles.loaderWrapper}>
+              <div className={styles.loader} />
+            </div>
             <p>Loading sale details...</p>
           </div>
         ) : detail ? (
@@ -295,40 +308,54 @@ export default function ReturnsPage() {
   const orgId = activeOrganization?.id || "";
   const branchId = activeBranch?.id;
 
-  const fetchData = async () => {
-    if (!orgId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const params: Record<string, string> = {};
-      if (branchId) params.branchId = branchId;
-      if (period) params.period = period;
-
-      const summaryRes = await api.get<ReturnsSummary>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/returns-summary`,
-        { params }
-      );
-      setSummary(summaryRes.data);
-
-      const refundsRes = await api.get<RefundedSalesResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/sales`,
-        { params: { ...params, status: "REFUNDED", limit: 50 } }
-      );
-      setRefunds(refundsRes.data);
-    } catch (err) {
-      console.error("Failed to fetch returns data:", err);
-      setError("Failed to load returns data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // FIXED: Use isMounted pattern, no need for useCallback
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchData = async () => {
+      if (!orgId) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+      if (isMounted) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const params: Record<string, string> = {};
+        if (branchId) params.branchId = branchId;
+        if (period) params.period = period;
+
+        const summaryRes = await api.get<ReturnsSummary>(
+          `/api/v1/organizations/${orgId}/kxtill/dashboard/returns-summary`,
+          { params }
+        );
+        if (!isMounted) return;
+        setSummary(summaryRes.data);
+
+        const refundsRes = await api.get<RefundedSalesResponse>(
+          `/api/v1/organizations/${orgId}/kxtill/sales`,
+          { params: { ...params, status: "REFUNDED", limit: 50 } }
+        );
+        if (!isMounted) return;
+        setRefunds(refundsRes.data);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error("Failed to fetch returns data:", err);
+        setError("Failed to load returns data. Please try again.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchData();
-  }, [orgId, branchId, period]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orgId, branchId, period]); // Simple dependencies, no function in deps
 
   const contextName = activeBranch?.name || "All Branches";
   const chartData = summary?.topReturnedProducts?.map((p) => ({
@@ -339,9 +366,8 @@ export default function ReturnsPage() {
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.loadingState}>
-          <div className={styles.spinner} />
-          <p>Loading returns data...</p>
+        <div className={styles.loaderWrapper}>
+          <div className={styles.loader} />
         </div>
       </div>
     );
@@ -353,7 +379,7 @@ export default function ReturnsPage() {
         <div className={styles.errorState}>
           <AlertCircle size={32} className={styles.errorIcon} />
           <p className={styles.errorText}>{error}</p>
-          <button className={styles.retryBtn} onClick={fetchData}>
+          <button className={styles.retryBtn} onClick={() => window.location.reload()}>
             <RefreshCw size={16} /> Retry
           </button>
         </div>
@@ -409,7 +435,7 @@ export default function ReturnsPage() {
                 90 Days
               </button>
             </div>
-            <button className={styles.refreshBtn} onClick={fetchData}>
+            <button className={styles.refreshBtn} onClick={() => window.location.reload()}>
               <RefreshCw size={16} />
             </button>
           </div>

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
@@ -23,6 +23,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Check,
+  Calendar,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -315,27 +316,33 @@ function SaleDetailModal({
   const isOwner = permissions.includes("*");
   const canRefund = isOwner || permissions.includes("kxtill.sales.refund");
 
+  // Fixed: Use isMounted pattern
   useEffect(() => {
-    if (transaction) {
-      fetchDetail();
-    }
-  }, [transaction]);
+    let isMounted = true;
 
-  const fetchDetail = async () => {
-    if (!transaction) return;
-    setLoading(true);
-    try {
-      const res = await api.get<TransactionDetailResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/sales/${transaction.id}`
-      );
-      setDetail(res.data);
-      setIsRefunded(res.data.sale.status === "REFUNDED");
-    } catch (error) {
-      console.error("Failed to fetch transaction detail:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchDetail = async () => {
+      if (!transaction) return;
+      setLoading(true);
+      try {
+        const res = await api.get<TransactionDetailResponse>(
+          `/api/v1/organizations/${orgId}/kxtill/sales/${transaction.id}`
+        );
+        if (!isMounted) return;
+        setDetail(res.data);
+        setIsRefunded(res.data.sale.status === "REFUNDED");
+      } catch (error) {
+        console.error("Failed to fetch transaction detail:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [transaction, orgId]);
 
   const handleRefund = async () => {
     if (!transaction) return;
@@ -355,16 +362,16 @@ function SaleDetailModal({
           type: 'success' 
         });
         
-        // Refresh parent data after delay
         setTimeout(() => {
           onRefundSuccess();
-          // Close modal after refresh
           onClose();
         }, 1500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to refund sale:", error);
-      const errorMessage = error?.response?.data?.message || "Failed to process refund. Please try again.";
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Failed to process refund. Please try again.";
       setToast({ message: errorMessage, type: 'error' });
     } finally {
       setRefunding(false);
@@ -392,7 +399,6 @@ function SaleDetailModal({
 
   return (
     <>
-      {/* Toast - rendered at root level with higher z-index */}
       {toast && (
         <Toast
           message={toast.message}
@@ -401,7 +407,6 @@ function SaleDetailModal({
         />
       )}
 
-      {/* Refund Confirmation Modal */}
       <RefundConfirmationModal
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
@@ -410,7 +415,6 @@ function SaleDetailModal({
         loading={refunding}
       />
 
-      {/* Sale Detail Modal */}
       <div className={styles.modalOverlay} onClick={onClose}>
         <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
           <div className={styles.modalHeader}>
@@ -438,13 +442,14 @@ function SaleDetailModal({
 
           {loading ? (
             <div className={styles.modalLoading}>
-              <div className={styles.spinner} />
+              <div className={styles.loaderWrapper}>
+                <div className={styles.loader} />
+              </div>
               <p>Loading sale details...</p>
             </div>
           ) : sale ? (
             <>
               <div className={styles.modalBody}>
-                {/* Refund Badge */}
                 {isRefunded && (
                   <div className={styles.refundedBadge}>
                     <AlertCircle size={16} />
@@ -583,7 +588,7 @@ export default function SalesPage() {
   const { activeOrganization, activeBranch, suiteContext } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
+  const [period, setPeriod] = useState<"today" | "7d" | "30d" | "90d">("today");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -601,65 +606,78 @@ export default function SalesPage() {
   const orgId = activeOrganization?.id || "";
   const branchId = activeBranch?.id;
 
-  const fetchData = async () => {
-    if (!orgId) {
-      setLoading(false);
-      return;
-    }
+  // ============================================================
+  // FETCH DATA - Fixed with useCallback and isMounted
+  // ============================================================
 
-    setLoading(true);
-    setError(null);
 
-    try {
-      const params: Record<string, string> = {};
-      if (branchId) params.branchId = branchId;
+  // Fixed: Use isMounted pattern to prevent setState warning
+  useEffect(() => {
+    let isMounted = true;
 
-      const summaryRes = await api.get<DashboardSummary>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/summary`,
-        { params }
-      );
-      setSummary(summaryRes.data);
-
-      const chartRes = await api.get<SalesChartResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/sales-chart`,
-        { params: { ...params, period } }
-      );
-      setChartData(chartRes.data);
-
-      const paymentRes = await api.get<PaymentMethodsResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/dashboard/payment-methods`,
-        { params: { ...params, period } }
-      );
-      setPaymentMethods(paymentRes.data);
-
-      if (isOwner) {
-        const branchRes = await api.get<BranchBreakdownResponse>(
-          `/api/v1/organizations/${orgId}/kxtill/dashboard/branch-breakdown`,
-          { params: { period } }
-        );
-        setBranchBreakdown(branchRes.data);
+    const loadData = async () => {
+      if (!orgId) {
+        if (isMounted) setLoading(false);
+        return;
       }
 
-      const txRes = await api.get<TransactionsResponse>(
-        `/api/v1/organizations/${orgId}/kxtill/sales`,
-        { params: { ...params, limit: 20 } }
-      );
-      setTransactions(txRes.data);
+      if (isMounted) {
+        setLoading(true);
+        setError(null);
+      }
 
-    } catch (err) {
-      console.error("Failed to fetch sales data:", err);
-      setError("Failed to load sales data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const params: Record<string, string> = {};
+        if (branchId) params.branchId = branchId;
+        if (period) params.period = period;
 
-  useEffect(() => {
-    fetchData();
-  }, [orgId, branchId, period, refreshKey]);
+        const [summaryRes, chartRes, paymentRes, branchRes, txRes] = await Promise.all([
+          api.get<DashboardSummary>(`/api/v1/organizations/${orgId}/kxtill/dashboard/summary`, { params }),
+          api.get<SalesChartResponse>(`/api/v1/organizations/${orgId}/kxtill/dashboard/sales-chart`, { params }),
+          api.get<PaymentMethodsResponse>(`/api/v1/organizations/${orgId}/kxtill/dashboard/payment-methods`, { params }),
+          isOwner ? api.get<BranchBreakdownResponse>(`/api/v1/organizations/${orgId}/kxtill/dashboard/branch-breakdown`, { params }) : Promise.resolve(null),
+          api.get<TransactionsResponse>(`/api/v1/organizations/${orgId}/kxtill/sales`, { params: { ...params, limit: 20 } }),
+        ]);
+
+        if (!isMounted) return;
+
+        setSummary(summaryRes.data);
+        setChartData(chartRes.data);
+        setPaymentMethods(paymentRes.data);
+        if (isOwner && branchRes) setBranchBreakdown(branchRes.data);
+        setTransactions(txRes.data);
+
+      } catch (err) {
+        if (!isMounted) return;
+        console.error("Failed to fetch sales data:", err);
+        setError("Failed to load sales data. Please try again.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orgId, branchId, period, refreshKey, isOwner]);
 
   const handleRefundSuccess = () => {
     setRefreshKey(prev => prev + 1);
+  };
+
+  // Recharts tooltip formatter can receive a scalar or a readonly array value.
+  const formatTooltipValue = (
+    value: number | string | readonly (number | string)[] | undefined
+  ): string => {
+    const numericValue = Array.isArray(value)
+      ? Number(value[0] ?? 0)
+      : Number(value ?? 0);
+
+    return Number.isFinite(numericValue) ? `KES ${numericValue.toLocaleString()}` : "KES 0";
   };
 
   const chartFormatted = chartData?.data?.map((d) => ({
@@ -670,12 +688,15 @@ export default function SalesPage() {
 
   const contextName = activeBranch?.name || "All Branches";
 
+  // ============================================================
+  // RENDER
+  // ============================================================
+
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.loadingState}>
-          <div className={styles.spinner} />
-          <p>Loading sales data...</p>
+        <div className={styles.loaderWrapper}>
+          <div className={styles.loader} />
         </div>
       </div>
     );
@@ -687,7 +708,7 @@ export default function SalesPage() {
         <div className={styles.errorState}>
           <AlertCircle size={32} className={styles.errorIcon} />
           <p className={styles.errorText}>{error}</p>
-          <button className={styles.retryBtn} onClick={fetchData}>
+          <button className={styles.retryBtn} onClick={() => setRefreshKey(prev => prev + 1)}>
             <RefreshCw size={16} />
             Retry
           </button>
@@ -711,6 +732,7 @@ export default function SalesPage() {
   return (
     <>
       <div className={styles.page}>
+        {/* ===== HEADER ===== */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <div className={styles.headerIcon}>
@@ -719,12 +741,19 @@ export default function SalesPage() {
             <div>
               <h1 className={styles.title}>Sales</h1>
               <p className={styles.subtitle}>
-                {contextName} • {period === "7d" ? "Last 7 Days" : period === "30d" ? "Last 30 Days" : "Last 90 Days"}
+                {contextName} • {period === "today" ? "Today" : period === "7d" ? "Last 7 Days" : period === "30d" ? "Last 30 Days" : "Last 90 Days"}
               </p>
             </div>
           </div>
           <div className={styles.headerRight}>
             <div className={styles.periodControls}>
+              <button
+                className={`${styles.periodBtn} ${period === "today" ? styles.periodBtnActive : ""}`}
+                onClick={() => setPeriod("today")}
+              >
+                <Calendar size={12} />
+                Today
+              </button>
               <button
                 className={`${styles.periodBtn} ${period === "7d" ? styles.periodBtnActive : ""}`}
                 onClick={() => setPeriod("7d")}
@@ -744,12 +773,13 @@ export default function SalesPage() {
                 90 Days
               </button>
             </div>
-            <button className={styles.refreshBtn} onClick={fetchData}>
+            <button className={styles.refreshBtn} onClick={() => setRefreshKey(prev => prev + 1)}>
               <RefreshCw size={16} />
             </button>
           </div>
         </div>
 
+        {/* ===== SUMMARY CARDS ===== */}
         <div className={styles.summaryGrid}>
           <div className={styles.summaryCard}>
             <div className={styles.summaryCardTop}>
@@ -785,13 +815,16 @@ export default function SalesPage() {
           </div>
         </div>
 
+        {/* ===== CHART ===== */}
         {chartData && (
           <div className={styles.chartCard}>
             <div className={styles.chartHeader}>
               <div className={styles.chartHeaderLeft}>
                 <span className={styles.chartTitle}>Sales Overview</span>
               </div>
-              <span className={styles.chartMeta}>Daily breakdown</span>
+              <span className={styles.chartMeta}>
+                {period === "today" ? "Hourly breakdown" : "Daily breakdown"}
+              </span>
             </div>
             <div className={styles.chartBody}>
               {chartFormatted.some(d => d.sales > 0) ? (
@@ -813,7 +846,7 @@ export default function SalesPage() {
                         borderRadius: "8px",
                         fontSize: "12px",
                       }}
-                      formatter={(value: number) => [`KES ${value.toLocaleString()}`, "Sales"]}
+                      formatter={formatTooltipValue}
                     />
                     <Bar dataKey="sales" fill="#ff6a2b" radius={[3, 3, 0, 0]} maxBarSize={40} />
                   </BarChart>
@@ -825,6 +858,7 @@ export default function SalesPage() {
           </div>
         )}
 
+        {/* ===== TWO COLUMN ===== */}
         <div className={styles.twoCol}>
           {paymentMethods && (
             <div className={styles.breakdownCard}>
@@ -875,6 +909,7 @@ export default function SalesPage() {
           )}
         </div>
 
+        {/* ===== TRANSACTIONS ===== */}
         {transactions && (
           <div className={styles.transactionsCard}>
             <div className={styles.transactionsHeader}>

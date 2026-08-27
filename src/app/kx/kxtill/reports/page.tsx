@@ -2,15 +2,12 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
 import {
   FileText,
-  Download,
-  Calendar,
   ChevronDown,
-  RefreshCw,
   FileSpreadsheet,
   File,
   TrendingUp,
@@ -20,8 +17,7 @@ import {
   AlertCircle,
   Check,
   ClipboardList,
-  Users,
-  Clock,
+  X,
 } from "lucide-react";
 import styles from "./page.module.css";
 
@@ -95,12 +91,12 @@ const REPORT_OPTIONS: ReportOption[] = [
 // COMPONENTS
 // ============================================================
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
-  useState(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
     }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [onClose]);
 
   return (
     <div className={`${styles.toast} ${type === 'success' ? styles.toastSuccess : styles.toastError}`}>
@@ -109,10 +105,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
         <span>{message}</span>
       </div>
       <button className={styles.toastClose} onClick={onClose}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <X size={16} />
       </button>
     </div>
   );

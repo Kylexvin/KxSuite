@@ -18,7 +18,6 @@ import {
   Shield,
   Globe,
   DollarSign,
-  Percent,
   Clock,
   Building2,
   Key,
@@ -136,10 +135,11 @@ export default function KxTillSettings() {
       );
       setSettings(response.data.settings);
       setIsComingSoon(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch settings:", error);
+      const apiError = error as { response?: { status?: number } };
       // If endpoint doesn't exist yet, show coming soon
-      if (error?.response?.status === 404) {
+      if (apiError.response?.status === 404) {
         setIsComingSoon(true);
       } else {
         setToast({ message: "Failed to load settings. Please try again.", type: 'error' });
@@ -150,7 +150,47 @@ export default function KxTillSettings() {
   };
 
   useEffect(() => {
-    fetchSettings();
+    let isMounted = true;
+
+    const loadSettings = async () => {
+      if (!orgId) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
+      if (isMounted) setLoading(true);
+
+      try {
+        const response = await api.get<SettingsResponse>(
+          `/api/v1/organizations/${orgId}/kxtill/settings`
+        );
+
+        if (isMounted) {
+          setSettings(response.data.settings);
+          setIsComingSoon(false);
+        }
+      } catch (error: unknown) {
+        console.error("Failed to fetch settings:", error);
+        if (isMounted) {
+          const apiError = error as { response?: { status?: number } };
+          if (apiError.response?.status === 404) {
+            setIsComingSoon(true);
+          } else {
+            setToast({ message: "Failed to load settings. Please try again.", type: 'error' });
+          }
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, [orgId]);
 
   // ============================================================
@@ -173,10 +213,19 @@ export default function KxTillSettings() {
       );
       setSettings(response.data.settings);
       setToast({ message: "Settings saved successfully!", type: 'success' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to save settings:", error);
-      if (error?.response?.data?.errors) {
-        const errors = error.response.data.errors.join(", ");
+
+      const apiError = error as {
+        response?: {
+          data?: {
+            errors?: string[];
+          };
+        };
+      };
+
+      if (apiError.response?.data?.errors) {
+        const errors = apiError.response.data.errors.join(", ");
         setToast({ message: `Validation error: ${errors}`, type: 'error' });
       } else {
         setToast({ message: "Failed to save settings. Please try again.", type: 'error' });
@@ -215,7 +264,7 @@ export default function KxTillSettings() {
         <div className={styles.noAccess}>
           <Shield size={48} className={styles.noAccessIcon} />
           <h2>Access Denied</h2>
-          <p>You don't have permission to view or update KxTill settings.</p>
+          <p>You don&apos;t have permission to view or update KxTill settings.</p>
           <p className={styles.noAccessSub}>Contact your organization owner for access.</p>
         </div>
       </div>

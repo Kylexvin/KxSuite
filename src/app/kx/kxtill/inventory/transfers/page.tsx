@@ -5,6 +5,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
+import Swal from "sweetalert2";
 import {
   RefreshCw,
   ArrowRight,
@@ -28,179 +29,94 @@ import styles from "./page.module.css";
 type TransferStatus = "PENDING" | "APPROVED" | "COMPLETED" | "REJECTED" | "FAILED";
 
 type TransferItem = {
-  id: string;
-  organizationId: string;
-  reference: string;
-  sourceBranchProductId: string;
-  destBranchProductId: string;
-  quantitySent: string;
-  quantityReceived: string | null;
-  sourceStockBefore: string;
-  sourceStockAfter: string;
-  destStockBefore: string;
-  destStockAfter: string;
-  status: TransferStatus;
-  initiatedById: string;
   notes: string;
-  approvedById: string | null;
-  approvedAt: string | null;
-  rejectedById: string | null;
-  rejectedAt: string | null;
-  rejectionReason: string | null;
-  completedById: string | null;
-  completedAt: string | null;
+  id: string;
+  reference: string;
+  quantitySent: string;
+  status: TransferStatus;
   createdAt: string;
-  updatedAt: string;
+  initiatedBy: { firstName: string; lastName: string };
   sourceBranchProduct: {
-    id: string;
-    productId: string;
-    branchId: string;
+    branch: { id: string; name: string; code: string };
+    product: { id: string; name: string; sku: string };
     displayName: string;
-    description: string | null;
-    isAvailable: boolean;
     stock: string;
-    minStock: string;
-    branch: {
-      id: string;
-      name: string;
-      code: string;
-    };
-    product: {
-      id: string;
-      name: string;
-      sku: string;
-    };
   };
   destBranchProduct: {
-    id: string;
-    productId: string;
-    branchId: string;
+    branch: { id: string; name: string; code: string };
+    product: { id: string; name: string; sku: string };
     displayName: string;
-    description: string | null;
-    isAvailable: boolean;
     stock: string;
-    minStock: string;
-    branch: {
-      id: string;
-      name: string;
-      code: string;
-    };
-    product: {
-      id: string;
-      name: string;
-      sku: string;
-    };
   };
-  initiatedBy: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
-};
-
-type TransfersResponse = {
-  items: TransferItem[];
-  total: number;
-  limit: number;
-  offset: number;
-};
-
-type TransferStats = {
-  total: number;
-  pending: number;
-  approved: number;
-  completed: number;
-  rejected: number;
-  failed: number;
-};
-
-type TransferDetailResponse = {
-  transfer: TransferItem;
-};
-
-type Branch = {
-  id: string;
-  name: string;
-  code: string;
 };
 
 type BranchProduct = {
   id: string;
-  branchProductId: string;
+  productId: string;
+  productName: string;
+  stock: string;
+};
+
+type FormDataBranch = {
+  id: string;
   name: string;
-  sku: string;
-  stock: number;
+  code: string;
+  products: BranchProduct[];
 };
 
 // ============================================================
-// HELPER FUNCTIONS
+// HELPERS
 // ============================================================
-function getDisplayName(value: any): string {
-  if (!value) return "Unknown";
-  if (typeof value === "string") return value;
-  if (typeof value === "object") {
-    if (value.firstName || value.lastName) {
-      return `${value.firstName || ""} ${value.lastName || ""}`.trim() || "Unknown";
-    }
-    if (value.name) return value.name;
-    if (value.displayName) return value.displayName;
-    return "Unknown";
-  }
-  return String(value) || "Unknown";
+function getDisplayName(user: { firstName?: string; lastName?: string } | null): string {
+  if (!user) return "Unknown";
+  return `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Unknown";
 }
 
-function getStatusDisplay(status: TransferStatus): { label: string; className: string } {
-  const map: Record<TransferStatus, { label: string; className: string }> = {
-    PENDING: { label: "Pending", className: "statusPending" },
-    APPROVED: { label: "Approved", className: "statusApproved" },
-    COMPLETED: { label: "Completed", className: "statusCompleted" },
-    REJECTED: { label: "Rejected", className: "statusRejected" },
-    FAILED: { label: "Failed", className: "statusFailed" },
+function getStatusBadge(status: TransferStatus): { label: string; className: string; icon: React.ReactNode } {
+  const map: Record<TransferStatus, { label: string; className: string; icon: React.ReactNode }> = {
+    PENDING: { label: "Pending", className: "statusPending", icon: <Clock size={12} /> },
+    APPROVED: { label: "Approved", className: "statusApproved", icon: <CheckCircle size={12} /> },
+    COMPLETED: { label: "Completed", className: "statusCompleted", icon: <CheckCircle size={12} /> },
+    REJECTED: { label: "Rejected", className: "statusRejected", icon: <XCircle size={12} /> },
+    FAILED: { label: "Failed", className: "statusFailed", icon: <XCircle size={12} /> },
   };
-  return map[status] || { label: status, className: "statusPending" };
+  return map[status] || map.PENDING;
 }
 
 // ============================================================
 // COMPONENTS
 // ============================================================
 function TransferStatusBadge({ status }: { status: TransferStatus }) {
-  const config = getStatusDisplay(status);
-  const icons: Record<TransferStatus, React.ReactNode> = {
-    PENDING: <Clock size={12} />,
-    APPROVED: <CheckCircle size={12} />,
-    COMPLETED: <CheckCircle size={12} />,
-    REJECTED: <XCircle size={12} />,
-    FAILED: <XCircle size={12} />,
-  };
+  const config = getStatusBadge(status);
   return (
     <span className={`${styles.statusBadge} ${styles[config.className]}`}>
-      {icons[status] || <Clock size={12} />}
+      {config.icon}
       {config.label}
     </span>
   );
 }
 
-function NewTransferModal({ 
-  onClose, 
+function NewTransferModal({
+  onClose,
   onCreate,
   branches,
-  products,
-  loadingProducts,
-  onBranchChange,
-}: { 
+  sourceProducts,
+  loadingSourceProducts,
+  onSourceBranchChange,
+  creating,
+}: {
   onClose: () => void;
-  onCreate: (data: { sourceBranchProductId: string; destBranchProductId: string; quantitySent: number; notes: string }) => void;
-  branches: Branch[];
-  products: BranchProduct[];
-  loadingProducts: boolean;
-  onBranchChange: (branchId: string) => void;
+  onCreate: (data: { sourceBranchProductId: string; destBranchId: string; quantitySent: number; notes: string }) => void;
+  branches: FormDataBranch[];
+  sourceProducts: BranchProduct[];
+  loadingSourceProducts: boolean;
+  onSourceBranchChange: (branchId: string) => void;
+  creating: boolean;
 }) {
   const [formData, setFormData] = useState({
     sourceBranchId: "",
     destBranchId: "",
     sourceBranchProductId: "",
-    destBranchProductId: "",
     quantitySent: 1,
     notes: "",
   });
@@ -209,7 +125,7 @@ function NewTransferModal({
     e.preventDefault();
     onCreate({
       sourceBranchProductId: formData.sourceBranchProductId,
-      destBranchProductId: formData.destBranchProductId,
+      destBranchId: formData.destBranchId,
       quantitySent: formData.quantitySent,
       notes: formData.notes,
     });
@@ -217,8 +133,11 @@ function NewTransferModal({
 
   const handleSourceBranchChange = (branchId: string) => {
     setFormData({ ...formData, sourceBranchId: branchId, sourceBranchProductId: "" });
-    onBranchChange(branchId);
+    onSourceBranchChange(branchId);
   };
+
+  const selectedSourceProduct = sourceProducts.find(p => p.id === formData.sourceBranchProductId);
+  const destBranch = branches.find(b => b.id === formData.destBranchId);
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -238,8 +157,9 @@ function NewTransferModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className={styles.modalForm}>
           <div className={styles.modalBody}>
+            {/* From Branch */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>From Branch</label>
               <select
@@ -247,6 +167,7 @@ function NewTransferModal({
                 value={formData.sourceBranchId}
                 onChange={(e) => handleSourceBranchChange(e.target.value)}
                 required
+                disabled={creating}
               >
                 <option value="">Select source branch</option>
                 {branches.map((branch) => (
@@ -257,6 +178,7 @@ function NewTransferModal({
               </select>
             </div>
 
+            {/* From Product */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>From Product</label>
               <select
@@ -264,21 +186,27 @@ function NewTransferModal({
                 value={formData.sourceBranchProductId}
                 onChange={(e) => setFormData({ ...formData, sourceBranchProductId: e.target.value })}
                 required
-                disabled={!formData.sourceBranchId || loadingProducts}
+                disabled={!formData.sourceBranchId || loadingSourceProducts || creating}
               >
                 <option value="">Select product</option>
-                {loadingProducts ? (
+                {loadingSourceProducts ? (
                   <option value="" disabled>Loading products...</option>
+                ) : sourceProducts.length === 0 ? (
+                  <option value="" disabled>No products with stock</option>
                 ) : (
-                  products.map((p) => (
-                    <option key={p.branchProductId} value={p.branchProductId}>
-                      {p.name} ({p.stock} in stock)
+                  sourceProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.productName} ({p.stock} available)
                     </option>
                   ))
                 )}
               </select>
+              {selectedSourceProduct && (
+                <span className={styles.stockHint}>Available stock: {selectedSourceProduct.stock} units</span>
+              )}
             </div>
 
+            {/* To Branch */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>To Branch</label>
               <select
@@ -286,29 +214,27 @@ function NewTransferModal({
                 value={formData.destBranchId}
                 onChange={(e) => setFormData({ ...formData, destBranchId: e.target.value })}
                 required
+                disabled={creating}
               >
                 <option value="">Select destination branch</option>
-                {branches.filter(b => b.id !== formData.sourceBranchId).map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.code} - {branch.name}
-                  </option>
-                ))}
+                {branches
+                  .filter(b => b.id !== formData.sourceBranchId)
+                  .map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.code} - {branch.name}
+                    </option>
+                  ))}
               </select>
+              {formData.destBranchId && selectedSourceProduct && destBranch && (
+                <span className={styles.stockHint}>
+                  {destBranch.products.some(p => p.productId === selectedSourceProduct.productId)
+                    ? "✅ Product exists in destination branch"
+                    : "🆕 Product will be created in destination branch"}
+                </span>
+              )}
             </div>
 
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>To Product</label>
-              <select
-                className={styles.formSelect}
-                value={formData.destBranchProductId}
-                onChange={(e) => setFormData({ ...formData, destBranchProductId: e.target.value })}
-                required
-                disabled={!formData.destBranchId}
-              >
-                <option value="">Select product</option>
-              </select>
-            </div>
-
+            {/* Quantity */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Quantity</label>
               <input
@@ -317,10 +243,16 @@ function NewTransferModal({
                 value={formData.quantitySent}
                 onChange={(e) => setFormData({ ...formData, quantitySent: parseInt(e.target.value) || 1 })}
                 min="1"
+                max={selectedSourceProduct ? parseInt(selectedSourceProduct.stock) : 999}
                 required
+                disabled={creating}
               />
+              {selectedSourceProduct && (
+                <span className={styles.stockHint}>Max transfer: {selectedSourceProduct.stock} units</span>
+              )}
             </div>
 
+            {/* Notes */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Notes (Optional)</label>
               <textarea
@@ -329,17 +261,31 @@ function NewTransferModal({
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder="Add any additional information..."
                 rows={3}
+                disabled={creating}
               />
             </div>
           </div>
 
           <div className={styles.modalFooter}>
-            <button type="button" className={styles.modalCancelBtn} onClick={onClose}>
+            <button type="button" className={styles.modalCancelBtn} onClick={onClose} disabled={creating}>
               Cancel
             </button>
-            <button type="submit" className={styles.modalCreateBtn}>
-              <Plus size={14} />
-              Create Transfer
+            <button
+              type="submit"
+              className={styles.modalCreateBtn}
+              disabled={creating || !formData.sourceBranchProductId || !formData.destBranchId}
+            >
+              {creating ? (
+                <>
+                  <Loader2 size={14} className={styles.spinning} />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus size={14} />
+                  Create Transfer
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -348,14 +294,14 @@ function NewTransferModal({
   );
 }
 
-function TransferDetailModal({ 
-  transfer, 
+function TransferDetailModal({
+  transfer,
   onClose,
   onApprove,
   onReject,
   onComplete,
   loading,
-}: { 
+}: {
   transfer: TransferItem | null;
   onClose: () => void;
   onApprove: (id: string) => void;
@@ -371,14 +317,12 @@ function TransferDetailModal({
   const canComplete = transfer.status === "APPROVED";
   const canReject = transfer.status === "PENDING";
 
-  const sourceBranchCode = transfer.sourceBranchProduct?.branch?.code || "Unknown";
-  const destBranchCode = transfer.destBranchProduct?.branch?.code || "Unknown";
-  const sourceBranchName = transfer.sourceBranchProduct?.branch?.name || "";
-  const destBranchName = transfer.destBranchProduct?.branch?.name || "";
-  const productName = transfer.sourceBranchProduct?.displayName || 
-                     transfer.sourceBranchProduct?.product?.name || 
-                     transfer.destBranchProduct?.displayName || 
-                     "Unknown";
+  const from = transfer.sourceBranchProduct?.branch?.code || "Unknown";
+  const to = transfer.destBranchProduct?.branch?.code || "Unknown";
+  const product = transfer.sourceBranchProduct?.displayName ||
+    transfer.sourceBranchProduct?.product?.name ||
+    transfer.destBranchProduct?.displayName ||
+    "Unknown";
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -404,24 +348,19 @@ function TransferDetailModal({
           <div className={styles.modalPath}>
             <div className={styles.modalBranch}>
               <Building2 size={14} />
-              <span>{sourceBranchCode}</span>
-              {sourceBranchName && <span className={styles.modalBranchName}>({sourceBranchName})</span>}
+              <span>{from}</span>
             </div>
             <ArrowRight size={16} className={styles.modalPathArrow} />
             <div className={styles.modalBranch}>
               <Building2 size={14} />
-              <span>{destBranchCode}</span>
-              {destBranchName && <span className={styles.modalBranchName}>({destBranchName})</span>}
+              <span>{to}</span>
             </div>
           </div>
 
           <div className={styles.modalDetails}>
             <div className={styles.modalDetailRow}>
               <span className={styles.modalDetailLabel}>Product</span>
-              <span className={styles.modalDetailValue}>
-                <Package size={14} />
-                {productName}
-              </span>
+              <span className={styles.modalDetailValue}><Package size={14} /> {product}</span>
             </div>
             <div className={styles.modalDetailRow}>
               <span className={styles.modalDetailLabel}>Quantity</span>
@@ -429,16 +368,11 @@ function TransferDetailModal({
             </div>
             <div className={styles.modalDetailRow}>
               <span className={styles.modalDetailLabel}>Initiated By</span>
-              <span className={styles.modalDetailValue}>
-                <User size={14} />
-                {getDisplayName(transfer.initiatedBy)}
-              </span>
+              <span className={styles.modalDetailValue}><User size={14} /> {getDisplayName(transfer.initiatedBy)}</span>
             </div>
             <div className={styles.modalDetailRow}>
               <span className={styles.modalDetailLabel}>Status</span>
-              <span className={styles.modalDetailValue}>
-                <TransferStatusBadge status={transfer.status} />
-              </span>
+              <span className={styles.modalDetailValue}><TransferStatusBadge status={transfer.status} /></span>
             </div>
             <div className={styles.modalDetailRow}>
               <span className={styles.modalDetailLabel}>Reference</span>
@@ -448,33 +382,6 @@ function TransferDetailModal({
               <span className={styles.modalDetailLabel}>Notes</span>
               <span className={styles.modalDetailValue}>{transfer.notes || "No notes"}</span>
             </div>
-            {transfer.approvedAt && (
-              <div className={styles.modalDetailRow}>
-                <span className={styles.modalDetailLabel}>Approved At</span>
-                <span className={styles.modalDetailValue}>
-                  {new Date(transfer.approvedAt).toLocaleString()}
-                </span>
-              </div>
-            )}
-            {transfer.rejectedAt && (
-              <div className={styles.modalDetailRow}>
-                <span className={styles.modalDetailLabel}>Rejected At</span>
-                <span className={styles.modalDetailValue}>
-                  {new Date(transfer.rejectedAt).toLocaleString()}
-                  {transfer.rejectionReason && (
-                    <span className={styles.modalRejectionReason}>Reason: {transfer.rejectionReason}</span>
-                  )}
-                </span>
-              </div>
-            )}
-            {transfer.completedAt && (
-              <div className={styles.modalDetailRow}>
-                <span className={styles.modalDetailLabel}>Completed At</span>
-                <span className={styles.modalDetailValue}>
-                  {new Date(transfer.completedAt).toLocaleString()}
-                </span>
-              </div>
-            )}
           </div>
 
           {canReject && (
@@ -492,37 +399,20 @@ function TransferDetailModal({
         </div>
 
         <div className={styles.modalFooter}>
-          <button className={styles.modalCancelBtn} onClick={onClose} disabled={loading}>
-            Close
-          </button>
+          <button className={styles.modalCancelBtn} onClick={onClose} disabled={loading}>Close</button>
           {canReject && (
-            <button 
-              className={styles.modalRejectBtn}
-              onClick={() => onReject(transfer.id, rejectionReason || "No reason provided")}
-              disabled={loading}
-            >
-              {loading ? <Loader2 size={14} className={styles.spinning} /> : <X size={14} />}
-              Reject
+            <button className={styles.modalRejectBtn} onClick={() => onReject(transfer.id, rejectionReason || "No reason provided")} disabled={loading}>
+              {loading ? <Loader2 size={14} className={styles.spinning} /> : <X size={14} />} Reject
             </button>
           )}
           {canApprove && (
-            <button 
-              className={styles.modalApproveBtn}
-              onClick={() => onApprove(transfer.id)}
-              disabled={loading}
-            >
-              {loading ? <Loader2 size={14} className={styles.spinning} /> : <Check size={14} />}
-              Approve Transfer
+            <button className={styles.modalApproveBtn} onClick={() => onApprove(transfer.id)} disabled={loading}>
+              {loading ? <Loader2 size={14} className={styles.spinning} /> : <Check size={14} />} Approve
             </button>
           )}
           {canComplete && (
-            <button 
-              className={styles.modalCompleteBtn}
-              onClick={() => onComplete(transfer.id)}
-              disabled={loading}
-            >
-              {loading ? <Loader2 size={14} className={styles.spinning} /> : <CheckCircle size={14} />}
-              Mark as Completed
+            <button className={styles.modalCompleteBtn} onClick={() => onComplete(transfer.id)} disabled={loading}>
+              {loading ? <Loader2 size={14} className={styles.spinning} /> : <CheckCircle size={14} />} Complete
             </button>
           )}
         </div>
@@ -532,6 +422,56 @@ function TransferDetailModal({
 }
 
 // ============================================================
+// SWEETALERT HELPERS
+// ============================================================
+const showSuccess = (title: string, message: string) => {
+  return Swal.fire({
+    icon: "success",
+    title,
+    text: message,
+    timer: 3000,
+    timerProgressBar: true,
+    showConfirmButton: true,
+    confirmButtonColor: "#4caf82",
+    background: "#1b1c23",
+    color: "#eceef2",
+    confirmButtonText: "OK",
+  });
+};
+
+const showError = (message: string) => {
+  return Swal.fire({
+    icon: "error",
+    title: "Error",
+    text: message,
+    confirmButtonColor: "#ef5350",
+    background: "#1b1c23",
+    color: "#eceef2",
+    confirmButtonText: "OK",
+  });
+};
+
+const showConfirm = (
+  title: string,
+  text: string,
+  confirmText: string,
+  icon: "success" | "error" | "warning" | "info" | "question" = "warning"
+) => {
+  return Swal.fire({
+    icon,
+    title,
+    text,
+    showCancelButton: true,
+    confirmButtonColor: "#ff6a2b",
+    cancelButtonColor: "#62636e",
+    confirmButtonText: confirmText,
+    cancelButtonText: "Cancel",
+    background: "#1b1c23",
+    color: "#eceef2",
+  });
+};
+
+// ============================================================
 // MAIN PAGE
 // ============================================================
 export default function StockTransfersPage() {
@@ -539,197 +479,194 @@ export default function StockTransfersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transfers, setTransfers] = useState<TransferItem[]>([]);
-  const [stats, setStats] = useState<TransferStats>({ total: 0, pending: 0, approved: 0, completed: 0, rejected: 0, failed: 0 });
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [products, setProducts] = useState<BranchProduct[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, completed: 0, rejected: 0, failed: 0 });
+  const [formData, setFormData] = useState<FormDataBranch[]>([]);
+  const [sourceProducts, setSourceProducts] = useState<BranchProduct[]>([]);
+  const [loadingSourceProducts, setLoadingSourceProducts] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | TransferStatus>("all");
   const [selectedTransfer, setSelectedTransfer] = useState<TransferItem | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showNewTransfer, setShowNewTransfer] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const permissions = suiteContext?.permissions ?? [];
   const isOwner = permissions.includes("*");
-  const canApprove = isOwner || permissions.includes("kxtill.inventory.transfers.approve");
   const canCreateTransfer = isOwner || permissions.includes("kxtill.inventory.transfers.create");
 
   const orgId = activeOrganization?.id || "";
   const branchId = activeBranch?.id;
 
-  // ============================================================
-  // FETCH DATA
-  // ============================================================
-
-  const fetchTransfers = async () => {
-    if (!orgId) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const params: Record<string, string> = {};
-      if (branchId) params.branchId = branchId;
-      if (statusFilter !== "all") params.status = statusFilter;
-      if (searchQuery) params.search = searchQuery;
-      
-      const [transfersRes, statsRes] = await Promise.all([
-        api.get<TransfersResponse>(`/api/v1/organizations/${orgId}/kxtill/transfers`, { params }),
-        api.get<TransferStats>(`/api/v1/organizations/${orgId}/kxtill/transfers/stats`),
-      ]);
-      
-      setTransfers(transfersRes.data.items || []);
-      setStats(statsRes.data);
-    } catch (err) {
-      console.error("Failed to fetch transfers:", err);
-      setError("Failed to load transfers. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchBranches = async () => {
-    if (!orgId) return;
-    try {
-      const res = await api.get<{ branches: Branch[] }>(`/api/v1/organizations/${orgId}/branches`);
-      setBranches(res.data.branches || []);
-    } catch (err) {
-      console.error("Failed to fetch branches:", err);
-    }
-  };
-
-  const fetchBranchProducts = async (branchId: string) => {
-    if (!orgId || !branchId) return;
-    setLoadingProducts(true);
-    try {
-      const res = await api.get<{ products: BranchProduct[] }>(
-        `/api/v1/organizations/${orgId}/kxtill/branches/${branchId}/products`
-      );
-      setProducts(res.data.products || []);
-    } catch (err) {
-      console.error("Failed to fetch branch products:", err);
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
+  // ===== FETCH =====
   useEffect(() => {
-    fetchTransfers();
-    fetchBranches();
+    if (!orgId) return;
+
+    let isActive = true;
+
+    const loadData = async () => {
+      if (isActive) {
+        setLoading(true);
+        setError(null);
+      }
+
+      try {
+        const params: Record<string, string> = {};
+        if (branchId) params.branchId = branchId;
+        if (statusFilter !== "all") params.status = statusFilter;
+
+        const [transfersRes, statsRes, formRes] = await Promise.all([
+          api.get(`/api/v1/organizations/${orgId}/kxtill/transfers`, { params }),
+          api.get(`/api/v1/organizations/${orgId}/kxtill/transfers/stats`),
+          api.get(`/api/v1/organizations/${orgId}/kxtill/transfers/form-data`),
+        ]);
+
+        if (!isActive) return;
+
+        setTransfers(transfersRes.data.items || []);
+        setStats(statsRes.data);
+        setFormData(formRes.data.branches || []);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+        if (isActive) {
+          setError("Failed to load data. Please try again.");
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadData();
+
+    return () => {
+      isActive = false;
+    };
   }, [orgId, branchId, statusFilter, refreshKey]);
 
-  // ============================================================
-  // HANDLERS
-  // ============================================================
+  // ===== HANDLERS =====
+  const handleSourceBranchChange = (branchId: string) => {
+    const branch = formData.find(b => b.id === branchId);
+    setSourceProducts((branch?.products || []).filter(p => parseInt(p.stock) > 0));
+    setLoadingSourceProducts(false);
+  };
 
-  const handleCreateTransfer = async (data: { 
-    sourceBranchProductId: string; 
-    destBranchProductId: string; 
-    quantitySent: number; 
-    notes: string 
-  }) => {
-    setActionLoading(true);
+  const handleCreateTransfer = async (data: { sourceBranchProductId: string; destBranchId: string; quantitySent: number; notes: string }) => {
+    setCreating(true);
     try {
-      await api.post(`/api/v1/organizations/${orgId}/kxtill/transfers`, data);
+      const response = await api.post(`/api/v1/organizations/${orgId}/kxtill/transfers`, data);
       setShowNewTransfer(false);
+      setSourceProducts([]);
       setRefreshKey(prev => prev + 1);
-    } catch (err) {
-      console.error("Failed to create transfer:", err);
-      setError("Failed to create transfer. Please try again.");
+      
+      await showSuccess(
+        "Transfer Created!",
+        `Transfer ${response.data.transfer.reference} has been created successfully and is pending approval.`
+      );
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to create transfer";
+      await showError(msg);
     } finally {
-      setActionLoading(false);
+      setCreating(false);
     }
   };
 
   const handleApprove = async (id: string) => {
+    const result = await showConfirm(
+      "Approve Transfer?",
+      "This will approve the transfer and move it to the next stage.",
+      "Yes, Approve"
+    );
+
+    if (!result.isConfirmed) return;
+
     setActionLoading(true);
     try {
       await api.patch(`/api/v1/organizations/${orgId}/kxtill/transfers/${id}/approve`);
       setShowDetail(false);
       setSelectedTransfer(null);
       setRefreshKey(prev => prev + 1);
-    } catch (err) {
-      console.error("Failed to approve transfer:", err);
-      setError("Failed to approve transfer. Please try again.");
+      
+      // Ask if they want to complete the transfer
+      const completeResult = await showConfirm(
+        "Mark as Completed?",
+        "The transfer has been approved. Would you like to mark it as completed now?",
+        "Yes, Complete",
+        "success"
+      );
+
+      if (completeResult.isConfirmed) {
+        await api.patch(`/api/v1/organizations/${orgId}/kxtill/transfers/${id}/complete`);
+        setRefreshKey(prev => prev + 1);
+        await showSuccess("Transfer Completed!", "The transfer has been marked as completed.");
+      } else {
+        await showSuccess("Transfer Approved!", "The transfer has been approved successfully.");
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to approve transfer";
+      await showError(msg);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleReject = async (id: string, reason: string) => {
+    if (!reason || reason.trim() === "") {
+      return;
+    }
+
+    const result = await showConfirm(
+      "Reject Transfer?",
+      `Are you sure you want to reject this transfer?\nReason: ${reason}`,
+      "Yes, Reject",
+      "error"
+    );
+
+    if (!result.isConfirmed) return;
+
     setActionLoading(true);
     try {
       await api.patch(`/api/v1/organizations/${orgId}/kxtill/transfers/${id}/reject`, { reason });
       setShowDetail(false);
       setSelectedTransfer(null);
       setRefreshKey(prev => prev + 1);
-    } catch (err) {
-      console.error("Failed to reject transfer:", err);
-      setError("Failed to reject transfer. Please try again.");
+      await showSuccess("Transfer Rejected!", "The transfer has been rejected.");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to reject transfer";
+      await showError(msg);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleComplete = async (id: string) => {
+    const result = await showConfirm(
+      "Complete Transfer?",
+      "This will mark the transfer as completed. Stock will be updated in both branches.",
+      "Yes, Complete",
+      "success"
+    );
+
+    if (!result.isConfirmed) return;
+
     setActionLoading(true);
     try {
       await api.patch(`/api/v1/organizations/${orgId}/kxtill/transfers/${id}/complete`);
       setShowDetail(false);
       setSelectedTransfer(null);
       setRefreshKey(prev => prev + 1);
-    } catch (err) {
-      console.error("Failed to complete transfer:", err);
-      setError("Failed to complete transfer. Please try again.");
+      await showSuccess("Transfer Completed!", "The transfer has been marked as completed.");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to complete transfer";
+      await showError(msg);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleBranchChange = (branchId: string) => {
-    fetchBranchProducts(branchId);
-  };
-
-  // ============================================================
-  // RENDER
-  // ============================================================
-
-  // Map transfers for display - use branch codes
-  const displayTransfers = transfers.map((transfer) => ({
-    id: transfer.id,
-    reference: transfer.reference,
-    from: transfer.sourceBranchProduct?.branch?.code || "Unknown",
-    fromName: transfer.sourceBranchProduct?.branch?.name || "",
-    to: transfer.destBranchProduct?.branch?.code || "Unknown",
-    toName: transfer.destBranchProduct?.branch?.name || "",
-    product: transfer.sourceBranchProduct?.displayName || 
-             transfer.sourceBranchProduct?.product?.name || 
-             transfer.destBranchProduct?.displayName || 
-             "Unknown",
-    quantity: parseInt(transfer.quantitySent) || 0,
-    date: transfer.createdAt,
-    status: transfer.status,
-    initiatedBy: getDisplayName(transfer.initiatedBy),
-  }));
-
-  const filteredTransfers = displayTransfers.filter((transfer) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      transfer.product.toLowerCase().includes(query) ||
-      transfer.from.toLowerCase().includes(query) ||
-      transfer.to.toLowerCase().includes(query) ||
-      transfer.initiatedBy.toLowerCase().includes(query) ||
-      transfer.reference.toLowerCase().includes(query)
-    );
-  });
-
-  const contextName = activeBranch?.name || "All Branches";
-
-  // Find selected transfer details
-  const selectedTransferDetail = transfers.find(t => t.id === selectedTransfer?.id) || null;
-
+  // ===== RENDER =====
   if (loading) {
     return (
       <div className={styles.page}>
@@ -748,84 +685,70 @@ export default function StockTransfersPage() {
           <AlertCircle size={32} className={styles.errorIcon} />
           <p className={styles.errorText}>{error}</p>
           <button className={styles.retryBtn} onClick={() => setRefreshKey(prev => prev + 1)}>
-            <RefreshCw size={16} />
-            Retry
+            <RefreshCw size={16} /> Retry
           </button>
         </div>
       </div>
     );
   }
 
+  const displayTransfers = transfers.map((t) => ({
+    id: t.id,
+    reference: t.reference,
+    from: t.sourceBranchProduct?.branch?.code || "Unknown",
+    to: t.destBranchProduct?.branch?.code || "Unknown",
+    product: t.sourceBranchProduct?.displayName || t.sourceBranchProduct?.product?.name || "Unknown",
+    quantity: parseInt(t.quantitySent) || 0,
+    date: t.createdAt,
+    status: t.status,
+    initiatedBy: getDisplayName(t.initiatedBy),
+  }));
+
+  const filteredTransfers = displayTransfers.filter((t) => {
+    const q = searchQuery.toLowerCase();
+    return t.product.toLowerCase().includes(q) ||
+      t.from.toLowerCase().includes(q) ||
+      t.to.toLowerCase().includes(q) ||
+      t.initiatedBy.toLowerCase().includes(q) ||
+      t.reference.toLowerCase().includes(q);
+  });
+
+  const contextName = activeBranch?.name || "All Branches";
+
   return (
     <>
       <div className={styles.page}>
-        {/* ===== HEADER ===== */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <div className={styles.headerIcon}>
-              <RefreshCw size={24} />
-            </div>
+            <div className={styles.headerIcon}><RefreshCw size={24} /></div>
             <div>
               <h1 className={styles.title}>Stock Transfers</h1>
-              <p className={styles.subtitle}>
-                Manage stock transfers between branches • {contextName}
-              </p>
+              <p className={styles.subtitle}>Manage stock transfers between branches • {contextName}</p>
             </div>
           </div>
           {canCreateTransfer && (
             <button className={styles.primaryBtn} onClick={() => setShowNewTransfer(true)}>
-              <Plus size={16} />
-              New Transfer
+              <Plus size={16} /> New Transfer
             </button>
           )}
         </div>
 
-        {/* ===== STATS ===== */}
         <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <div className={styles.statValue}>{stats.total}</div>
-            <div className={styles.statLabel}>Total</div>
-          </div>
-          <div className={`${styles.statCard} ${styles.statCardPending}`}>
-            <div className={styles.statValue}>{stats.pending}</div>
-            <div className={styles.statLabel}>Pending</div>
-          </div>
-          <div className={`${styles.statCard} ${styles.statCardApproved}`}>
-            <div className={styles.statValue}>{stats.approved}</div>
-            <div className={styles.statLabel}>Approved</div>
-          </div>
-          <div className={`${styles.statCard} ${styles.statCardCompleted}`}>
-            <div className={styles.statValue}>{stats.completed}</div>
-            <div className={styles.statLabel}>Completed</div>
-          </div>
-          <div className={`${styles.statCard} ${styles.statCardRejected}`}>
-            <div className={styles.statValue}>{stats.rejected}</div>
-            <div className={styles.statLabel}>Rejected</div>
-          </div>
-          <div className={`${styles.statCard} ${styles.statCardFailed}`}>
-            <div className={styles.statValue}>{stats.failed}</div>
-            <div className={styles.statLabel}>Failed</div>
-          </div>
+          <div className={styles.statCard}><div className={styles.statValue}>{stats.total}</div><div className={styles.statLabel}>Total</div></div>
+          <div className={`${styles.statCard} ${styles.statCardPending}`}><div className={styles.statValue}>{stats.pending}</div><div className={styles.statLabel}>Pending</div></div>
+          <div className={`${styles.statCard} ${styles.statCardApproved}`}><div className={styles.statValue}>{stats.approved}</div><div className={styles.statLabel}>Approved</div></div>
+          <div className={`${styles.statCard} ${styles.statCardCompleted}`}><div className={styles.statValue}>{stats.completed}</div><div className={styles.statLabel}>Completed</div></div>
+          <div className={`${styles.statCard} ${styles.statCardRejected}`}><div className={styles.statValue}>{stats.rejected}</div><div className={styles.statLabel}>Rejected</div></div>
+          <div className={`${styles.statCard} ${styles.statCardFailed}`}><div className={styles.statValue}>{stats.failed}</div><div className={styles.statLabel}>Failed</div></div>
         </div>
 
-        {/* ===== FILTERS ===== */}
         <div className={styles.filtersBar}>
           <div className={styles.searchWrap}>
             <Search size={16} className={styles.searchIcon} />
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder="Search by product, branch or initiator..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <input type="text" className={styles.searchInput} placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <div className={styles.filterGroup}>
-            <select
-              className={styles.filterSelect}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-            >
+            <select className={styles.filterSelect} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}>
               <option value="all">All Status</option>
               <option value="PENDING">Pending</option>
               <option value="APPROVED">Approved</option>
@@ -836,80 +759,49 @@ export default function StockTransfersPage() {
           </div>
         </div>
 
-        {/* ===== TRANSFERS LIST ===== */}
         <div className={styles.transfersCard}>
           <div className={styles.transfersList}>
             <div className={styles.transferHeaders}>
-              <span>Reference</span>
-              <span>From → To</span>
-              <span>Product</span>
-              <span>Qty</span>
-              <span>Date</span>
-              <span>Initiated By</span>
-              <span>Status</span>
-              <span></span>
+              <span>Reference</span><span>From → To</span><span>Product</span><span>Qty</span><span>Date</span><span>By</span><span>Status</span><span></span>
             </div>
             {filteredTransfers.length > 0 ? (
-              filteredTransfers.map((transfer) => (
-                <div key={transfer.id} className={styles.transferRow}>
-                  <span className={styles.transferReference}>{transfer.reference}</span>
-                  <div className={styles.transferPath}>
-                    <span className={styles.transferFrom}>{transfer.from}</span>
-                    <ArrowRight size={14} className={styles.transferArrow} />
-                    <span className={styles.transferTo}>{transfer.to}</span>
-                  </div>
-                  <span className={styles.transferProduct}>{transfer.product}</span>
-                  <span className={styles.transferQuantity}>{transfer.quantity}</span>
-                  <span className={styles.transferDate}>
-                    {new Date(transfer.date).toLocaleDateString()}
-                  </span>
-                  <span className={styles.transferInitiator}>{transfer.initiatedBy}</span>
-                  <TransferStatusBadge status={transfer.status} />
-                  <button 
-                    className={styles.transferActionBtn}
-                    onClick={() => {
-                      const fullTransfer = transfers.find(t => t.id === transfer.id);
-                      if (fullTransfer) {
-                        setSelectedTransfer(fullTransfer);
-                        setShowDetail(true);
-                      }
-                    }}
-                  >
+              filteredTransfers.map((t) => (
+                <div key={t.id} className={styles.transferRow}>
+                  <span className={styles.transferReference}>{t.reference}</span>
+                  <div className={styles.transferPath}><span>{t.from}</span><ArrowRight size={14} className={styles.transferArrow} /><span>{t.to}</span></div>
+                  <span className={styles.transferProduct}>{t.product}</span>
+                  <span className={styles.transferQuantity}>{t.quantity}</span>
+                  <span className={styles.transferDate}>{new Date(t.date).toLocaleDateString()}</span>
+                  <span className={styles.transferInitiator}>{t.initiatedBy}</span>
+                  <TransferStatusBadge status={t.status} />
+                  <button className={styles.transferActionBtn} onClick={() => { const full = transfers.find(tr => tr.id === t.id); if (full) { setSelectedTransfer(full); setShowDetail(true); } }}>
                     <Eye size={14} />
                   </button>
                 </div>
               ))
             ) : (
-              <div className={styles.emptyState}>
-                <RefreshCw size={32} className={styles.emptyIcon} />
-                <p>No transfers found</p>
-                <span className={styles.emptySub}>Try adjusting your filters</span>
-              </div>
+              <div className={styles.emptyState}><RefreshCw size={32} className={styles.emptyIcon} /><p>No transfers found</p><span className={styles.emptySub}>Try adjusting your filters</span></div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ===== NEW TRANSFER MODAL ===== */}
       {showNewTransfer && (
         <NewTransferModal
-          onClose={() => setShowNewTransfer(false)}
+          onClose={() => { setShowNewTransfer(false); setSourceProducts([]); }}
           onCreate={handleCreateTransfer}
-          branches={branches}
-          products={products}
-          loadingProducts={loadingProducts}
-          onBranchChange={handleBranchChange}
+          branches={formData}
+          sourceProducts={sourceProducts}
+          loadingSourceProducts={loadingSourceProducts}
+          onSourceBranchChange={handleSourceBranchChange}
+          creating={creating}
         />
       )}
 
-      {/* ===== DETAIL MODAL ===== */}
-      {showDetail && selectedTransferDetail && (
+      {showDetail && selectedTransfer && (
         <TransferDetailModal
-          transfer={selectedTransferDetail}
-          onClose={() => {
-            setShowDetail(false);
-            setSelectedTransfer(null);
-          }}
+          transfer={selectedTransfer}
+          onClose={() => { setShowDetail(false); setSelectedTransfer(null); }}
           onApprove={handleApprove}
           onReject={handleReject}
           onComplete={handleComplete}
