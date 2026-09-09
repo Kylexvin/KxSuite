@@ -178,29 +178,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedActiveBranch = localStorage.getItem("activeBranch");
     const storedSuiteContext = localStorage.getItem("suiteContext");
 
-    if (storedToken) setAccessToken(storedToken);
-    if (storedRefresh) setRefreshToken(storedRefresh);
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch {}
-    }
-    if (storedOrgs) {
-      try { setOrganizations(JSON.parse(storedOrgs)); } catch {}
-    }
-    if (storedActive) {
-      try { setActiveOrganizationState(JSON.parse(storedActive)); } catch {}
-    }
-    if (storedActiveDetail) {
-      try { setActiveOrganizationDetail(JSON.parse(storedActiveDetail)); } catch {}
-    }
-    if (storedBranches) {
-      try { setBranches(JSON.parse(storedBranches)); } catch {}
-    }
-    if (storedActiveBranch) {
-      try { setActiveBranchState(JSON.parse(storedActiveBranch)); } catch {}
-    }
-    if (storedSuiteContext) {
-      try { setSuiteContext(JSON.parse(storedSuiteContext)); } catch {}
-    }
+    // Avoid synchronous setState calls inside the effect body which can
+    // trigger cascading renders. Defer state restoration to the next tick.
+    setTimeout(() => {
+      if (storedToken) setAccessToken(storedToken);
+      if (storedRefresh) setRefreshToken(storedRefresh);
+      if (storedUser) {
+        try { setUser(JSON.parse(storedUser)); } catch {}
+      }
+      if (storedOrgs) {
+        try { setOrganizations(JSON.parse(storedOrgs)); } catch {}
+      }
+      if (storedActive) {
+        try { setActiveOrganizationState(JSON.parse(storedActive)); } catch {}
+      }
+      if (storedActiveDetail) {
+        try { setActiveOrganizationDetail(JSON.parse(storedActiveDetail)); } catch {}
+      }
+      if (storedBranches) {
+        try { setBranches(JSON.parse(storedBranches)); } catch {}
+      }
+      if (storedActiveBranch) {
+        try { setActiveBranchState(JSON.parse(storedActiveBranch)); } catch {}
+      }
+      if (storedSuiteContext) {
+        try { setSuiteContext(JSON.parse(storedSuiteContext)); } catch {}
+      }
+    }, 0);
   }, []);
 
   // ============================================================
@@ -494,4 +498,4 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
+} 
