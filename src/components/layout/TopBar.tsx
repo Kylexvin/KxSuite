@@ -3,6 +3,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -137,12 +138,14 @@ export default function TopBar({
         )}
 
         <div className={styles.logo}>
-          <img
+          <Image
             src="/assets/logo.png"
             alt="KXBYTE"
+            width={24}
+            height={24}
             className={styles.logoImage}
           />
-          <span className={styles.logoText}>KXBYTE</span>
+          <span className={styles.logoText}>KXBYTE SUITE</span>
         </div>
 
         {(orgName || branchName) && (

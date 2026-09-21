@@ -162,7 +162,7 @@ export default function KxTillTopBar({
             className={styles.logoImage}
             priority
           />
-          <span className={styles.logoText}>KxTill</span>
+          <span className={styles.logoText}>KxTill Manager</span>
         </div>
       </div>
 
