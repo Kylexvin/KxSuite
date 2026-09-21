@@ -10,6 +10,38 @@ import { useAuth } from "@/contexts/AuthContext";
 const AUTH_BASE_URL =
   process.env.NEXT_PUBLIC_AUTH_BASE_URL || "https://kxbyte.onrender.com";
 
+function SigningInScreen() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        background: "#0e0f13",
+        color: "#eceef2",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      <div style={{ textAlign: "center" }}>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            border: "3px solid rgba(255,255,255,0.1)",
+            borderTopColor: "#ff6a2b",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            margin: "0 auto 16px",
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p>Signing you in…</p>
+      </div>
+    </div>
+  );
+}
+
 function SSOContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -49,40 +81,12 @@ function SSOContent() {
       });
   }, [searchParams, router, setTokens]);
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        background: "#0e0f13",
-        color: "#eceef2",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <div style={{ textAlign: "center" }}>
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            border: "3px solid rgba(255,255,255,0.1)",
-            borderTopColor: "#ff6a2b",
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-            margin: "0 auto 16px",
-          }}
-        />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p>Signing you in…</p>
-      </div>
-    </div>
-  );
+  return <SigningInScreen />;
 }
 
 export default function SSOPage() {
   return (
-    <Suspense fallback={<div>Loading…</div>}>
+    <Suspense fallback={<SigningInScreen />}>
       <SSOContent />
     </Suspense>
   );
