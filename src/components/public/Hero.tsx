@@ -25,31 +25,16 @@ export default function Hero() {
       <Navbar />
 
       {/* Content */}
-      <div className={styles.content}>
-        <h1>
-          Everything your business needs to run, <span className={styles.accent}>connected.</span>
-        </h1>
+<div className={styles.content}>
+  <h1>
+    Everything your business needs to run, <span className={styles.accent}>connected.</span>
+  </h1>
 
-        {/* <p className={styles.subtitle}>
-          A growing suite of business tools that helps you manage sales, customers,
-          invoices, operations and more from one connected platform.
-        </p> */}
-
-        <div className={styles.buttons}>
-          <Link href="/signup" className={styles.primary}>
-            Start Now
-            <ArrowRight size={16} />
-          </Link>
-          <Link href="/products" className={styles.secondary}>
-            Explore Products
-          </Link>
-        </div>
-
-        <div className={styles.pricingHint}>
-          <span className={styles.pricingAmount}>From KES 699</span>
-          <span className={styles.pricingPeriod}>/month</span>
-        </div>
-      </div>
+  <p className={styles.subtitle}>
+    One account. Every KXBYTE product.
+    Manage your business from a single dashboard and bring your sales, customers, teams, and operations together.
+  </p>
+</div>
 
       {/* ===== L-SHAPED MOCKUPS ===== */}
       <div className={styles.mockupSection}>

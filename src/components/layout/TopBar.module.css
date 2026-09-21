@@ -1,20 +1,6 @@
 /* src/components/layout/TopBar.module.css */
 
 .topBar {
-  --bg: #0e0f13;
-  --panel: #16171d;
-  --raised: #1b1c23;
-  --raised-hi: #24252e;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text: #eceef2;
-  --text-muted: #a3a5b0;
-  --text-faint: #62636e;
-  --accent: #ff6a2b;
-  --accent-glow: #ff8c42;
-  --danger: #ef5350;
-  --success: #4caf82;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -22,101 +8,112 @@
   height: 64px;
   min-height: 64px;
   padding: 0 20px;
-  background: var(--raised);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised, #1b1c23);
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
   position: sticky;
   top: 0;
-  z-index: 20;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
+  z-index: 30;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* ---- Left ---- */
+/* ---------- Left ---------- */
+
 .leftGroup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
-.orgSwitcher {
+.menuButton {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: var(--bg-panel, #16171d);
+  border-radius: 10px;
+  color: var(--text-muted, #a3a5b0);
   cursor: pointer;
   transition: all 0.15s ease;
-  white-space: nowrap;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.096), 3px 3px 8px rgba(0, 0, 0, 0.4);
-}
-
-.orgSwitcher:hover:not(:disabled) {
-  background: var(--raised-hi);
-  border-color: var(--border-strong);
-  box-shadow: -2px -2px 6px rgba(255, 255, 255, 0.02), 4px 4px 12px rgba(0, 0, 0, 0.5);
-}
-
-.orgSwitcher:disabled {
-  cursor: default;
-  opacity: 0.75;
-}
-
-.orgSwitcher:disabled:hover {
-  background: var(--panel);
-  border-color: var(--border);
-}
-
-.orgIcon {
-  color: var(--accent-glow);
   flex-shrink: 0;
 }
 
-.orgName {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.menuButton:hover {
+  background: var(--bg-raised-hi, #24252e);
+  border-color: var(--border-strong, rgba(255, 255, 255, 0.14));
+  color: var(--text, #eceef2);
 }
-.branchSwitcher {
+
+.logo {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
-.branchSwitcher:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-strong);
+.logoImage {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
-.branchSwitcher:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.logoText {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text, #eceef2);
+  letter-spacing: -0.5px;
 }
 
-.branchIcon {
-  color: var(--text-muted);
+.orgInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-left: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  margin-left: 8px;
+  color: var(--text-muted, #a3a5b0);
+  font-size: 12px;
+  min-width: 0;
 }
 
-.branchName {
+.orgIcon {
+  flex-shrink: 0;
+  color: var(--accent-glow, #ff8c42);
+  opacity: 0.7;
+}
+
+.orgText {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.orgSeparator {
+  color: var(--text-faint, #62636e);
+  margin: 0 2px;
+}
+
+.branchText {
+  color: var(--text-faint, #62636e);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* ---- Right ---- */
+
+/* ---------- Right ---------- */
+
 .actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .dropdownWrap {
@@ -130,167 +127,42 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: var(--bg-panel, #16171d);
   border-radius: 10px;
-  color: var(--text-muted);
+  color: var(--text-muted, #a3a5b0);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .iconBtn:hover {
-  background: var(--raised-hi);
-  border-color: var(--border-strong);
-  color: var(--text);
-  box-shadow: -2px -2px 6px rgba(255, 255, 255, 0.02), 4px 4px 12px rgba(0, 0, 0, 0.5);
+  background: var(--bg-raised-hi, #24252e);
+  border-color: var(--border-strong, rgba(255, 255, 255, 0.14));
+  color: var(--text, #eceef2);
 }
 
-.notifBadge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
-  color: #17181d;
-  font-size: 10px;
-  font-weight: 700;
-  box-shadow: 0 0 12px rgba(255, 106, 43, 0.5);
-}
+/* ---------- Notifications ---------- */
 
-/* ---- Dropdown shells ---- */
-.dropdownMenu,
-.notifMenu,
-.userMenu {
+.notifMenu {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 14px rgba(0, 0, 0, 0.6);
-  padding: 6px;
-  z-index: 30;
-  min-width: 220px;
-}
-
-.dropdownMenu {
-  left: 0;
-  right: auto;
-  min-width: 220px;
-  padding: 6px;
-}
-
-.dropdownHeader {
-  padding: 6px 10px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-faint);
-  border-bottom: 1px solid var(--border);
-}
-
-.menuOption,
-.menuOptionActive {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 8px 12px;
-  border: none;
-  background: none;
-  border-radius: 8px;
-  color: var(--text-muted);
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  gap: 8px;
-}
-
-.menuOption:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
-}
-
-.menuOptionActive {
-  background: rgba(255, 106, 43, 0.08);
-  color: var(--accent-glow);
-}
-
-.menuOptionActive:hover {
-  background: rgba(255, 106, 43, 0.14);
-}
-
-.menuOptionContent {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-}
-
-.menuOptionName {
-  font-weight: 500;
-  color: var(--text);
-}
-
-.menuOptionRole {
-  font-size: 11px;
-  color: var(--text-faint);
-}
-
-.menuOptionCheck {
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.chevronSmall {
-  flex-shrink: 0;
-  color: var(--text-faint);
-  transition: transform 0.2s ease;
-}
-
-.chevronSmall[data-open="true"] {
-  transform: rotate(180deg);
-}
-
-/* ---- Notifications ---- */
-.notifMenu {
   width: 320px;
-  padding: 0;
+  background: var(--bg-panel, #16171d);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  z-index: 30;
+  transform-origin: top right;
+  animation: menuIn 0.14s ease-out;
 }
 
 .notifHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
   font-size: 14px;
   font-weight: 600;
-  color: var(--text);
-}
-
-.notifMarkAll {
-  border: none;
-  background: none;
-  color: var(--accent-glow);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.15s ease;
-}
-
-.notifMarkAll:hover {
-  color: var(--accent);
-  text-decoration: underline;
+  color: var(--text, #eceef2);
 }
 
 .notifList {
@@ -298,111 +170,53 @@
   overflow-y: auto;
 }
 
-.notifList::-webkit-scrollbar {
-  width: 4px;
-}
-
-.notifList::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.notifList::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
-  border-radius: 999px;
-}
-
-.notifItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.15s ease;
-}
-
-.notifItem:last-child {
-  border-bottom: none;
-}
-
-.notifItem:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.notifIconLowStock {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  border-radius: 8px;
-  background: rgba(255, 106, 43, 0.12);
-  color: var(--accent-glow);
-}
-
-.notifTitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.notifDesc {
-  font-size: 12px;
-  color: var(--text-faint);
-  margin-top: 2px;
-}
-
 .notifEmpty {
   padding: 40px 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-faint);
+  color: var(--text-faint, #62636e);
 }
 
-/* ---- User menu ---- */
+/* ---------- User ---------- */
+
 .userBtn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px 6px 6px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  padding: 6px 10px 6px 8px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  background: var(--bg-panel, #16171d);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .userBtn:hover {
-  background: var(--raised-hi);
-  border-color: var(--border-strong);
-  box-shadow: -2px -2px 6px rgba(255, 255, 255, 0.02), 4px 4px 12px rgba(0, 0, 0, 0.5);
-}
-
-.userAvatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
-  color: #17181d;
-  font-weight: 700;
-  font-size: 12px;
-  box-shadow: 0 2px 8px rgba(255, 106, 43, 0.3);
+  background: var(--bg-raised-hi, #24252e);
+  border-color: var(--border-strong, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .userName {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text);
+  color: var(--text, #eceef2);
   white-space: nowrap;
 }
 
 .userMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
   width: 260px;
+  background: var(--bg-panel, #16171d);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   padding: 6px;
+  z-index: 30;
+  transform-origin: top right;
+  animation: menuIn 0.14s ease-out;
 }
 
 .userInfo {
@@ -410,23 +224,8 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.07));
   margin-bottom: 4px;
-}
-
-.userAvatarLarge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
-  color: #17181d;
-  font-weight: 700;
-  font-size: 18px;
-  box-shadow: 0 3px 12px rgba(255, 106, 43, 0.35);
 }
 
 .userInfoText {
@@ -437,7 +236,7 @@
 .userNameFull {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text, #eceef2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -445,25 +244,52 @@
 
 .userEmail {
   font-size: 12px;
-  color: var(--text-faint);
+  color: var(--text-faint, #62636e);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .userRole {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   font-size: 11px;
-  color: var(--accent-glow);
+  color: var(--accent-glow, #ff8c42);
   margin-top: 2px;
   font-weight: 500;
 }
 
+.userAvatarSmall {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 106, 43, 0.15);
+  color: var(--accent, #ff6a2b);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.userAvatarLarge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 106, 43, 0.15);
+  color: var(--accent, #ff6a2b);
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ---------- Menu items ---------- */
+
 .divider {
   height: 1px;
-  background: var(--border);
+  background: var(--border, rgba(255, 255, 255, 0.07));
   margin: 4px 8px;
 }
 
@@ -476,31 +302,146 @@
   border: none;
   background: none;
   border-radius: 8px;
-  color: var(--text-muted);
+  color: var(--text-muted, #a3a5b0);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition: all 0.15s ease;
+  font-family: inherit;
 }
 
 .menuItem:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
+  background: var(--bg-raised, #1b1c23);
+  color: var(--text, #eceef2);
 }
 
 .menuItemLogout {
-  composes: menuItem;
-  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  color: #ef5350;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
 }
 
 .menuItemLogout:hover {
   background: rgba(239, 83, 80, 0.1);
-  color: var(--danger);
+  color: #ef5350;
 }
 
-/* ============================================================
-   MOBILE: KEEP ORG NAME VISIBLE
-   ============================================================ */
+.menuSectionLabel {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint, #62636e);
+}
+
+/* ---------- Org / Branch switcher ---------- */
+
+.switcherSection {
+  padding: 4px 0;
+}
+
+.switcherHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text-muted, #a3a5b0);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.switcherHeader:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #eceef2);
+}
+
+.switcherCurrent {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-faint, #62636e);
+  font-weight: 400;
+}
+
+.switcherChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  color: var(--text-faint, #62636e);
+}
+
+.switcherChevron.open {
+  transform: rotate(90deg);
+}
+
+.switcherList {
+  padding: 4px 0 4px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switcherOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-muted, #a3a5b0);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  font-family: inherit;
+}
+
+.switcherOption:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #eceef2);
+}
+
+.switcherOption.active {
+  color: var(--accent-glow, #ff8c42);
+  background: rgba(255, 106, 43, 0.08);
+}
+
+.switcherOptionName {
+  flex: 1;
+}
+
+.checkIcon {
+  color: var(--accent-glow, #ff8c42);
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ---------- Responsive ---------- */
 
 @media (max-width: 768px) {
   .topBar {
@@ -510,11 +451,23 @@
     gap: 10px;
   }
 
-  /* ✅ Keep organization name visible */
-  .orgName {
-    display: block;
-    max-width: 120px;
-    font-size: 12px;
+  .logoImage {
+    width: 28px;
+    height: 28px;
+  }
+
+  .logoText {
+    font-size: 14px;
+  }
+
+  .orgInfo {
+    padding: 2px 6px;
+    margin-left: 4px;
+    font-size: 11px;
+  }
+
+  .branchText {
+    max-width: 60px;
   }
 
   .userName {
@@ -522,11 +475,7 @@
   }
 
   .userBtn {
-    padding: 4px;
-  }
-
-  .orgSwitcher {
-    padding: 6px 10px;
+    padding: 6px;
   }
 
   .notifMenu {
@@ -535,7 +484,7 @@
   }
 
   .userMenu {
-    width: 220px;
+    width: 240px;
     right: -10px;
   }
 }
@@ -546,17 +495,9 @@
     gap: 6px;
   }
 
-  .orgSwitcher {
-    padding: 6px 8px;
-    gap: 4px;
-  }
-
-  /* ✅ Still show org name on very small screens */
-  .orgName {
-    display: block;
-    max-width: 80px;
-    font-size: 11px;
-    
+  .menuButton {
+    width: 32px;
+    height: 32px;
   }
 
   .iconBtn {
@@ -564,20 +505,15 @@
     height: 32px;
   }
 
+  .orgInfo {
+    display: none;
+  }
+
   .notifMenu {
     width: 260px;
-    right: -6px;
   }
 
   .userMenu {
-    width: 200px;
-    right: -6px;
-  }
-
-  .userAvatarLarge {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    font-size: 15px;
+    width: 220px;
   }
 }

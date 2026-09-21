@@ -1,13 +1,15 @@
-// app/kx/kxtill/components/KxTillTopBar.tsx
+// src/app/kx/kxtill/components/KxTillTopBar.tsx
 
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Bell,
   ChevronDown,
+  ChevronRight,
   User,
   Settings,
   HelpCircle,
@@ -17,11 +19,17 @@ import {
   AlertTriangle,
   Check,
   Store,
-  RefreshCw,
+  Menu,
 } from "lucide-react";
 import styles from "../styles/KxTillTopBar.module.css";
 
-export default function KxTillTopBar() {
+export default function KxTillTopBar({
+  isMobile,
+  onToggleSidebar,
+}: {
+  isMobile: boolean;
+  onToggleSidebar: () => void;
+}) {
   const router = useRouter();
   const {
     user,
@@ -36,33 +44,22 @@ export default function KxTillTopBar() {
     switchBranch,
   } = useAuth();
 
-  const [orgMenuOpen, setOrgMenuOpen] = useState(false);
-  const [branchMenuOpen, setBranchMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [switchingOrg, setSwitchingOrg] = useState(false);
 
-  const orgMenuRef = useRef<HTMLDivElement>(null);
-  const branchMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
-
-  // ============================================================
-  // PERMISSIONS
-  // ============================================================
 
   const permissions = suiteContext?.permissions ?? [];
   const hasPermission = (perm: string): boolean => {
     if (permissions.includes("*")) return true;
     return permissions.includes(perm);
   };
-
   const isOwner = permissions.includes("*");
   const lowStockCount = suiteContext?.lowStockCount ?? 0;
-
-  // ============================================================
-  // BRANCH OPTIONS — Owners see "All Branches"
-  // ============================================================
 
   const branchOptions = useMemo(() => {
     const branchList = branches || [];
@@ -72,52 +69,47 @@ export default function KxTillTopBar() {
     return branchList;
   }, [branches, isOwner]);
 
-  // Display name: show "All Branches" when activeBranch is null
-  const branchDisplayName = activeBranch?.id === "ALL" 
-    ? "All Branches" 
-    : activeBranch?.name || branchOptions[0]?.name || "All Branches";
-
-  const showBranchToggle = branchOptions.length > 1;
-
-  // ============================================================
-  // CLICK OUTSIDE
-  // ============================================================
+  const showOrgSwitcher = organizations && organizations.length > 1;
+  const showBranchSwitcher = branchOptions && branchOptions.length > 1;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (orgMenuRef.current && !orgMenuRef.current.contains(event.target as Node)) {
-        setOrgMenuOpen(false);
-      }
-      if (branchMenuRef.current && !branchMenuRef.current.contains(event.target as Node)) {
-        setBranchMenuOpen(false);
-      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
+        setOrgDropdownOpen(false);
+        setBranchDropdownOpen(false);
       }
       if (notifMenuRef.current && !notifMenuRef.current.contains(event.target as Node)) {
         setNotifOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ============================================================
-  // HANDLERS
-  // ============================================================
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setUserMenuOpen(false);
+        setNotifOpen(false);
+        setOrgDropdownOpen(false);
+        setBranchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSwitchOrg = async (orgId: string) => {
     if (orgId === activeOrganization?.id) {
-      setOrgMenuOpen(false);
+      setOrgDropdownOpen(false);
       return;
     }
-
     setSwitchingOrg(true);
     try {
       await setActiveOrganization(orgId);
       await loadBranches(orgId);
-      setOrgMenuOpen(false);
+      setOrgDropdownOpen(false);
       router.refresh();
     } catch (err) {
       console.error("Failed to switch organization:", err);
@@ -128,9 +120,8 @@ export default function KxTillTopBar() {
 
   const handleSwitchBranch = async (branchId: string) => {
     try {
-      // 'ALL' means no branch filter (null)
       await switchBranch(branchId === "ALL" ? null : branchId);
-      setBranchMenuOpen(false);
+      setBranchDropdownOpen(false);
       router.refresh();
     } catch (err) {
       console.error("Failed to switch branch:", err);
@@ -142,110 +133,40 @@ export default function KxTillTopBar() {
     router.push("/login");
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  const closeMenuAndNavigate = (path: string) => {
+    setUserMenuOpen(false);
+    setOrgDropdownOpen(false);
+    setBranchDropdownOpen(false);
+    router.push(path);
+  };
 
   return (
     <header className={styles.topBar}>
-      {/* Left: Organization + Branch context */}
       <div className={styles.leftGroup}>
-        {/* Organization Switcher */}
-        <div className={styles.dropdownWrap} ref={orgMenuRef}>
+        {isMobile && (
           <button
-            className={styles.orgSwitcher}
-            onClick={() => organizations.length > 1 && setOrgMenuOpen((v) => !v)}
-            disabled={organizations.length <= 1 || switchingOrg}
+            className={styles.menuButton}
+            onClick={onToggleSidebar}
+            aria-label="Toggle menu"
           >
-            <Building2 size={15} className={styles.orgIcon} />
-            <span className={styles.orgName}>
-              {switchingOrg ? "Switching..." : activeOrganization?.name}
-            </span>
-            {organizations.length > 1 && (
-              <ChevronDown size={13} className={styles.chevronSmall} data-open={orgMenuOpen} />
-            )}
+            <Menu size={18} />
           </button>
-
-          {orgMenuOpen && !switchingOrg && (
-            <div className={styles.dropdownMenu}>
-              <div className={styles.dropdownHeader}>
-                <span>Switch Organization</span>
-              </div>
-              {organizations.map((org) => {
-                const isActive = org.id === activeOrganization?.id;
-                return (
-                  <button
-                    key={org.id}
-                    className={isActive ? styles.menuOptionActive : styles.menuOption}
-                    onClick={() => handleSwitchOrg(org.id)}
-                  >
-                    <span className={styles.menuOptionName}>{org.name}</span>
-                    {isActive && <Check size={14} className={styles.menuOptionCheck} />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Branch Switcher */}
-        {showBranchToggle && (
-          <div className={styles.dropdownWrap} ref={branchMenuRef}>
-            <button
-              className={styles.branchSwitcher}
-              onClick={() => setBranchMenuOpen((v) => !v)}
-            >
-              <Store size={15} className={styles.branchIcon} />
-              <span className={styles.branchName}>{branchDisplayName}</span>
-              <ChevronDown size={13} className={styles.chevronSmall} data-open={branchMenuOpen} />
-            </button>
-
-            {branchMenuOpen && (
-              <div className={styles.dropdownMenu}>
-                <div className={styles.dropdownHeader}>
-                  <span>Switch Branch</span>
-                </div>
-                {branchOptions.map((branch) => {
-                  const isActive = branch.id === (activeBranch?.id || "ALL");
-                  // Check if this is the currently selected branch
-                  // For "ALL", activeBranch is null, so we compare branch.id === "ALL"
-                  const isSelected = branch.id === "ALL" 
-                    ? activeBranch === null 
-                    : branch.id === activeBranch?.id;
-                  
-                  return (
-                    <button
-                      key={branch.id}
-                      className={isSelected ? styles.menuOptionActive : styles.menuOption}
-                      onClick={() => handleSwitchBranch(branch.id)}
-                    >
-                      <span className={styles.menuOptionName}>
-                        {branch.name}
-                        {branch.id === "ALL" && (
-                          <span className={styles.menuOptionSub}> (All Branches)</span>
-                        )}
-                      </span>
-                      {isSelected && <Check size={14} className={styles.menuOptionCheck} />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
         )}
+
+        <div className={styles.logo}>
+          <Image
+            src="/assets/logo.png"
+            alt="KXBYTE"
+            width={32}
+            height={32}
+            className={styles.logoImage}
+            priority
+          />
+          <span className={styles.logoText}>KxTill</span>
+        </div>
       </div>
 
-      {/* Right: Notifications + User */}
       <div className={styles.actions}>
-        {/* Refresh Button */}
-        <button
-          className={styles.iconBtn}
-          onClick={() => router.refresh()}
-          title="Refresh data"
-        >
-          <RefreshCw size={16} />
-        </button>
-
         {/* Notifications */}
         <div className={styles.dropdownWrap} ref={notifMenuRef}>
           <button
@@ -284,11 +205,12 @@ export default function KxTillTopBar() {
           )}
         </div>
 
-        {/* User Menu */}
+        {/* User menu — contains org/branch switchers */}
         <div className={styles.dropdownWrap} ref={userMenuRef}>
           <button
             className={styles.userBtn}
             onClick={() => setUserMenuOpen((v) => !v)}
+            aria-expanded={userMenuOpen}
           >
             <span className={styles.userAvatar}>{user?.firstName?.[0] || "U"}</span>
             <span className={styles.userName}>
@@ -298,7 +220,7 @@ export default function KxTillTopBar() {
           </button>
 
           {userMenuOpen && (
-            <div className={styles.userMenu}>
+            <div className={styles.userMenu} role="menu">
               <div className={styles.userInfo}>
                 <div className={styles.userAvatarLarge}>{user?.firstName?.[0] || "U"}</div>
                 <div className={styles.userInfoText}>
@@ -318,39 +240,137 @@ export default function KxTillTopBar() {
                   </div>
                 </div>
               </div>
+
               <div className={styles.divider} />
+
               <button
                 className={styles.menuItem}
-                onClick={() => router.push("/dashboard/profile")}
+                onClick={() => closeMenuAndNavigate("/dashboard/profile")}
               >
                 <User size={15} />
                 My Profile
               </button>
+
               {hasPermission("kxtill.settings.view") && (
                 <button
                   className={styles.menuItem}
-                  onClick={() => router.push("/kx/kxtill/settings")}
+                  onClick={() => closeMenuAndNavigate("/kx/kxtill/settings")}
                 >
                   <Settings size={15} />
                   Product Settings
                 </button>
               )}
+
               <button
                 className={styles.menuItem}
-                onClick={() => router.push("/dashboard/help")}
+                onClick={() => closeMenuAndNavigate("/dashboard/help")}
               >
                 <HelpCircle size={15} />
-                Help & Support
+                Help &amp; Support
               </button>
-              <div className={styles.divider} />
+
               <button
                 className={styles.menuItem}
-                onClick={() => router.push("/dashboard")}
+                onClick={() => closeMenuAndNavigate("/dashboard")}
               >
                 <Building2 size={15} />
                 Back to Suite
               </button>
+
+              {(showOrgSwitcher || showBranchSwitcher) && (
+                <>
+                  <div className={styles.divider} />
+                  <div className={styles.menuSectionLabel}>Organization</div>
+                </>
+              )}
+
+              {showOrgSwitcher && (
+                <div className={styles.switcherSection}>
+                  <div
+                    className={styles.switcherHeader}
+                    onClick={() => setOrgDropdownOpen((v) => !v)}
+                  >
+                    <Building2 size={14} />
+                    <span>Org</span>
+                    <span className={styles.switcherCurrent}>
+                      {switchingOrg ? "Switching..." : activeOrganization?.name || "Select"}
+                    </span>
+                    <ChevronRight
+                      size={14}
+                      className={`${styles.switcherChevron} ${
+                        orgDropdownOpen ? styles.open : ""
+                      }`}
+                    />
+                  </div>
+                  {orgDropdownOpen && !switchingOrg && (
+                    <div className={styles.switcherList}>
+                      {organizations.map((org) => {
+                        const isActive = org.id === activeOrganization?.id;
+                        return (
+                          <button
+                            key={org.id}
+                            className={`${styles.switcherOption} ${
+                              isActive ? styles.active : ""
+                            }`}
+                            onClick={() => handleSwitchOrg(org.id)}
+                          >
+                            <span className={styles.switcherOptionName}>{org.name}</span>
+                            {isActive && <Check size={14} className={styles.checkIcon} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {showBranchSwitcher && (
+                <div className={styles.switcherSection}>
+                  <div
+                    className={styles.switcherHeader}
+                    onClick={() => setBranchDropdownOpen((v) => !v)}
+                  >
+                    <Store size={14} />
+                    <span>Branch</span>
+                    <span className={styles.switcherCurrent}>
+                      {activeBranch?.id === "ALL"
+                        ? "All Branches"
+                        : activeBranch?.name || "All Branches"}
+                    </span>
+                    <ChevronRight
+                      size={14}
+                      className={`${styles.switcherChevron} ${
+                        branchDropdownOpen ? styles.open : ""
+                      }`}
+                    />
+                  </div>
+                  {branchDropdownOpen && (
+                    <div className={styles.switcherList}>
+                      {branchOptions.map((branch) => {
+                        const isSelected =
+                          branch.id === "ALL"
+                            ? activeBranch === null
+                            : branch.id === activeBranch?.id;
+                        return (
+                          <button
+                            key={branch.id}
+                            className={`${styles.switcherOption} ${
+                              isSelected ? styles.active : ""
+                            }`}
+                            onClick={() => handleSwitchBranch(branch.id)}
+                          >
+                            <span className={styles.switcherOptionName}>{branch.name}</span>
+                            {isSelected && <Check size={14} className={styles.checkIcon} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className={styles.divider} />
+
               <button className={styles.menuItemLogout} onClick={handleLogout}>
                 <LogOut size={15} />
                 Logout

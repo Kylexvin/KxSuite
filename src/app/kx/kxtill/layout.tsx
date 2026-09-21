@@ -1,8 +1,8 @@
-// app/kx/kxtill/layout.tsx
+// src/app/kx/kxtill/layout.tsx
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import KxTillSidebar from "./components/KxTillSidebar";
@@ -17,8 +17,30 @@ export default function KxTillLayout({
   const router = useRouter();
   const { isAuthenticated, isLoading, organizations, activeOrganization } = useAuth();
 
+  const [isMounted, setIsMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   useEffect(() => {
+    const id = requestAnimationFrame(() => setIsMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(false);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     if (isLoading) return;
+
     if (!isAuthenticated) {
       router.push("/login");
       return;
@@ -27,32 +49,42 @@ export default function KxTillLayout({
       router.push("/onboarding/select-organization");
       return;
     }
-  }, [isLoading, isAuthenticated, organizations, activeOrganization, router]);
+  }, [isMounted, isLoading, isAuthenticated, organizations, activeOrganization, router]);
 
-  // Show loader while loading
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
-      <div className={styles.layout}>
-        <div className={styles.main}>
-          <div className={styles.content}>
-            <div className={styles.loaderWrapper}>
-              <div className={styles.loader} />
-            </div>
-          </div>
-        </div>
+      <div className={styles.loading}>
+        <div className={styles.spinner} />
       </div>
     );
   }
 
-  if (!isAuthenticated || !activeOrganization) {
-    return null;
-  }
+  if (!isAuthenticated || !activeOrganization) return null;
 
   return (
     <div className={styles.layout}>
-      <KxTillSidebar />
-      <div className={styles.main}>
-        <KxTillTopBar />
+      <KxTillTopBar
+        isMobile={isMobile}
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+      />
+
+      {isMobile && sidebarOpen && (
+        <div
+          className={styles.overlay}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <div
+        className={`${styles.sidebarWrap} ${sidebarOpen ? styles.open : ""}`}
+      >
+        <KxTillSidebar
+          isMobile={isMobile}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </div>
+
+      <div className={styles.contentWrap}>
         <main className={styles.content}>{children}</main>
       </div>
     </div>

@@ -7,8 +7,6 @@ import {
   useContext,
   useState,
   ReactNode,
-  useEffect,
-  useRef,
 } from "react";
 import axios from "axios";
 import { api } from "@/lib/axios";
@@ -29,7 +27,7 @@ export type Organization = {
   id: string;
   name: string;
   slug: string;
-  role: string; // "Owner" or "Member" from login response
+  role: string; // "Owner" or "Member"
   hasAllBranches: boolean;
   membershipId?: string;
   branchIds?: string[];
@@ -120,11 +118,11 @@ function safeLocalStorageGet<T>(key: string, defaultValue: T): T {
   if (typeof window === "undefined") return defaultValue;
   const stored = localStorage.getItem(key);
   if (!stored || stored === "undefined" || stored === "null") return defaultValue;
-  
-  if (typeof defaultValue === 'string') {
+
+  if (typeof defaultValue === "string") {
     return stored as T;
   }
-  
+
   try {
     const parsed = JSON.parse(stored);
     return parsed !== null && parsed !== undefined ? parsed : defaultValue;
@@ -134,6 +132,7 @@ function safeLocalStorageGet<T>(key: string, defaultValue: T): T {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // ---- State: initialized synchronously from localStorage ----
   const [user, setUser] = useState<User | null>(() =>
     safeLocalStorageGet<User | null>("user", null)
   );
@@ -162,53 +161,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     safeLocalStorageGet<SuiteContext | null>("suiteContext", null)
   );
   const [isLoading, setIsLoading] = useState(false);
-  const authInitialized = useRef(false);
-
-  useEffect(() => {
-    if (authInitialized.current) return;
-    authInitialized.current = true;
-
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("accessToken");
-    const storedRefresh = localStorage.getItem("refreshToken");
-    const storedOrgs = localStorage.getItem("organizations");
-    const storedActive = localStorage.getItem("activeOrganization");
-    const storedActiveDetail = localStorage.getItem("activeOrganizationDetail");
-    const storedBranches = localStorage.getItem("branches");
-    const storedActiveBranch = localStorage.getItem("activeBranch");
-    const storedSuiteContext = localStorage.getItem("suiteContext");
-
-    // Avoid synchronous setState calls inside the effect body which can
-    // trigger cascading renders. Defer state restoration to the next tick.
-    setTimeout(() => {
-      if (storedToken) setAccessToken(storedToken);
-      if (storedRefresh) setRefreshToken(storedRefresh);
-      if (storedUser) {
-        try { setUser(JSON.parse(storedUser)); } catch {}
-      }
-      if (storedOrgs) {
-        try { setOrganizations(JSON.parse(storedOrgs)); } catch {}
-      }
-      if (storedActive) {
-        try { setActiveOrganizationState(JSON.parse(storedActive)); } catch {}
-      }
-      if (storedActiveDetail) {
-        try { setActiveOrganizationDetail(JSON.parse(storedActiveDetail)); } catch {}
-      }
-      if (storedBranches) {
-        try { setBranches(JSON.parse(storedBranches)); } catch {}
-      }
-      if (storedActiveBranch) {
-        try { setActiveBranchState(JSON.parse(storedActiveBranch)); } catch {}
-      }
-      if (storedSuiteContext) {
-        try { setSuiteContext(JSON.parse(storedSuiteContext)); } catch {}
-      }
-    }, 0);
-  }, []);
 
   // ============================================================
-  // LOGIN
+  // LOGIN — does NOT touch org loading, lets caller navigate
   // ============================================================
 
   const login = async (email: string, password: string) => {
@@ -220,25 +175,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const { user, accessToken, refreshToken, organizations } = response.data;
+      const safeOrgs = organizations || [];
 
       setUser(user);
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
-      setOrganizations(organizations || []);
+      setOrganizations(safeOrgs);
 
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("organizations", JSON.stringify(organizations || []));
+      localStorage.setItem("organizations", JSON.stringify(safeOrgs));
 
-      if (organizations && organizations.length === 1) {
-        await setActiveOrganization(organizations[0].id);
+      // If user has exactly one org, silently select it — but do NOT
+      // await loadSuiteContext here. That's the caller's job after
+      // they decide where to navigate. Failing here would break login.
+      if (safeOrgs.length === 1) {
+        const org = safeOrgs[0];
+        setActiveOrganizationState(org);
+        localStorage.setItem("activeOrganization", JSON.stringify(org));
       }
 
-      return { hasOrganizations: organizations && organizations.length > 0 };
+      return { hasOrganizations: safeOrgs.length > 0 };
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        throw new Error(err.response?.data?.message || "Login failed");
+        throw new Error(
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Login failed"
+        );
       }
       throw err;
     } finally {
@@ -247,15 +212,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ============================================================
-  // SET TOKENS
+  // SET TOKENS (used by /callback after social auth)
   // ============================================================
 
   const setTokens = async (accessToken: string, refreshToken: string) => {
-    if (isLoading) {
-      console.log("⏳ Already loading, skipping duplicate setTokens call");
-      return;
-    }
-
     setIsLoading(true);
     try {
       setAccessToken(accessToken);
@@ -273,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const orgsRes = await api.get("/api/v1/organizations", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      const organizations = orgsRes.data.organizations || [];
+      const organizations: Organization[] = orgsRes.data.organizations || [];
       setOrganizations(organizations);
       localStorage.setItem("organizations", JSON.stringify(organizations));
 
@@ -320,45 +280,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ============================================================
 
   const loadSuiteContext = async (organizationId: string): Promise<SuiteContext> => {
-    try {
-      const response = await api.get<SuiteContext>(
-        `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
-      );
-      const context = response.data;
+    const response = await api.get<SuiteContext>(
+      `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
+    );
+    const context = response.data;
 
-      setSuiteContext(context);
-      localStorage.setItem("suiteContext", JSON.stringify(context));
+    setSuiteContext(context);
+    localStorage.setItem("suiteContext", JSON.stringify(context));
 
-      setActiveOrganizationDetail(context.organization);
-      localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
+    setActiveOrganizationDetail(context.organization);
+    localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
 
-      setBranches(context.branches);
-      localStorage.setItem("branches", JSON.stringify(context.branches));
+    setBranches(context.branches);
+    localStorage.setItem("branches", JSON.stringify(context.branches));
 
-      if (context.branches.length > 0) {
-        const currentBranch = activeBranch;
-        const stillValid = currentBranch && context.branches.some(b => b.id === currentBranch.id);
-        const branchToSet = stillValid ? currentBranch : context.branches[0];
-        
-        setActiveBranchState(branchToSet);
-        localStorage.setItem("activeBranch", JSON.stringify(branchToSet));
-      } else {
-        setActiveBranchState(null);
-        localStorage.removeItem("activeBranch");
-      }
-
-      return context;
-    } catch (error) {
-      console.error('Failed to load suite context:', error);
-      throw error;
+    if (context.branches.length > 0) {
+      const stillValid =
+        activeBranch && context.branches.some((b) => b.id === activeBranch.id);
+      const branchToSet = stillValid ? activeBranch : context.branches[0];
+      setActiveBranchState(branchToSet);
+      localStorage.setItem("activeBranch", JSON.stringify(branchToSet));
+    } else {
+      setActiveBranchState(null);
+      localStorage.removeItem("activeBranch");
     }
+
+    return context;
   };
 
   // ============================================================
-  // SET AUTH
+  // SET AUTH (used by register flow if needed)
   // ============================================================
 
-  const setAuth = (user: User, accessToken: string, refreshToken: string, organizations: Organization[]) => {
+  const setAuth = (
+    user: User,
+    accessToken: string,
+    refreshToken: string,
+    organizations: Organization[]
+  ) => {
     const safeOrgs = organizations || [];
     setUser(user);
     setAccessToken(accessToken);
@@ -378,27 +337,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ============================================================
-  // SET ACTIVE ORGANIZATION
+  // SET ACTIVE ORGANIZATION (called from org-select page)
   // ============================================================
 
   const setActiveOrganization = async (orgId: string) => {
-    setIsLoading(true);
-    try {
-      const org = organizations.find(o => o.id === orgId);
-      if (!org) {
-        throw new Error("Organization not found");
-      }
-
-      setActiveOrganizationState(org);
-      localStorage.setItem("activeOrganization", JSON.stringify(org));
-
-      await loadSuiteContext(orgId);
-    } catch (err) {
-      console.error("Failed to set active organization:", err);
-      throw err;
-    } finally {
-      setIsLoading(false);
+    const org = organizations.find((o) => o.id === orgId);
+    if (!org) {
+      throw new Error("Organization not found");
     }
+
+    setActiveOrganizationState(org);
+    localStorage.setItem("activeOrganization", JSON.stringify(org));
+
+    await loadSuiteContext(orgId);
   };
 
   const setActiveOrganizationDirect = (org: Organization) => {
@@ -411,18 +362,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ============================================================
 
   const loadBranches = async (orgId: string): Promise<Branch[]> => {
-    try {
-      const response = await api.get<BranchesResponse>(
-        `/api/v1/organizations/${orgId}/branches/my`
-      );
-      const items = response.data.branches || [];
-      setBranches(items);
-      localStorage.setItem("branches", JSON.stringify(items));
-      return items;
-    } catch (err) {
-      console.error("Failed to load branches:", err);
-      throw err;
-    }
+    const response = await api.get<BranchesResponse>(
+      `/api/v1/organizations/${orgId}/branches/my`
+    );
+    const items = response.data.branches || [];
+    setBranches(items);
+    localStorage.setItem("branches", JSON.stringify(items));
+    return items;
   };
 
   const setActiveBranch = (branch: Branch | null) => {
@@ -439,7 +385,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveBranch(null);
       return;
     }
-    const branch = branches.find(b => b.id === branchId);
+    const branch = branches.find((b) => b.id === branchId);
     if (!branch) {
       throw new Error("Branch not found");
     }
@@ -498,4 +444,4 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-} 
+}

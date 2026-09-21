@@ -2,22 +2,21 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
+  ShoppingBag,
   Package,
   Users,
   Building2,
+  FileText,
   CreditCard,
   Settings,
   ChevronDown,
-  ChevronsLeft,
   LogOut,
-  ShoppingBag,
-  FileText,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./Sidebar.module.css";
@@ -31,18 +30,14 @@ type NavLink = {
 };
 
 const NAV_LINKS: NavLink[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   {
     href: "/dashboard/marketplace",
     label: "Marketplace",
     icon: ShoppingBag,
     requiresOwner: true,
   },
-  {
-    href: "/kx",
-    label: "Products",
-    icon: Package,
-  },
+  { href: "/kx", label: "Products", icon: Package },
   {
     href: "/dashboard/members",
     label: "Members",
@@ -75,24 +70,20 @@ const NAV_LINKS: NavLink[] = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({
+  isMobile,
+  onClose,
+}: {
+  isMobile: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const {
-    activeOrganization,
-    suiteContext,
-    logout,
-  } = useAuth();
+  const { activeOrganization, suiteContext, logout } = useAuth();
 
-  const [productsOpen, setProductsOpen] = useState(true);
-  const [collapsed, setCollapsed] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  const isKxProduct = pathname.startsWith("/kx/") && pathname !== "/kx";
 
-  const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 1024;
-
-  // ============================================================
-  // PERMISSION HELPERS
-  // ============================================================
+  const [productsOpen, setProductsOpen] = useState(isKxProduct ? true : true);
 
   const permissions = suiteContext?.permissions ?? [];
   const isOwner = permissions.includes("*");
@@ -103,12 +94,7 @@ export default function Sidebar() {
     return permissions.includes(permission);
   };
 
-  // ============================================================
-  // PRODUCT VISIBILITY
-  // ============================================================
-
   const products = suiteContext?.products ?? [];
-
   const visibleProducts = products.filter((p) => {
     if (!p.isActive) return false;
     if (isOwner) return true;
@@ -117,140 +103,43 @@ export default function Sidebar() {
 
   const showProductsTab = visibleProducts.length > 0 || isOwner;
 
-  // ============================================================
-  // EFFECTS
-  // ============================================================
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth <= 1024) {
-        setCollapsed(true);
-      } else {
-        setCollapsed(false);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // ============================================================
-  // HANDLE CLICK OUTSIDE - ONLY FOR MOBILE
-  // ============================================================
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isSmallScreen && 
-          sidebarRef.current && 
-          !sidebarRef.current.contains(event.target as Node) &&
-          !collapsed) {
-        setCollapsed(true);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isSmallScreen, collapsed]);
-
-  // ============================================================
-  // HANDLERS
-  // ============================================================
-
   if (!activeOrganization) return null;
-
-  const isKxProduct = pathname.startsWith("/kx/") && pathname !== "/kx";
 
   const handleLogout = () => {
     logout();
     router.push("/login");
   };
 
-  const handleProductsToggle = () => {
-    if (collapsed && isSmallScreen) {
-      setCollapsed(false);
-      setTimeout(() => {
-        setProductsOpen((v) => !v);
-      }, 300);
-    } else {
-      setProductsOpen((v) => !v);
-    }
-  };
-
-  const handleProductClick = (href: string) => {
-    router.push(href);
-    if (isSmallScreen) {
-      setTimeout(() => {
-        setCollapsed(true);
-        setProductsOpen(false);
-      }, 300);
-    }
+  const closeIfMobile = () => {
+    if (isMobile) onClose();
   };
 
   const handleNavClick = (href: string) => {
     router.push(href);
-    if (isSmallScreen) {
-      setTimeout(() => {
-        setCollapsed(true);
-      }, 300);
-    }
+    closeIfMobile();
   };
 
-  // ============================================================
-  // FILTER NAV LINKS
-  // ============================================================
+  const handleProductClick = (href: string) => {
+    router.push(href);
+    closeIfMobile();
+  };
+
+  const handleVisitKxbyte = () => {
+    window.open("https://kxbyte.co.ke", "_blank", "noopener,noreferrer");
+  };
 
   const visibleLinks = NAV_LINKS.filter((link) => {
-    if (link.href === "/kx") {
-      return showProductsTab;
-    }
-
-    if (link.requiresOwner && !isOwner) {
-      return false;
-    }
-
+    if (link.href === "/kx") return showProductsTab;
+    if (link.requiresOwner && !isOwner) return false;
     return hasPermission(link.permission);
   });
 
-  // ============================================================
-  // RENDER
-  // ============================================================
-
   const user = suiteContext?.user;
 
-  const sidebarKey = `sidebar-${activeOrganization?.id}-${products.length}`;
-
   return (
-    <aside 
-      key={sidebarKey} 
-      ref={sidebarRef}
-      className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}
-    >
-      {/* Logo Row */}
-      <div className={styles.logoRow}>
-        <div className={styles.logoWrapper}>
-          <Image
-            src="/assets/logo.png"
-            alt="KXBYTE Logo"
-            width={32}
-            height={32}
-            className={styles.logoImage}
-            priority
-          />
-          <span className={styles.logoText}>KXBYTE</span>
-        </div>
-        <button
-          className={styles.collapseBtn}
-          onClick={() => setCollapsed((v) => !v)}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <ChevronsLeft size={14} color="currentColor" />
-        </button>
-      </div>
+    <aside className={`${styles.sidebar} ${isMobile ? styles.mobile : ""}`}>
+      {isMobile && <div className={styles.mobileSpacer} />}
 
-      <div className={styles.divider} />
-
-      {/* Navigation */}
       <nav className={styles.nav}>
         {visibleLinks.map((link) => {
           const Icon = link.icon;
@@ -259,19 +148,20 @@ export default function Sidebar() {
             return (
               <div key={link.href}>
                 <button
+                  type="button"
                   className={`${styles.navLinkExpandable} ${
-                    pathname === link.href || isKxProduct ? styles.navLinkActive : ""
+                    pathname === link.href || isKxProduct
+                      ? styles.navLinkActive
+                      : ""
                   }`}
-                  onClick={handleProductsToggle}
-                  title={link.label}
+                  onClick={() => setProductsOpen((v) => !v)}
                 >
                   <span className={styles.navLinkExpandableLabel}>
-                    <Icon size={16} color="currentColor" className={styles.navIcon} />
+                    <Icon size={16} className={styles.navIcon} />
                     <span className={styles.navLabel}>{link.label}</span>
                   </span>
                   <ChevronDown
                     size={13}
-                    color="currentColor"
                     className={styles.chevron}
                     data-open={productsOpen}
                   />
@@ -284,6 +174,7 @@ export default function Sidebar() {
                       return (
                         <button
                           key={product.key}
+                          type="button"
                           className={`${styles.subLink} ${
                             pathname === href ? styles.subLinkActive : ""
                           }`}
@@ -299,16 +190,19 @@ export default function Sidebar() {
             );
           }
 
+          const isActive =
+            link.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(link.href);
+
           return (
             <button
               key={link.href}
-              className={
-                pathname === link.href ? styles.navLinkActive : styles.navLink
-              }
+              type="button"
+              className={isActive ? styles.navLinkActive : styles.navLink}
               onClick={() => handleNavClick(link.href)}
-              title={link.label}
             >
-              <Icon size={16} color="currentColor" className={styles.navIcon} />
+              <Icon size={16} className={styles.navIcon} />
               <span className={styles.navLabel}>{link.label}</span>
             </button>
           );
@@ -317,13 +211,23 @@ export default function Sidebar() {
 
       <div className={styles.spacer} />
 
-      {/* Profile & Logout */}
       <div className={styles.divider} />
+
+      <button
+        type="button"
+        className={styles.suiteRow}
+        onClick={handleVisitKxbyte}
+        title="Visit KXBYTE"
+      >
+        <ExternalLink size={15} />
+        <span className={styles.navLabel}>Visit KXBYTE</span>
+      </button>
 
       {user && (
         <button
+          type="button"
           className={styles.profileRow}
-          onClick={() => router.push("/dashboard/profile")}
+          onClick={() => handleNavClick("/dashboard/profile")}
           title="My Profile"
         >
           <div className={styles.avatar}>
@@ -335,11 +239,15 @@ export default function Sidebar() {
         </button>
       )}
 
-      <button className={styles.logoutRow} onClick={handleLogout} title="Logout">
-        <LogOut size={15} color="currentColor" />
+      <button
+        type="button"
+        className={styles.logoutRow}
+        onClick={handleLogout}
+        title="Logout"
+      >
+        <LogOut size={15} />
         <span className={styles.navLabel}>Logout</span>
       </button>
-      
     </aside>
   );
 }

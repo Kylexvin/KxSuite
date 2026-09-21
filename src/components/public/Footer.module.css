@@ -47,6 +47,10 @@
   letter-spacing: -0.02em;
 }
 
+.brandSuite {
+  color: #d95b2d;
+}
+
 .tagline {
   font-size: 0.88rem;
   color: #f9f9f9;
@@ -90,6 +94,9 @@
   opacity: 0.6;
   text-decoration: none;
   transition: opacity 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .linkGroup a:hover,
@@ -98,72 +105,37 @@
   text-decoration: none;
 }
 
-.comingSoon {
-  color: #f9f9f9;
-  opacity: 0.3;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.external {
+  font-size: 0.72rem;
+  opacity: 0.5;
+  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
-.badge {
-  font-size: 0.55rem;
-  font-weight: 600;
-  color: #f9f9f9;
-  opacity: 0.3;
-  background: rgba(249, 249, 249, 0.05);
-  border: 0.6px solid rgba(249, 249, 249, 0.06);
-  padding: 1px 8px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+.linkGroup a:hover .external {
+  color: #d95b2d;
+  opacity: 1;
 }
 
 /* ---- Bottom section ---- */
 .bottom {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding-top: 24px;
   flex-wrap: wrap;
   gap: 16px;
 }
 
-/* ---- Social ---- */
-.social {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.socialLink {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: #f9f9f9;
-  opacity: 0.3;
-  border: 0.6px solid rgba(249, 249, 249, 0.06);
-  transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease;
-}
-
-.socialLink:hover,
-.socialLink:focus {
-  opacity: 0.7;
-  background: rgba(249, 249, 249, 0.04);
-  transform: translateY(-2px);
-}
-
 /* ---- Legal ---- */
 .legal {
   font-size: 0.78rem;
   color: #f9f9f9;
-  opacity: 0.25;
+  opacity: 0.35;
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .divider {
@@ -221,19 +193,5 @@
 
   .linkGroup:last-child {
     grid-column: span 2;
-  }
-
-  .social {
-    gap: 8px;
-  }
-
-  .socialLink {
-    width: 32px;
-    height: 32px;
-  }
-
-  .socialLink svg {
-    width: 16px;
-    height: 16px;
   }
 }

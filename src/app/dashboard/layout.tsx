@@ -1,4 +1,4 @@
-// dashboard/layout.tsx
+// src/app/dashboard/layout.tsx
 
 "use client";
 
@@ -9,43 +9,42 @@ import Sidebar from "./Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import styles from "./layout.module.css";
 
-
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, organizations, activeOrganization, user, accessToken } = useAuth();
+  const { isAuthenticated, isLoading, organizations, activeOrganization } = useAuth();
+
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Debug
-  console.log('DashboardLayout - isAuthenticated:', isAuthenticated);
-  console.log('DashboardLayout - isLoading:', isLoading);
-  console.log('DashboardLayout - user:', user);
-  console.log('DashboardLayout - accessToken:', accessToken);
-  console.log('DashboardLayout - organizations:', organizations);
-  console.log('DashboardLayout - activeOrganization:', activeOrganization);
-
-  // mark mounted asynchronously to avoid synchronous setState in effect
   useEffect(() => {
     const id = requestAnimationFrame(() => setIsMounted(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // handle redirects after mount and when auth/loading/org state changes
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(false);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     if (!isMounted) return;
     if (isLoading) return;
-
     if (!isAuthenticated) {
-      console.log('Redirecting to login - not authenticated');
       router.push("/login");
       return;
     }
-
     if (organizations.length === 0 || !activeOrganization) {
-      console.log('Redirecting to select organization - no orgs or active org');
       router.push("/onboarding/select-organization");
       return;
     }
@@ -59,15 +58,32 @@ export default function DashboardLayout({
     );
   }
 
-  if (!isAuthenticated || !activeOrganization) {
-    return null;
-  }
+  if (!isAuthenticated || !activeOrganization) return null;
 
   return (
     <div className={styles.layout}>
-      <Sidebar />
-      <div className={styles.main}>
-        <TopBar />
+      <TopBar
+        isMobile={isMobile}
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+      />
+
+      {isMobile && sidebarOpen && (
+        <div
+          className={styles.overlay}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <div
+        className={`${styles.sidebarWrap} ${sidebarOpen ? styles.open : ""}`}
+      >
+        <Sidebar
+          isMobile={isMobile}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </div>
+
+      <div className={styles.contentWrap}>
         <main className={styles.content}>{children}</main>
       </div>
     </div>
