@@ -117,6 +117,7 @@
   width: 100%;
   padding: 9px 10px;
   margin-bottom: 6px;
+ 
   border: 1px solid var(--border);
   background: var(--raised);
   cursor: pointer;
@@ -275,6 +276,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  
   flex: 1;
 }
 
@@ -526,6 +528,10 @@
     width: 220px;
     min-width: 220px;
     padding: 12px 8px;
+  }
+  
+  .nav {
+      margin-top: 20px;
   }
 
   .logoText {
@@ -1066,4 +1072,155 @@
 .mobileSpacer {
   height: 56px;
   flex-shrink: 0;
+}
+/* ============================================================
+   APPENDED — Kx Products group (added with Sidebar rewrite)
+   ============================================================ */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Product count pill, shown only while collapsed */
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 2px;
+  border-radius: 9px;
+  background: rgba(255, 106, 43, 0.14);
+  color: var(--accent-glow);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Hide count badge when sidebar is collapsed (rail has no labels anyway) */
+.collapsed .countBadge,
+.sidebar:not(.collapsed) .countBadge {
+  /* No-op selector to keep specificity predictable */
+}
+
+/* ---- Sub-nav: leaf item ---- */
+.subLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  margin-top: 0;
+  border-radius: 8px;
+  border: 1px var(--accent-glow);
+  color: var(--text);
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.025), 4px 4px 10px rgba(0, 0, 0, 0.45);  
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.subLink:hover {
+  background: var(--raised);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.subLinkLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subLinkArrow {
+  flex-shrink: 0;
+  color: var(--text-faint);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease;
+}
+
+.subLink:hover .subLinkArrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--accent-glow);
+}
+
+/* ---- Sub-nav: active leaf ---- */
+.subLinkActive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 106, 43, 0.18);
+  background: rgba(255, 106, 43, 0.1);
+  color: var(--accent-glow);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.subLinkActive:hover {
+  background: rgba(255, 106, 43, 0.16);
+  border-color: rgba(255, 106, 43, 0.3);
+  color: var(--accent-glow);
+}
+
+.subLinkActive .subLinkArrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--accent-glow);
+}
+
+/* ---- Sub-nav: empty state ---- */
+.subNavEmpty {
+  display: block;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* ---- Sub-nav animation ---- */
+.subNav {
+  animation: subNavIn 0.15s ease-out;
+}
+
+@keyframes subNavIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subNav {
+    animation: none;
+  }
+
+  .subLinkArrow {
+    transition: none;
+  }
 }

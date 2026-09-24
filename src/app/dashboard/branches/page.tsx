@@ -1,11 +1,11 @@
 // app/dashboard/branches/page.tsx
 
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/axios";
-import { AxiosError } from "axios";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/axios';
+import { AxiosError } from 'axios';
 import {
   Building2,
   Plus,
@@ -21,35 +21,18 @@ import {
   Archive,
   RefreshCw,
   Loader2,
-  BarChart3,
-  Activity,
-  PieChart as PieChartIcon,
-} from "lucide-react";
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-} from "recharts";
-import styles from "./page.module.css";
+  Crown,
+} from 'lucide-react';
+import styles from './page.module.css';
 
 // ============================================================
 // TYPES
 // ============================================================
 
-type Branch = {
+type Role = {
   id: string;
   name: string;
-  code: string;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  isActive: boolean;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-  members?: BranchMember[];
+  description?: string;
 };
 
 type BranchMember = {
@@ -66,6 +49,46 @@ type BranchMember = {
   joinedAt: string;
 };
 
+type Assignment = {
+  id: string;
+  membershipId: string;
+  branchId: string;
+  createdAt: string;
+  updatedAt: string;
+  membership: {
+    id: string;
+    userId: string;
+    organizationId: string;
+    roleId: string | null;
+    isActive: boolean;
+    joinedAt: string;
+    hasAllBranches: boolean;
+    user: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    };
+  };
+};
+
+type Branch = {
+  id: string;
+  name: string;
+  code: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  isActive: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+  assignments: Assignment[];
+  _count: {
+    assignments: number;
+  };
+};
+
 type BranchFormData = {
   name: string;
   code: string;
@@ -74,55 +97,35 @@ type BranchFormData = {
   email: string;
 };
 
-type ActivityItem = {
-  branch: string;
-  activity: number;
-};
-
-type ActivityData = {
-  branchActivity: ActivityItem[];
-};
-
-type ChartDataItem = {
-  name: string;
-  value: number;
-  color: string;
-};
-
-// ============================================================
-// API ERROR TYPE
-// ============================================================
-
 type ApiErrorResponse = {
   message?: string;
   error?: string;
   [key: string]: unknown;
 };
 
-// ============================================================
-// HELPER: Get error message from unknown error
-// ============================================================
-
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof AxiosError) {
     const data = error.response?.data as ApiErrorResponse;
     return data?.message || data?.error || fallback;
   }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
   return fallback;
 }
-
 
 // ============================================================
 // TOAST
 // ============================================================
 
-function Toast({ type, message, onClose }: { type: "success" | "error" | "info"; message: string; onClose: () => void }) {
+function Toast({
+  type,
+  message,
+  onClose,
+}: {
+  type: 'success' | 'error' | 'info';
+  message: string;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
@@ -152,154 +155,204 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
 }
 
 // ============================================================
+// SKELETON
+// ============================================================
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={`${styles.skeleton} ${className ?? ''}`} />;
+}
+
+function BranchesSkeleton() {
+  return (
+    <div className={styles.page} aria-busy="true" aria-live="polite">
+      <span className={styles.srOnly}>Loading branches…</span>
+
+      <div className={styles.orgHeader}>
+        <div className={styles.orgIdentity}>
+          <SkeletonBlock className={styles.skeletonAvatarLg} />
+          <div style={{ flex: 1 }}>
+            <SkeletonBlock className={styles.skeletonTitle} />
+            <SkeletonBlock className={styles.skeletonSubtitle} />
+          </div>
+        </div>
+        <SkeletonBlock className={styles.skeletonButton} />
+      </div>
+
+      <div className={styles.coverageCard}>
+        <div className={styles.coverageHeader}>
+          <SkeletonBlock className={styles.skeletonLabel} />
+        </div>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonBlock key={`c-${i}`} className={styles.skeletonCoverageRow} />
+        ))}
+      </div>
+
+      <div className={styles.filtersBar}>
+        <SkeletonBlock className={styles.skeletonSearch} />
+        <SkeletonBlock className={styles.skeletonFilter} />
+      </div>
+
+      <div className={styles.branchGrid}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={`b-${i}`} className={styles.skeletonCard}>
+            <SkeletonBlock className={styles.skeletonLine} />
+            <SkeletonBlock className={styles.skeletonLineShort} />
+            <SkeletonBlock className={styles.skeletonCardBody} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // MAIN PAGE
 // ============================================================
 
 export default function BranchesPage() {
   const { activeOrganization, loadSuiteContext } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadingMembers, setLoadingMembers] = useState(false);
-  const [loadingActivity, setLoadingActivity] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchMembers, setBranchMembers] = useState<BranchMember[]>([]);
-  const [activityData, setActivityData] = useState<ActivityData | null>(null);
-  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
 
-  // UI States
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<
+    'ALL' | 'ACTIVE' | 'INACTIVE'
+  >('ALL');
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
-  // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
 
-  // Form states
   const [formData, setFormData] = useState<BranchFormData>({
-    name: "",
-    code: "",
-    address: "",
-    phone: "",
-    email: "",
+    name: '',
+    code: '',
+    address: '',
+    phone: '',
+    email: '',
   });
 
   // ============================================================
-  // FETCH DATA
+  // FETCH
   // ============================================================
 
   const refreshData = useCallback(async () => {
     if (!activeOrganization) return;
-
-    setLoading(true);
     try {
       const orgId = activeOrganization.id;
-
-      const branchesRes = await api.get(`/api/v1/organizations/${orgId}/branches`);
-      const branchesData = branchesRes.data.items || branchesRes.data.branches || [];
-      
-      const branchesWithMembers = await Promise.all(
-        branchesData.map(async (branch: Branch) => {
-          try {
-            const membersRes = await api.get(
-              `/api/v1/organizations/${orgId}/branches/${branch.id}/members`
-            );
-            return { ...branch, members: membersRes.data.members || [] };
-          } catch {
-            return { ...branch, members: [] };
-          }
-        })
-      );
-      setBranches(branchesWithMembers);
-    } catch (err: unknown) {
-      console.error("Failed to fetch branches:", err);
-      setToast({ type: "error", message: "Failed to load branches. Please try again." });
-      setTimeout(() => setToast(null), 4000);
-    } finally {
-      setLoading(false);
+      const res = await api.get(`/api/v1/organizations/${orgId}/branches`);
+      const items = res.data.items ?? res.data.branches ?? [];
+      setBranches(items);
+    } catch (err) {
+      console.error('Failed to fetch branches:', err);
+      setToast({ type: 'error', message: 'Failed to load branches' });
     }
   }, [activeOrganization]);
 
-  const fetchActivity = useCallback(async () => {
+  const refreshRoles = useCallback(async () => {
     if (!activeOrganization) return;
-    setLoadingActivity(true);
     try {
-      const res = await api.get(
-        `/api/v1/organizations/${activeOrganization.id}/branches/activity?days=7`
-      );
-      setActivityData(res.data as ActivityData);
-    } catch (err: unknown) {
-      console.error("Failed to fetch activity:", err);
-    } finally {
-      setLoadingActivity(false);
+      const orgId = activeOrganization.id;
+      const res = await api.get(`/api/v1/organizations/${orgId}/roles`);
+      setRoles(res.data.roles ?? []);
+    } catch (err) {
+      console.error('Failed to fetch roles:', err);
     }
   }, [activeOrganization]);
 
   // ============================================================
-  // EFFECT WITH ISMOUNTED FLAG
+  // EFFECT
   // ============================================================
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadData = async () => {
-      if (!activeOrganization || !isMounted) return;
-
+    const load = async () => {
+      if (!activeOrganization) return;
       setLoading(true);
-      setLoadingActivity(true);
-      
       try {
         const orgId = activeOrganization.id;
-
-        // Fetch both in parallel for better performance
-        const [branchesRes, activityRes] = await Promise.all([
+        const [branchesRes, rolesRes] = await Promise.all([
           api.get(`/api/v1/organizations/${orgId}/branches`),
-          api.get(`/api/v1/organizations/${orgId}/branches/activity?days=7`),
+          api.get(`/api/v1/organizations/${orgId}/roles`),
         ]);
-
         if (!isMounted) return;
-
-        // Process branches
-        const branchesData = branchesRes.data.items || branchesRes.data.branches || [];
-        
-        const branchesWithMembers = await Promise.all(
-          branchesData.map(async (branch: Branch) => {
-            try {
-              const membersRes = await api.get(
-                `/api/v1/organizations/${orgId}/branches/${branch.id}/members`
-              );
-              return { ...branch, members: membersRes.data.members || [] };
-            } catch {
-              return { ...branch, members: [] };
-            }
-          })
-        );
-
-        if (!isMounted) return;
-        
-        setBranches(branchesWithMembers);
-        setActivityData(activityRes.data as ActivityData);
-      } catch (err: unknown) {
+        const items =
+          branchesRes.data.items ?? branchesRes.data.branches ?? [];
+        setBranches(items);
+        setRoles(rolesRes.data.roles ?? []);
+      } catch (err) {
         if (isMounted) {
-          console.error("Failed to fetch data:", err);
-          setToast({ type: "error", message: "Failed to load branches. Please try again." });
+          console.error('Failed to load branches:', err);
+          setToast({ type: 'error', message: 'Failed to load branches' });
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-          setLoadingActivity(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
-    loadData();
-
+    load();
     return () => {
       isMounted = false;
     };
   }, [activeOrganization]);
+
+  // ============================================================
+  // DERIVED
+  // ============================================================
+
+  const totalBranches = branches.length;
+  const activeBranches = branches.filter((b) => b.isActive).length;
+  const totalAssigned = branches.reduce(
+    (sum, b) => sum + (b._count?.assignments ?? 0),
+    0,
+  );
+  const unassignedBranches = branches.filter(
+    (b) => b.isActive && (b._count?.assignments ?? 0) === 0,
+  ).length;
+
+  // Team coverage: only active branches with members, sorted desc.
+  const coverage = useMemo(() => {
+    return branches
+      .filter((b) => b.isActive)
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        code: b.code,
+        members: b._count?.assignments ?? 0,
+      }))
+      .sort((a, b) => b.members - a.members);
+  }, [branches]);
+
+  const maxMembers = Math.max(1, ...coverage.map((c) => c.members));
+
+  const filteredBranches = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return branches.filter((branch) => {
+      const matchesSearch =
+        branch.name.toLowerCase().includes(q) ||
+        branch.code.toLowerCase().includes(q);
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'ACTIVE' && branch.isActive) ||
+        (statusFilter === 'INACTIVE' && !branch.isActive);
+      return matchesSearch && matchesStatus;
+    });
+  }, [branches, searchQuery, statusFilter]);
+
+  const roleById = useMemo(() => {
+    const map = new Map<string, Role>();
+    roles.forEach((r) => map.set(r.id, r));
+    return map;
+  }, [roles]);
 
   // ============================================================
   // HANDLERS
@@ -308,24 +361,22 @@ export default function BranchesPage() {
   const handleCreateBranch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOrganization) return;
-
     setSaving(true);
     try {
-      await api.post(`/api/v1/organizations/${activeOrganization.id}/branches`, formData);
+      await api.post(
+        `/api/v1/organizations/${activeOrganization.id}/branches`,
+        formData,
+      );
       await loadSuiteContext(activeOrganization.id);
       await refreshData();
-      await fetchActivity();
-      setToast({ type: "success", message: "Branch created successfully" });
+      setToast({ type: 'success', message: 'Branch created' });
       setShowCreateModal(false);
-      setFormData({ name: "", code: "", address: "", phone: "", email: "" });
-      setTimeout(() => setToast(null), 3000);
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to create branch");
+      setFormData({ name: '', code: '', address: '', phone: '', email: '' });
+    } catch (err) {
       setToast({
-        type: "error",
-        message,
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to create branch'),
       });
-      setTimeout(() => setToast(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -334,27 +385,22 @@ export default function BranchesPage() {
   const handleUpdateBranch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOrganization || !selectedBranch) return;
-
     setSaving(true);
     try {
       await api.patch(
         `/api/v1/organizations/${activeOrganization.id}/branches/${selectedBranch.id}`,
-        formData
+        formData,
       );
       await refreshData();
-      await fetchActivity();
-      setToast({ type: "success", message: "Branch updated successfully" });
+      setToast({ type: 'success', message: 'Branch updated' });
       setShowEditModal(false);
       setSelectedBranch(null);
-      setFormData({ name: "", code: "", address: "", phone: "", email: "" });
-      setTimeout(() => setToast(null), 3000);
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to update branch");
+      setFormData({ name: '', code: '', address: '', phone: '', email: '' });
+    } catch (err) {
       setToast({
-        type: "error",
-        message,
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to update branch'),
       });
-      setTimeout(() => setToast(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -362,29 +408,24 @@ export default function BranchesPage() {
 
   const handleToggleBranchStatus = async () => {
     if (!activeOrganization || !selectedBranch) return;
-
     setSaving(true);
     try {
       await api.patch(
         `/api/v1/organizations/${activeOrganization.id}/branches/${selectedBranch.id}`,
-        { isActive: !selectedBranch.isActive }
+        { isActive: !selectedBranch.isActive },
       );
       await refreshData();
-      await fetchActivity();
       setToast({
-        type: "success",
-        message: selectedBranch.isActive ? "Branch archived" : "Branch restored",
+        type: 'success',
+        message: selectedBranch.isActive ? 'Branch archived' : 'Branch restored',
       });
       setShowArchiveModal(false);
       setSelectedBranch(null);
-      setTimeout(() => setToast(null), 3000);
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to update branch status");
+    } catch (err) {
       setToast({
-        type: "error",
-        message,
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to update branch'),
       });
-      setTimeout(() => setToast(null), 4000);
     } finally {
       setSaving(false);
     }
@@ -395,79 +436,38 @@ export default function BranchesPage() {
     setFormData({
       name: branch.name,
       code: branch.code,
-      address: branch.address || "",
-      phone: branch.phone || "",
-      email: branch.email || "",
+      address: branch.address ?? '',
+      phone: branch.phone ?? '',
+      email: branch.email ?? '',
     });
     setShowEditModal(true);
   };
 
   const openArchiveModal = (branch: Branch) => {
+    if (branch.isDefault) {
+      setToast({
+        type: 'error',
+        message: 'The default branch cannot be archived',
+      });
+      return;
+    }
     setSelectedBranch(branch);
     setShowArchiveModal(true);
   };
 
-  const openMembersModal = async (branch: Branch) => {
-    if (!activeOrganization) return;
-    
+  const openMembersModal = (branch: Branch) => {
     setSelectedBranch(branch);
-    setLoadingMembers(true);
-    try {
-      const membersRes = await api.get(
-        `/api/v1/organizations/${activeOrganization.id}/branches/${branch.id}/members`
-      );
-      setBranchMembers(membersRes.data.members || []);
-      setShowMembersModal(true);
-    } catch {
-      setToast({ type: "error", message: "Failed to load branch members" });
-      setTimeout(() => setToast(null), 4000);
-    } finally {
-      setLoadingMembers(false);
-    }
+    setShowMembersModal(true);
   };
-
-  // ============================================================
-  // FILTERS
-  // ============================================================
-
-  const filteredBranches = branches.filter((branch) => {
-    const matchesSearch = branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          branch.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" ||
-                          (statusFilter === "ACTIVE" && branch.isActive) ||
-                          (statusFilter === "INACTIVE" && !branch.isActive);
-    return matchesSearch && matchesStatus;
-  });
-
-  // ============================================================
-  // STATS
-  // ============================================================
-
-  const totalBranches = branches.length;
-  const activeBranches = branches.filter(b => b.isActive).length;
-  const inactiveBranches = branches.filter(b => !b.isActive).length;
-  
-
-  // Chart data
-  const statusChartData: ChartDataItem[] = [
-    { name: "Active", value: activeBranches, color: "#4caf82" },
-    { name: "Archived", value: inactiveBranches, color: "#62636e" },
-  ];
 
   // ============================================================
   // LOADING
   // ============================================================
 
-  if (loading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.loadingState}>
-          <Loader2 size={32} className={styles.spinner} />
-          <p>Loading branches...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <BranchesSkeleton />;
+
+  const hasZeroBranches = totalBranches === 0;
+  const hasOneBranch = totalBranches === 1;
 
   // ============================================================
   // RENDER
@@ -475,7 +475,6 @@ export default function BranchesPage() {
 
   return (
     <div className={styles.page}>
-      {/* Toast */}
       {toast && (
         <Toast
           type={toast.type}
@@ -498,7 +497,7 @@ export default function BranchesPage() {
               </span>
             </div>
             <div className={styles.orgMeta}>
-              Manage your organization&apos;s branches and locations
+              Locations where your organization operates
             </div>
           </div>
         </div>
@@ -511,261 +510,285 @@ export default function BranchesPage() {
         </button>
       </div>
 
-      {/* ===== CHARTS ROW (replaces stats) ===== */}
-      <div className={styles.chartsRow}>
-        {/* Bar Chart - Activity by Branch */}
-        <div className={styles.chartCard}>
-          <div className={styles.chartHeader}>
-            <div className={styles.chartTitle}>
-              <BarChart3 size={16} />
-              <span>Activity by Branch</span>
-            </div>
-            <span className={styles.chartBadge}>Last 7 days</span>
+      {/* ===== METRICS ===== */}
+      {!hasZeroBranches && (
+        <div className={styles.metricsRow}>
+          <div className={styles.metricCard}>
+            <span className={styles.metricValue}>{totalBranches}</span>
+            <span className={styles.metricLabel}>Branches</span>
           </div>
-          <div className={styles.chartBody}>
-            {loadingActivity ? (
-              <div className={styles.chartPlaceholder}>
-                <Loader2 size={24} className={styles.spinner} />
-                <span>Loading...</span>
-              </div>
-            ) : activityData && activityData.branchActivity.length > 0 ? (
-              <div className={styles.barChart}>
-                {activityData.branchActivity.map((item: ActivityItem) => {
-                  const max = Math.max(...activityData.branchActivity.map((b: ActivityItem) => b.activity), 1);
-                  const percent = (item.activity / max) * 100;
-                  return (
-                    <div key={item.branch} className={styles.barRow}>
-                      <span className={styles.barLabel}>{item.branch}</span>
-                      <div className={styles.barTrack}>
-                        <div 
-                          className={styles.barFill} 
-                          style={{ width: `${Math.max(percent, 4)}%` }}
-                        />
-                      </div>
-                      <span className={styles.barValue}>{item.activity}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className={styles.chartPlaceholder}>
-                <Activity size={24} className={styles.chartPlaceholderIcon} />
-                <span>No activity data</span>
-              </div>
-            )}
+          <div className={styles.metricCard}>
+            <span className={styles.metricValue}>{activeBranches}</span>
+            <span className={styles.metricLabel}>Active</span>
+          </div>
+          <div className={styles.metricCard}>
+            <span className={styles.metricValue}>{totalAssigned}</span>
+            <span className={styles.metricLabel}>Team members assigned</span>
+          </div>
+          <div
+            className={`${styles.metricCard} ${
+              unassignedBranches > 0 ? styles.metricCardWarn : ''
+            }`}
+          >
+            <span className={styles.metricValue}>{unassignedBranches}</span>
+            <span className={styles.metricLabel}>Unassigned branches</span>
           </div>
         </div>
+      )}
 
-        {/* Donut Chart - Branch Status */}
-        <div className={styles.chartCard}>
-          <div className={styles.chartHeader}>
-            <div className={styles.chartTitle}>
-              <PieChartIcon size={16} />
-              <span>Branch Status</span>
+      {/* ===== TEAM COVERAGE ===== */}
+      {coverage.length > 0 && (
+        <div className={styles.coverageCard}>
+          <div className={styles.coverageHeader}>
+            <div className={styles.coverageTitle}>
+              <Users size={15} />
+              <span>Team coverage</span>
             </div>
-            <span className={styles.chartBadge}>
-              {activeBranches} active
+            <span className={styles.coverageMeta}>
+              Members per active branch
             </span>
           </div>
-          <div className={styles.donutContainer}>
-            {totalBranches > 0 ? (
-              <>
-                <div className={styles.donutWrapper}>
-                  <ResponsiveContainer width={140} height={140}>
-                    <PieChart>
-                      <Pie 
-                        data={statusChartData} 
-                        dataKey="value" 
-                        innerRadius={40} 
-                        outerRadius={60} 
-                        stroke="none"
-                        paddingAngle={2}
-                      >
-                        {statusChartData.map((entry: ChartDataItem, index: number) => (
-                          <Cell key={index} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          background: "#1b1c23", 
-                          border: "1px solid rgba(255,255,255,0.07)", 
-                          borderRadius: "8px", 
-                          fontSize: "12px" 
-                        }} 
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className={styles.donutCenter}>
-                    <span className={styles.donutValue}>{totalBranches}</span>
-                    <span className={styles.donutLabel}>Total</span>
+          <div className={styles.coverageList}>
+            {coverage.map((c) => {
+              const percent = (c.members / maxMembers) * 100;
+              return (
+                <div key={c.id} className={styles.coverageRow}>
+                  <span className={styles.coverageName}>{c.name}</span>
+                  <div className={styles.coverageTrack}>
+                    <div
+                      className={styles.coverageFill}
+                      style={{ width: `${Math.max(percent, 3)}%` }}
+                    />
                   </div>
+                  <span className={styles.coverageValue}>
+                    {c.members} member{c.members === 1 ? '' : 's'}
+                  </span>
                 </div>
-                <div className={styles.donutLegend}>
-                  {statusChartData.map((item: ChartDataItem) => (
-                    <div key={item.name} className={styles.legendRow}>
-                      <span className={styles.legendDot} style={{ background: item.color }} />
-                      <span className={styles.legendName}>{item.name}</span>
-                      <span className={styles.legendValue}>{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className={styles.chartPlaceholder}>
-                <Building2 size={24} className={styles.chartPlaceholderIcon} />
-                <span>No branches</span>
-              </div>
-            )}
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ===== EMPTY: ZERO BRANCHES ===== */}
+      {hasZeroBranches && (
+        <div className={styles.friendlyEmpty}>
+          <div className={styles.friendlyEmptyIcon}>
+            <Building2 size={28} />
+          </div>
+          <h3>No branches yet</h3>
+          <p>
+            Add your first branch to organize where your team operates. Every
+            organization needs at least one.
+          </p>
+          <button
+            className={styles.primaryButton}
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus size={16} />
+            Add your first branch
+          </button>
+        </div>
+      )}
+
+      {/* ===== ONE BRANCH BANNER ===== */}
+      {hasOneBranch && (
+        <div className={styles.softBanner}>
+          <span>
+            You&apos;re running a single branch. Add more as you grow.
+          </span>
+          <button
+            className={styles.bannerLink}
+            onClick={() => setShowCreateModal(true)}
+          >
+            Add branch →
+          </button>
+        </div>
+      )}
 
       {/* ===== FILTERS ===== */}
-      <div className={styles.filtersBar}>
-        <div className={styles.searchWrap}>
-          <Search size={16} className={styles.searchIcon} />
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Search branches..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      {!hasZeroBranches && (
+        <div className={styles.filtersBar}>
+          <div className={styles.searchWrap}>
+            <Search size={16} className={styles.searchIcon} />
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search branches..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <select
+              className={styles.filterSelect}
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as typeof statusFilter)
+              }
+            >
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Archived</option>
+            </select>
+          </div>
         </div>
-        <div className={styles.filterGroup}>
-          <select
-            className={styles.filterSelect}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          >
-            <option value="ALL">All Status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Archived</option>
-          </select>
-        </div>
-      </div>
+      )}
 
       {/* ===== BRANCH GRID ===== */}
-      <div className={styles.branchGrid}>
-        {filteredBranches.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Building2 size={48} className={styles.emptyIcon} />
-            <h3>No branches found</h3>
-            <p>Try adjusting your filters or add a new branch</p>
-          </div>
-        ) : (
-          filteredBranches.map((branch) => (
-            <div key={branch.id} className={styles.branchCard}>
-              <div className={styles.branchCardHeader}>
-                <div className={styles.branchCardTitle}>
-                  <Building2 size={18} className={styles.branchIcon} />
-                  <span className={styles.branchName}>{branch.name}</span>
-                  {branch.isDefault && (
-                    <span className={styles.defaultBadge}>Default</span>
-                  )}
-                </div>
-                <span className={`${styles.statusPill} ${branch.isActive ? styles.statusActive : styles.statusInactive}`}>
-                  {branch.isActive ? "Active" : "Archived"}
-                </span>
-              </div>
-
-              <div className={styles.branchDetails}>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>
-                    <MapPin size={14} />
-                    Address
-                  </span>
-                  <span className={styles.detailValue}>{branch.address || "—"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>
-                    <Phone size={14} />
-                    Phone
-                  </span>
-                  <span className={styles.detailValue}>{branch.phone || "—"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>
-                    <Mail size={14} />
-                    Email
-                  </span>
-                  <span className={styles.detailValue}>{branch.email || "—"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>
-                    <Users size={14} />
-                    Members
-                  </span>
-                  <span className={styles.detailValue}>{branch.members?.length || 0}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Code</span>
-                  <span className={styles.detailValue}>{branch.code}</span>
-                </div>
-              </div>
-
-              <div className={styles.branchActions}>
-                <button
-                  className={styles.actionButton}
-                  onClick={() => openMembersModal(branch)}
-                  title="View members"
-                >
-                  <Users size={14} />
-                  Members
-                </button>
-                <button
-                  className={styles.actionButton}
-                  onClick={() => openEditModal(branch)}
-                  title="Edit branch"
-                >
-                  <Edit2 size={14} />
-                </button>
-                <button
-                  className={`${styles.actionButton} ${styles.actionButtonDanger}`}
-                  onClick={() => openArchiveModal(branch)}
-                  title={branch.isActive ? "Archive branch" : "Restore branch"}
-                >
-                  {branch.isActive ? <Archive size={14} /> : <RefreshCw size={14} />}
-                </button>
-              </div>
+      {!hasZeroBranches && (
+        <div className={styles.branchGrid}>
+          {filteredBranches.length === 0 ? (
+            <div className={styles.emptyState}>
+              <Building2 size={48} className={styles.emptyIcon} />
+              <h3>No branches match your filters</h3>
+              <p>Try adjusting your search or filters.</p>
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            filteredBranches.map((branch) => {
+              const memberCount = branch._count?.assignments ?? 0;
+              return (
+                <article
+                  key={branch.id}
+                  className={`${styles.branchCard} ${
+                    !branch.isActive ? styles.branchCardArchived : ''
+                  }`}
+                >
+                  {/* Top: name + status */}
+                  <div className={styles.branchCardTop}>
+                    <div className={styles.branchCardTitleRow}>
+                      <span className={styles.branchName}>{branch.name}</span>
+                      {branch.isDefault && (
+                        <span className={styles.defaultBadge}>
+                          <Crown size={10} />
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`${styles.statusPill} ${
+                        branch.isActive
+                          ? styles.statusActive
+                          : styles.statusInactive
+                      }`}
+                    >
+                      {branch.isActive ? 'Active' : 'Archived'}
+                    </span>
+                  </div>
+
+                  {/* Code */}
+                  <div className={styles.branchCode}>{branch.code}</div>
+
+                  {/* Members */}
+                  <div className={styles.branchMembers}>
+                    <Users size={13} />
+                    <span>
+                      {memberCount} member{memberCount === 1 ? '' : 's'}
+                    </span>
+                    {memberCount === 0 && (
+                      <span className={styles.noMembersPill}>
+                        No one assigned
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Address (only if present) */}
+                  {branch.address && (
+                    <div className={styles.branchAddress}>
+                      <MapPin size={12} />
+                      <span>{branch.address}</span>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className={styles.branchActions}>
+                    <button
+                      className={styles.actionButtonPrimary}
+                      onClick={() => openMembersModal(branch)}
+                    >
+                      <Users size={13} />
+                      View members
+                    </button>
+                    <button
+                      className={styles.actionButtonIcon}
+                      onClick={() => openEditModal(branch)}
+                      title="Edit branch"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      className={`${styles.actionButtonIcon} ${
+                        branch.isActive
+                          ? styles.actionButtonDanger
+                          : styles.actionButtonRestore
+                      }`}
+                      onClick={() => openArchiveModal(branch)}
+                      disabled={branch.isDefault}
+                      title={
+                        branch.isDefault
+                          ? 'The default branch cannot be archived'
+                          : branch.isActive
+                          ? 'Archive branch'
+                          : 'Restore branch'
+                      }
+                    >
+                      {branch.isActive ? (
+                        <Archive size={14} />
+                      ) : (
+                        <RefreshCw size={14} />
+                      )}
+                    </button>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* ===== CREATE MODAL ===== */}
       {showCreateModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setShowCreateModal(false)}
+        >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
                 <Plus size={20} />
                 Add Branch
               </h2>
-              <button className={styles.modalClose} onClick={() => setShowCreateModal(false)}>
+              <button
+                className={styles.modalClose}
+                onClick={() => setShowCreateModal(false)}
+              >
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleCreateBranch} className={styles.modalForm}>
               <div className={styles.formGroup}>
-                <label>Branch Name</label>
+                <label>Branch name</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter branch name"
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="e.g. Nairobi CBD"
                   required
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label>Branch Code</label>
+                <label>Branch code</label>
                 <input
                   type="text"
                   value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="e.g. KGL"
+                  onChange={(e) =>
+                    setFormData({ ...formData, code: e.target.value })
+                  }
+                  placeholder="e.g. NBO"
                   required
                 />
               </div>
@@ -775,8 +798,10 @@ export default function BranchesPage() {
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Enter address"
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
+                  placeholder="Street, city"
                 />
               </div>
 
@@ -786,8 +811,10 @@ export default function BranchesPage() {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Phone number"
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    placeholder="+254..."
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -795,18 +822,32 @@ export default function BranchesPage() {
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Email address"
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    placeholder="branch@company.com"
                   />
                 </div>
               </div>
 
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelButton} onClick={() => setShowCreateModal(false)}>
+                <button
+                  type="button"
+                  className={styles.cancelButton}
+                  onClick={() => setShowCreateModal(false)}
+                >
                   Cancel
                 </button>
-                <button type="submit" className={styles.submitButton} disabled={saving}>
-                  {saving ? <Loader2 size={16} className={styles.spinning} /> : <Check size={16} />}
+                <button
+                  type="submit"
+                  className={styles.submitButton}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <Loader2 size={16} className={styles.spinning} />
+                  ) : (
+                    <Check size={16} />
+                  )}
                   Create Branch
                 </button>
               </div>
@@ -817,35 +858,45 @@ export default function BranchesPage() {
 
       {/* ===== EDIT MODAL ===== */}
       {showEditModal && selectedBranch && (
-        <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setShowEditModal(false)}
+        >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
                 <Edit2 size={20} />
                 Edit Branch
               </h2>
-              <button className={styles.modalClose} onClick={() => setShowEditModal(false)}>
+              <button
+                className={styles.modalClose}
+                onClick={() => setShowEditModal(false)}
+              >
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleUpdateBranch} className={styles.modalForm}>
               <div className={styles.formGroup}>
-                <label>Branch Name</label>
+                <label>Branch name</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label>Branch Code</label>
+                <label>Branch code</label>
                 <input
                   type="text"
                   value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, code: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -855,7 +906,9 @@ export default function BranchesPage() {
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                 />
               </div>
 
@@ -865,7 +918,9 @@ export default function BranchesPage() {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -873,17 +928,31 @@ export default function BranchesPage() {
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                   />
                 </div>
               </div>
 
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelButton} onClick={() => setShowEditModal(false)}>
+                <button
+                  type="button"
+                  className={styles.cancelButton}
+                  onClick={() => setShowEditModal(false)}
+                >
                   Cancel
                 </button>
-                <button type="submit" className={styles.submitButton} disabled={saving}>
-                  {saving ? <Loader2 size={16} className={styles.spinning} /> : <Check size={16} />}
+                <button
+                  type="submit"
+                  className={styles.submitButton}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <Loader2 size={16} className={styles.spinning} />
+                  ) : (
+                    <Check size={16} />
+                  )}
                   Save Changes
                 </button>
               </div>
@@ -894,43 +963,67 @@ export default function BranchesPage() {
 
       {/* ===== ARCHIVE MODAL ===== */}
       {showArchiveModal && selectedBranch && (
-        <div className={styles.modalOverlay} onClick={() => setShowArchiveModal(false)}>
-          <div className={`${styles.modal} ${styles.modalDanger}`} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setShowArchiveModal(false)}
+        >
+          <div
+            className={`${styles.modal} ${styles.modalDanger}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
-                {selectedBranch.isActive ? <Archive size={20} /> : <RefreshCw size={20} />}
-                {selectedBranch.isActive ? "Archive Branch" : "Restore Branch"}
+                {selectedBranch.isActive ? (
+                  <Archive size={20} />
+                ) : (
+                  <RefreshCw size={20} />
+                )}
+                {selectedBranch.isActive ? 'Archive Branch' : 'Restore Branch'}
               </h2>
-              <button className={styles.modalClose} onClick={() => setShowArchiveModal(false)}>
+              <button
+                className={styles.modalClose}
+                onClick={() => setShowArchiveModal(false)}
+              >
                 <X size={20} />
               </button>
             </div>
 
             <div className={styles.deleteContent}>
               <div className={styles.deleteIcon}>
-                {selectedBranch.isActive ? <Archive size={48} /> : <RefreshCw size={48} />}
+                {selectedBranch.isActive ? (
+                  <Archive size={48} />
+                ) : (
+                  <RefreshCw size={48} />
+                )}
               </div>
               <h3>Are you sure?</h3>
               <p>
                 {selectedBranch.isActive
                   ? `This will archive "${selectedBranch.name}". Members will lose access to this branch.`
-                  : `This will restore "${selectedBranch.name}" and make it active again.`
-                }
+                  : `This will restore "${selectedBranch.name}" and make it active again.`}
               </p>
             </div>
 
             <div className={styles.modalActions}>
-              <button type="button" className={styles.cancelButton} onClick={() => setShowArchiveModal(false)}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={() => setShowArchiveModal(false)}
+              >
                 Cancel
               </button>
               <button
                 type="button"
-                className={selectedBranch.isActive ? styles.deleteButton : styles.restoreButton}
+                className={
+                  selectedBranch.isActive
+                    ? styles.deleteButton
+                    : styles.restoreButton
+                }
                 onClick={handleToggleBranchStatus}
                 disabled={saving}
               >
-                {saving ? <Loader2 size={16} className={styles.spinning} /> : null}
-                {selectedBranch.isActive ? "Archive Branch" : "Restore Branch"}
+                {saving && <Loader2 size={16} className={styles.spinning} />}
+                {selectedBranch.isActive ? 'Archive Branch' : 'Restore Branch'}
               </button>
             </div>
           </div>
@@ -939,63 +1032,86 @@ export default function BranchesPage() {
 
       {/* ===== MEMBERS MODAL ===== */}
       {showMembersModal && selectedBranch && (
-        <div className={styles.modalOverlay} onClick={() => setShowMembersModal(false)}>
-          <div className={styles.modalLarge} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setShowMembersModal(false)}
+        >
+          <div
+            className={styles.modalLarge}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
                 <Users size={20} />
-                Members - {selectedBranch.name}
+                Members — {selectedBranch.name}
               </h2>
-              <button className={styles.modalClose} onClick={() => setShowMembersModal(false)}>
+              <button
+                className={styles.modalClose}
+                onClick={() => setShowMembersModal(false)}
+              >
                 <X size={20} />
               </button>
             </div>
 
-            {loadingMembers ? (
-              <div className={styles.loadingMembers}>
-                <Loader2 size={24} className={styles.spinner} />
-                <p>Loading members...</p>
-              </div>
-            ) : branchMembers.length === 0 ? (
+            {selectedBranch.assignments.length === 0 ? (
               <div className={styles.emptyMemberState}>
                 <Users size={48} className={styles.emptyIcon} />
                 <h4>No members assigned</h4>
-                <p>This branch has no members assigned yet.</p>
+                <p>
+                  Assign members to this branch from the Members page.
+                </p>
               </div>
             ) : (
               <div className={styles.membersList}>
                 <div className={styles.membersListHeader}>
                   <span>Name</span>
-                  <span>Email</span>
                   <span>Role</span>
                   <span>Status</span>
                 </div>
-                {branchMembers.map((member) => (
-                  <div key={member.userId} className={styles.membersListItem}>
-                    <div className={styles.memberInfo}>
-                      <div className={styles.memberAvatarSmall}>
-                        {member.user.firstName?.charAt(0) || "U"}
+                {selectedBranch.assignments.map((a) => {
+                  const m = a.membership;
+                  const role = m.roleId ? roleById.get(m.roleId) : null;
+                  return (
+                    <div key={a.id} className={styles.membersListItem}>
+                      <div className={styles.memberInfo}>
+                        <div className={styles.memberAvatarSmall}>
+                          {m.user.firstName?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <div className={styles.memberName}>
+                            {m.user.firstName} {m.user.lastName}
+                          </div>
+                          <div className={styles.memberEmail}>
+                            {m.user.email}
+                          </div>
+                        </div>
                       </div>
-                      <span className={styles.memberName}>
-                        {member.user.firstName} {member.user.lastName}
+                      <span className={styles.memberRole}>
+                        {role?.name ?? (m.hasAllBranches ? 'Owner' : 'No Role')}
+                      </span>
+                      <span className={styles.memberStatus}>
+                        <span
+                          className={`${styles.statusPill} ${
+                            m.isActive
+                              ? styles.statusActive
+                              : styles.statusInactive
+                          }`}
+                        >
+                          {m.isActive ? 'Active' : 'Inactive'}
+                        </span>
                       </span>
                     </div>
-                    <span className={styles.memberEmail}>{member.user.email}</span>
-                    <span className={styles.memberRole}>
-                      {member.roleId ? "Assigned" : "No Role"}
-                    </span>
-                    <span className={styles.memberStatus}>
-                      <span className={`${styles.statusPill} ${member.isActive ? styles.statusActive : styles.statusInactive}`}>
-                        {member.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
             <div className={styles.modalActions}>
-              <button type="button" className={styles.cancelButton} onClick={() => setShowMembersModal(false)}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={() => setShowMembersModal(false)}
+              >
                 Close
               </button>
             </div>

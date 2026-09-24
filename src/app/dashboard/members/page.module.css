@@ -1,5 +1,7 @@
+/* app/dashboard/members/page.module.css */
+
 /* ============================================================
-   ROOT VARIABLES
+   ROOT
    ============================================================ */
 
 .page {
@@ -24,30 +26,6 @@
 }
 
 /* ============================================================
-   LOADING
-   ============================================================ */
-
-.loadingState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  gap: 16px;
-  color: var(--text-muted);
-}
-
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ============================================================
    HEADER
    ============================================================ */
 
@@ -59,7 +37,8 @@
   border: 1px solid var(--border);
   background: var(--raised);
   border-radius: 14px;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02),
+    4px 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 .orgIdentity {
@@ -102,12 +81,28 @@
   margin-top: 3px;
 }
 
-/* ---- Header Responsive ---- */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 768px) {
   .orgHeader {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .headerActions .primaryButton,
+  .headerActions .secondaryButton {
+    flex: 1;
+    justify-content: center;
   }
 }
 
@@ -127,7 +122,8 @@
   background: var(--raised);
   border-radius: 14px;
   text-align: center;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02),
+    4px 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 .statValue {
@@ -142,7 +138,6 @@
   margin-top: 4px;
 }
 
-/* ---- Stats Responsive ---- */
 @media (max-width: 1024px) {
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -154,9 +149,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
+
   .statValue {
     font-size: 18px;
   }
+
   .statCard {
     padding: 12px;
   }
@@ -214,12 +211,12 @@
   color: var(--accent-glow);
 }
 
-/* ---- Tabs Responsive ---- */
 @media (max-width: 768px) {
   .tabButton {
     padding: 10px 14px;
     font-size: 13px;
   }
+
   .tabButton span:last-child {
     display: none;
   }
@@ -295,19 +292,19 @@
   border-color: rgba(255, 106, 43, 0.4);
 }
 
-/* ---- Filters Responsive ---- */
 @media (max-width: 768px) {
   .filtersBar {
     flex-direction: column;
     align-items: stretch;
   }
+
   .filterGroup {
     flex-direction: column;
   }
 }
 
 /* ============================================================
-   PRIMARY BUTTON
+   BUTTONS
    ============================================================ */
 
 .primaryButton {
@@ -331,149 +328,27 @@
   box-shadow: 0 4px 16px rgba(255, 106, 43, 0.35);
 }
 
-/* ============================================================
-   BADGES & TAGS
-   ============================================================ */
-
-/* ---- Status Pills ---- */
-.statusPill {
+.secondaryButton {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.statusActive {
-  color: var(--success);
-  background: rgba(76, 175, 130, 0.12);
-}
-
-.statusPending {
-  color: var(--accent-glow);
-  background: rgba(255, 106, 43, 0.12);
-}
-
-.statusInactive {
-  color: var(--text-faint);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* ---- Role Badges ---- */
-.roleBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.roleActive {
-  color: var(--success);
-  background: rgba(76, 175, 130, 0.12);
-}
-
-.roleInactive {
-  color: var(--text-faint);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.permissionBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.memberCountBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.ownerBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  background: rgba(255, 106, 43, 0.12);
-  color: var(--accent-glow);
-}
-
-.allBranchesBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  background: rgba(76, 175, 130, 0.12);
-  color: var(--success);
-}
-
-.ownerProtected {
-  font-size: 11px;
-  color: var(--text-faint);
-  padding: 4px 10px;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  cursor: default;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
-/* ---- Branch Tags ---- */
-.branchTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
+  color: var(--text);
 }
-
-.branchTag {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-muted);
-}
-
-.branchTagMore {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  background: rgba(255, 106, 43, 0.12);
-  color: var(--accent-glow);
-}
-
-.noBranches {
-  color: var(--text-faint);
-}
-
-/* ============================================================
-   ACTION BUTTONS
-   ============================================================ */
 
 .actionButton {
   display: flex;
@@ -506,32 +381,16 @@
   cursor: not-allowed;
 }
 
-/* ---- Action Button Responsive ---- */
 @media (max-width: 480px) {
   .actionButton {
     width: 28px;
     height: 28px;
   }
+
   .actionButton svg {
     width: 14px;
     height: 14px;
   }
-}
-
-/* ============================================================
-   NO ROLES WARNING
-   ============================================================ */
-
-.noRolesWarning {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  color: var(--text-muted);
-  font-size: 13px;
-  background: rgba(255, 255, 255, 0.02);
 }
 
 .createRoleLink {
@@ -548,15 +407,130 @@
   color: var(--accent-glow);
 }
 
-/* ---- No Roles Warning Responsive ---- */
-@media (max-width: 480px) {
-  .noRolesWarning {
-    flex-wrap: wrap;
-  }
+/* ============================================================
+   BADGES & TAGS
+   ============================================================ */
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusActive {
+  color: var(--success);
+  background: rgba(76, 175, 130, 0.12);
+}
+
+.statusInactive {
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.roleActive {
+  color: var(--success);
+  background: rgba(76, 175, 130, 0.12);
+}
+
+.roleInactive {
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ownerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(255, 106, 43, 0.12);
+  color: var(--accent-glow);
+}
+
+.allBranchesBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(76, 175, 130, 0.12);
+  color: var(--success);
+}
+
+.ownerProtected {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--accent-glow);
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 106, 43, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 106, 43, 0.08);
+  cursor: default;
+  white-space: nowrap;
+}
+
+.branchTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.branchTag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+
+.branchTagMore {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 106, 43, 0.12);
+  color: var(--accent-glow);
+}
+
+.noBranches {
+  color: var(--text-faint);
+}
+
+.branchDefaultTag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  background: rgba(76, 175, 130, 0.12);
+  color: var(--success);
 }
 
 /* ============================================================
-   EMPTY STATE
+   EMPTY STATES
    ============================================================ */
 
 .emptyState {
@@ -587,8 +561,204 @@
   margin: 0;
 }
 
+.friendlyEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.015);
+  gap: 14px;
+}
+
+.friendlyEmptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 140, 66, 0.15),
+    rgba(255, 106, 43, 0.08)
+  );
+  color: var(--accent-glow);
+  margin-bottom: 4px;
+}
+
+.friendlyEmpty h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.friendlyEmpty p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.55;
+}
+
+.friendlyEmpty .primaryButton {
+  margin-top: 6px;
+}
+
 /* ============================================================
-   MEMBER LIST — DESKTOP TABLE + MOBILE CARDS
+   PENDING INVITATIONS
+   ============================================================ */
+
+.pendingSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(255, 106, 43, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 106, 43, 0.03);
+}
+
+.pendingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pendingTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.pendingCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: rgba(255, 106, 43, 0.15);
+  color: var(--accent-glow);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.pendingList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pendingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.pendingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pendingEmail {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pendingMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pendingRoleBadge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+
+.pendingTime {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.pendingActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pendingAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pendingAction:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.pendingActionDanger:hover {
+  border-color: rgba(239, 83, 80, 0.35);
+  color: var(--danger);
+  background: rgba(239, 83, 80, 0.06);
+}
+
+@media (max-width: 480px) {
+  .pendingRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pendingActions {
+    justify-content: flex-end;
+  }
+
+  .pendingAction {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   MEMBER LIST — DESKTOP TABLE
    ============================================================ */
 
 .memberList {
@@ -628,7 +798,6 @@
   border-bottom: none;
 }
 
-/* ---- Desktop Member Info ---- */
 .memberInfo {
   display: flex;
   align-items: center;
@@ -665,15 +834,8 @@
   color: var(--text-faint);
 }
 
-/* ---- Desktop fields ---- */
-.memberRole {
-  font-size: 13px;
-}
-
-.memberBranches {
-  font-size: 13px;
-}
-
+.memberRole,
+.memberBranches,
 .memberStatus {
   font-size: 13px;
 }
@@ -688,25 +850,15 @@
   gap: 4px;
 }
 
-/* ---- Mobile Details Grid (hidden on desktop) ---- */
-.memberDetails {
-  display: none;
-}
-
-.memberDetailItem {
-  display: none;
-}
-
-.memberDetailLabel {
-  display: none;
-}
-
+.memberDetails,
+.memberDetailItem,
+.memberDetailLabel,
 .memberDetailValue {
   display: none;
 }
 
 /* ============================================================
-   MEMBER LIST — RESPONSIVE (CARDS ON MOBILE)
+   MEMBER LIST — MOBILE CARDS
    ============================================================ */
 
 @media (max-width: 768px) {
@@ -732,7 +884,8 @@
     border: 1px solid var(--border);
     border-radius: 14px;
     margin-bottom: 0;
-    box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02), 4px 4px 10px rgba(0, 0, 0, 0.4);
+    box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02),
+      4px 4px 10px rgba(0, 0, 0, 0.4);
     transition: all 0.2s ease;
   }
 
@@ -746,7 +899,6 @@
     margin-bottom: 0;
   }
 
-  /* ---- Hide desktop fields on mobile ---- */
   .memberRole,
   .memberBranches,
   .memberStatus,
@@ -754,7 +906,6 @@
     display: none !important;
   }
 
-  /* ---- Card Header ---- */
   .memberInfo {
     display: flex;
     align-items: center;
@@ -779,7 +930,6 @@
     font-size: 13px;
   }
 
-  /* ---- Card Details Grid ---- */
   .memberDetails {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
@@ -811,7 +961,6 @@
     font-weight: 400;
   }
 
-  /* ---- Card Actions ---- */
   .memberActions {
     display: flex;
     align-items: center;
@@ -826,28 +975,8 @@
     width: 34px;
     height: 34px;
   }
-
-  /* ---- Branch Tags in cards ---- */
-  .memberBranches .branchTags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .memberBranches .branchTag {
-    padding: 2px 10px;
-    font-size: 11px;
-  }
-
-  .memberStatus .statusPill {
-    font-size: 12px;
-  }
-
-  .memberJoined {
-    font-size: 13px;
-    color: var(--text-muted);
-  }
 }
+
 /* ============================================================
    MODALS
    ============================================================ */
@@ -905,7 +1034,8 @@
   padding: 28px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: -4px -4px 12px rgba(255, 255, 255, 0.02), 8px 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: -4px -4px 12px rgba(255, 255, 255, 0.02),
+    8px 8px 24px rgba(0, 0, 0, 0.6);
   animation: slideUp 0.3s ease;
 }
 
@@ -952,13 +1082,13 @@
   color: var(--text);
 }
 
-/* ---- Modals Responsive ---- */
 @media (max-width: 768px) {
   .modal,
   .modalLarge {
     padding: 20px;
     width: 95%;
   }
+
   .modalActions {
     flex-direction: column;
   }
@@ -970,6 +1100,7 @@
     padding: 16px;
     width: 98%;
   }
+
   .modalTitle {
     font-size: 16px;
   }
@@ -1116,29 +1247,6 @@
   cursor: not-allowed;
 }
 
-.restoreButton {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--success);
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.restoreButton:hover {
-  background: #388e3c;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(76, 175, 130, 0.35);
-}
-
 /* ============================================================
    DELETE CONTENT
    ============================================================ */
@@ -1233,7 +1341,7 @@
   cursor: pointer;
 }
 
-.checkboxLabel input[type="checkbox"] {
+.checkboxLabel input[type='checkbox'] {
   width: 16px;
   height: 16px;
   accent-color: var(--accent);
@@ -1268,11 +1376,185 @@
   margin: 0;
 }
 
-/* ---- Permissions Responsive ---- */
 @media (max-width: 768px) {
   .permissionItems {
     padding-left: 16px;
   }
+}
+
+/* ============================================================
+   INLINE FORM HINTS / ERRORS
+   ============================================================ */
+
+.labelIcon {
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 6px;
+  color: var(--text-faint);
+}
+
+.hintIcon {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-right: 4px;
+  color: var(--accent-glow);
+}
+
+.inlineError {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.inlineHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+.noRolesWarning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+@media (max-width: 480px) {
+  .noRolesWarning {
+    flex-wrap: wrap;
+  }
+}
+
+/* ============================================================
+   ROLES GRID
+   ============================================================ */
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  border-radius: 14px;
+  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02),
+    4px 4px 10px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
+}
+
+.roleCard:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.roleCardAdmin {
+  border-color: rgba(255, 106, 43, 0.28);
+  background: linear-gradient(
+      135deg,
+      rgba(255, 106, 43, 0.06) 0%,
+      rgba(255, 106, 43, 0.02) 100%
+    ),
+    var(--raised);
+}
+
+.roleCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.roleCardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.roleCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.roleCardIconAdmin {
+  background: rgba(255, 106, 43, 0.15);
+  color: var(--accent-glow);
+}
+
+.roleCardTitleText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.roleCardName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roleLockedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent-glow);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.roleCardDescription {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.roleCardMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.roleMetaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
 }
 
 /* ============================================================
@@ -1327,6 +1609,177 @@
 
 .spinning {
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   SKELETON
+   ============================================================ */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    background: none;
+  }
+}
+
+.skeletonAvatarLg {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.skeletonAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.skeletonTitle {
+  width: 180px;
+  height: 18px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.skeletonSubtitle {
+  width: 260px;
+  max-width: 100%;
+  height: 12px;
+  border-radius: 6px;
+}
+
+.skeletonButton {
+  width: 130px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.skeletonStatValue {
+  width: 40px;
+  height: 22px;
+  border-radius: 6px;
+  margin: 0 auto 6px;
+}
+
+.skeletonStatLabel {
+  width: 70px;
+  height: 10px;
+  border-radius: 6px;
+  margin: 0 auto;
+}
+
+.skeletonTab {
+  width: 110px;
+  height: 40px;
+  border-radius: 10px;
+  margin: 6px;
+}
+
+.skeletonSearch {
+  flex: 1;
+  min-width: 200px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.skeletonFilter {
+  width: 120px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.skeletonMemberRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.skeletonMemberRow:last-child {
+  border-bottom: none;
+}
+
+.skeletonLine {
+  width: 60%;
+  height: 12px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.skeletonLineShort {
+  width: 40%;
+  height: 10px;
+  border-radius: 6px;
+}
+
+.skeletonPill {
+  width: 70px;
+  height: 22px;
+  border-radius: 999px;
+}
+
+.skeletonIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .skeletonMemberRow {
+    flex-wrap: wrap;
+  }
+
+  .skeletonButton {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 /* ============================================================

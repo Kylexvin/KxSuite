@@ -1,55 +1,31 @@
 // app/dashboard/members/components/RoleModal.tsx
 
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/axios";
-import { AxiosError } from "axios";
-import { X, Check, Loader2, Shield, Trash2, AlertCircle } from "lucide-react";
-import styles from "../page.module.css";
-
-type Permission = {
-  id: string;
-  key: string;
-  name: string;
-  productKey: string;
-  description?: string;
-};
-
-type Branch = {
-  id: string;
-  name: string;
-  code: string;
-  isDefault: boolean;
-};
-
-type RawPermission = {
-  permission: Permission;
-  roleId: string;
-  permissionId: string;
-};
-
-type Role = {
-  id: string;
-  name: string;
-  description: string;
-  permissions: Permission[] | RawPermission[];
-  memberCount: number;
-};
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/axios';
+import { AxiosError } from 'axios';
+import {
+  X,
+  Check,
+  Loader2,
+  Shield,
+  Trash2,
+  AlertCircle,
+} from 'lucide-react';
+import styles from '../page.module.css';
+import { isAdminRole } from '../page';
+import type { Role, Branch, Permission, RawPermission } from '../page';
 
 type Props = {
   role: Role | null;
   permissions: Permission[];
-  branches: Branch[]; // Keep type but prefix with underscore to silence warning
+  branches: Branch[];
   onClose: () => void;
-  onSuccess: () => void;
-  setToast: (toast: { type: "success" | "error"; message: string } | null) => void;
+  onSuccess: () => void | Promise<void>;
+  setToast: (toast: { type: 'success' | 'error'; message: string } | null) => void;
 };
-
-// ============================================================
-// API ERROR TYPE
-// ============================================================
 
 type ApiErrorResponse = {
   message?: string;
@@ -57,28 +33,23 @@ type ApiErrorResponse = {
   [key: string]: unknown;
 };
 
-// ============================================================
-// HELPER: Get error message from unknown error
-// ============================================================
-
 function getErrorMessage(error: unknown, fallback: string): string {
-  // Handle Axios errors
   if (error instanceof AxiosError) {
     const data = error.response?.data as ApiErrorResponse;
     return data?.message || data?.error || fallback;
   }
-  
-  // Handle standard errors
-  if (error instanceof Error) {
-    return error.message;
-  }
-  
-  // Handle string errors
-  if (typeof error === 'string') {
-    return error;
-  }
-  
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
   return fallback;
+}
+
+function getInitialPermissionKeys(role: Role | null): string[] {
+  if (!role) return [];
+  const first = role.permissions?.[0];
+  if (first && 'permission' in first) {
+    return (role.permissions as RawPermission[]).map((rp) => rp.permission.key);
+  }
+  return (role.permissions as Permission[]).map((p) => p.key);
 }
 
 export default function RoleModal({
@@ -89,50 +60,76 @@ export default function RoleModal({
   setToast,
 }: Props) {
   const { activeOrganization } = useAuth();
+  const isEditing = role !== null;
 
-  const isEditing = !!role;
-
-  // ✅ Helper to get flat permissions
-  const getInitialPermissions = (): Permission[] => {
-    if (!role) return [];
-    const firstPerm = role.permissions?.[0];
-    if (firstPerm && "permission" in firstPerm) {
-      return (role.permissions as RawPermission[]).map((rp) => rp.permission);
-    }
-    return role.permissions as Permission[];
-  };
-
-  // ✅ Initialize state directly from props (no useEffect needed!)
-  const [name, setName] = useState(role?.name || "");
-  const [description, setDescription] = useState(role?.description || "");
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(() => {
-    const flatPermissions = getInitialPermissions();
-    return flatPermissions.map((p) => p.key);
-  });
+  // Initialize state hooks before any conditional returns
+  const [name, setName] = useState(role?.name ?? '');
+  const [description, setDescription] = useState(role?.description ?? '');
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(
+    () => getInitialPermissionKeys(role),
+  );
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const safePermissions = permissions || [];
-  const groupedPermissions = safePermissions.reduce((acc, perm) => {
-    const key = perm.productKey || "other";
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(perm);
-    return acc;
-  }, {} as Record<string, Permission[]>);
+  // Defense-in-depth: never allow editing the admin role
+  if (role && isAdminRole(role)) {
+    return (
+      <div className={styles.modalOverlay} onClick={onClose}>
+        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h2 className={styles.modalTitle}>
+              <Shield size={20} />
+              System Role
+            </h2>
+            <button className={styles.modalClose} onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className={styles.deleteContent}>
+            <div className={styles.deleteIcon}>
+              <AlertCircle size={48} />
+            </div>
+            <h3>This role cannot be edited</h3>
+            <p>
+              <strong>{role.name}</strong> is a system role that manages the
+              organization owner. It cannot be modified or deleted.
+            </p>
+          </div>
+          <div className={styles.modalActions}>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // ============================================================
-  // HANDLERS
-  // ============================================================
+  // Filter out the wildcard `*` — it's reserved for the Owner role.
+  const safePermissions = permissions.filter((p) => p.key !== '*');
+  const groupedPermissions = safePermissions.reduce(
+    (acc, perm) => {
+      const key = perm.productKey || 'other';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(perm);
+      return acc;
+    },
+    {} as Record<string, Permission[]>,
+  );
 
   const togglePermission = (key: string) => {
     setSelectedPermissions((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
   };
 
-  const toggleAllPermissions = (productKey: string, checked: boolean) => {
-    const productPermissions = groupedPermissions[productKey] || [];
-    const keys = productPermissions.map((p) => p.key);
+  const toggleAll = (productKey: string, checked: boolean) => {
+    const productPerms = groupedPermissions[productKey] ?? [];
+    const keys = productPerms.map((p) => p.key);
     if (checked) {
       setSelectedPermissions((prev) => [...new Set([...prev, ...keys])]);
     } else {
@@ -145,7 +142,7 @@ export default function RoleModal({
     if (!activeOrganization) return;
 
     if (!name.trim()) {
-      setToast({ type: "error", message: "Role name is required" });
+      setToast({ type: 'error', message: 'Role name is required' });
       return;
     }
 
@@ -158,18 +155,20 @@ export default function RoleModal({
         permissionKeys: selectedPermissions,
       };
 
-      if (isEditing) {
-        await api.patch(`/api/v1/organizations/${orgId}/roles/${role.id}`, payload);
+      if (isEditing && role) {
+        await api.patch(
+          `/api/v1/organizations/${orgId}/roles/${role.id}`,
+          payload,
+        );
       } else {
         await api.post(`/api/v1/organizations/${orgId}/roles`, payload);
       }
 
-      onSuccess();
+      await onSuccess();
     } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to save role");
       setToast({
-        type: "error",
-        message,
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to save role'),
       });
     } finally {
       setSaving(false);
@@ -179,40 +178,32 @@ export default function RoleModal({
   const handleDelete = async () => {
     if (!activeOrganization || !role) return;
 
-    if (role.name === "Owner") {
-      setToast({ type: "error", message: "Owner role cannot be deleted" });
-      setShowDeleteConfirm(false);
-      return;
-    }
-
     if (role.memberCount > 0) {
       setToast({
-        type: "error",
-        message: `Cannot delete role. It is assigned to ${role.memberCount} members.`,
+        type: 'error',
+        message: `Cannot delete. This role is assigned to ${role.memberCount} member${role.memberCount === 1 ? '' : 's'}.`,
       });
       setShowDeleteConfirm(false);
       return;
     }
 
     try {
-      await api.delete(`/api/v1/organizations/${activeOrganization.id}/roles/${role.id}`);
-      onSuccess();
-      setToast({ type: "success", message: "Role deleted successfully" });
+      await api.delete(
+        `/api/v1/organizations/${activeOrganization.id}/roles/${role.id}`,
+      );
+      await onSuccess();
+      setToast({ type: 'success', message: 'Role deleted successfully' });
       setShowDeleteConfirm(false);
     } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to delete role");
       setToast({
-        type: "error",
-        message,
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to delete role'),
       });
     }
   };
 
   const productKeys = Object.keys(groupedPermissions);
-
-  // ============================================================
-  // RENDER
-  // ============================================================
+  const canDelete = isEditing && role && role.memberCount === 0;
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -220,7 +211,7 @@ export default function RoleModal({
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>
             <Shield size={20} />
-            {isEditing ? `Edit Role: ${role.name}` : "Create Role"}
+            {isEditing ? `Edit Role: ${role?.name}` : 'Create Role'}
           </h2>
           <button className={styles.modalClose} onClick={onClose}>
             <X size={20} />
@@ -254,16 +245,19 @@ export default function RoleModal({
             <div className={styles.permissionsContainer}>
               {productKeys.length === 0 ? (
                 <div className={styles.noPermissions}>
-                  <p>No permissions available. Install a product to see permissions.</p>
+                  <p>
+                    No permissions available. Activate a product first to see
+                    its permissions.
+                  </p>
                 </div>
               ) : (
                 productKeys.map((productKey) => {
-                  const productPerms = groupedPermissions[productKey] || [];
+                  const productPerms = groupedPermissions[productKey] ?? [];
                   const allSelected = productPerms.every((p) =>
-                    selectedPermissions.includes(p.key)
+                    selectedPermissions.includes(p.key),
                   );
                   const someSelected = productPerms.some((p) =>
-                    selectedPermissions.includes(p.key)
+                    selectedPermissions.includes(p.key),
                   );
 
                   return (
@@ -274,14 +268,16 @@ export default function RoleModal({
                             type="checkbox"
                             checked={allSelected}
                             ref={(el) => {
-                              if (el) el.indeterminate = someSelected && !allSelected;
+                              if (el)
+                                el.indeterminate =
+                                  someSelected && !allSelected;
                             }}
                             onChange={(e) =>
-                              toggleAllPermissions(productKey, e.target.checked)
+                              toggleAll(productKey, e.target.checked)
                             }
                           />
                           <span className={styles.productName}>
-                            {productKey === "admin" ? "Platform" : productKey}
+                            {productKey === 'admin' ? 'Platform' : productKey}
                           </span>
                         </label>
                         <span className={styles.permissionCount}>
@@ -313,36 +309,48 @@ export default function RoleModal({
           </div>
 
           <div className={styles.modalActions}>
-            {isEditing && (
+            {isEditing && role && (
               <button
                 type="button"
                 className={styles.deleteButton}
                 onClick={() => setShowDeleteConfirm(true)}
-                disabled={role.name === "Owner" || role.memberCount > 0}
+                disabled={!canDelete}
                 title={
-                  role.name === "Owner"
-                    ? "Owner role cannot be deleted"
-                    : role.memberCount > 0
-                    ? `Cannot delete: assigned to ${role.memberCount} members`
-                    : ""
+                  role.memberCount > 0
+                    ? `In use by ${role.memberCount} member${role.memberCount === 1 ? '' : 's'}`
+                    : 'Delete this role'
                 }
               >
                 <Trash2 size={16} />
-                Delete Role
+                {role.memberCount > 0
+                  ? `In use by ${role.memberCount}`
+                  : 'Delete Role'}
               </button>
             )}
-            <button type="button" className={styles.cancelButton} onClick={onClose}>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              onClick={onClose}
+            >
               Cancel
             </button>
-            <button type="submit" className={styles.submitButton} disabled={saving}>
-              {saving ? <Loader2 size={16} className={styles.spinning} /> : <Check size={16} />}
-              {isEditing ? "Update Role" : "Create Role"}
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={saving}
+            >
+              {saving ? (
+                <Loader2 size={16} className={styles.spinning} />
+              ) : (
+                <Check size={16} />
+              )}
+              {isEditing ? 'Update Role' : 'Create Role'}
             </button>
           </div>
         </form>
       </div>
 
-      {showDeleteConfirm && (
+      {showDeleteConfirm && role && (
         <div
           className={styles.modalOverlay}
           onClick={() => setShowDeleteConfirm(false)}
@@ -370,14 +378,11 @@ export default function RoleModal({
               </div>
               <h3>Are you sure?</h3>
               <p>
-                This will permanently delete <strong>{role?.name}</strong>.
-                {role?.memberCount && role.memberCount > 0 && (
-                  <span className={styles.deleteWarning}>
-                    {" "}It is assigned to {role.memberCount} members.
-                  </span>
-                )}
+                This will permanently delete <strong>{role.name}</strong>.
               </p>
-              <p className={styles.deleteWarning}>This action cannot be undone.</p>
+              <p className={styles.deleteWarning}>
+                This action cannot be undone.
+              </p>
             </div>
 
             <div className={styles.modalActions}>

@@ -1,9 +1,10 @@
-"use client";
+// app/dashboard/audit/page.tsx
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/axios";
+'use client';
 
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/axios';
 import {
   Filter,
   Download,
@@ -27,8 +28,11 @@ import {
   Briefcase,
   Store,
   Lock,
-} from "lucide-react";
-import styles from "./page.module.css";
+  Shield,
+  UserCheck,
+  AlertTriangle,
+} from 'lucide-react';
+import styles from './page.module.css';
 
 // ============================================================
 // TYPES
@@ -39,7 +43,7 @@ type AuditEvent = {
   action: string;
   resource: string;
   resourceId: string | null;
-  metadata: Record<string, unknown> | null; // ✅ Fixed: changed 'any' to 'unknown'
+  metadata: Record<string, unknown> | null;
   userId: string | null;
   user: {
     id: string;
@@ -76,65 +80,72 @@ type UserOption = {
   name: string;
 };
 
-
+type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
 // ============================================================
-// ACTION LABELS - Memoized constants
+// ACTION LABELS — user-facing copy
 // ============================================================
 
 const ACTION_LABELS: Record<string, string> = {
-  'organization_created': 'Created organization',
-  'organization_updated': 'Updated settings',
-  'organization_archived': 'Archived organization',
-  'member_joined': 'Joined organization',
-  'member_removed': 'Removed member',
-  'member_updated': 'Updated member',
-  'invitation_sent': 'Sent invitation',
-  'invitation_accepted': 'Accepted invitation',
-  'invitation_rejected': 'Rejected invitation',
-  'role_created': 'Created role',
-  'role_updated': 'Updated role',
-  'role_deleted': 'Deleted role',
-  'permission_assigned': 'Assigned permission',
-  'permission_removed': 'Removed permission',
-  'role_assigned': 'Assigned role to member',
-  'product_activated': 'Activated product',
-  'product_deactivated': 'Deactivated product',
-  'subscription_created': 'Started subscription',
-  'subscription_cancelled': 'Cancelled subscription',
-  'subscription_renewed': 'Renewed subscription',
-  'subscription_payment_initiated': 'Payment initiated',
-  'subscription_payment_success': 'Payment successful',
-  'branch_created': 'Added branch',
-  'branch_updated': 'Updated branch',
-  'branch_deleted': 'Removed branch',
-  'branch_assigned': 'Assigned branch to member',
-  'branch_unassigned': 'Removed branch from member',
-  'payment_configured': 'Configured payment',
-  'payment_ipn_registered': 'Registered IPN',
-  'payment_initiated': 'Payment initiated',
-  'payment_ipn_received': 'Payment IPN received',
-  'kxtill_product_created': 'Added product',
-  'kxtill_product_updated': 'Updated product',
-  'kxtill_product_deleted': 'Removed product',
-  'kxtill_sale_created': 'Created sale',
-  'kxtill_sale_refunded': 'Refunded sale',
+  // Organization
+  'organization_created': 'Created the organization',
+  'organization_updated': 'Updated organization settings',
+  'organization_archived': 'Archived the organization',
+  // Members
+  'member_joined': 'Joined the organization',
+  'member_removed': 'Removed a member',
+  'member_updated': 'Updated a member',
+  'invitation_sent': 'Sent an invitation',
+  'invitation_accepted': 'Accepted an invitation',
+  'invitation_rejected': 'Declined an invitation',
+  // Roles
+  'role_created': 'Created a role',
+  'role_updated': 'Updated a role',
+  'role_deleted': 'Deleted a role',
+  'permission_assigned': 'Granted a permission',
+  'permission_removed': 'Revoked a permission',
+  'role_assigned': 'Assigned a role to a member',
+  // Products
+  'product_activated': 'Activated a product',
+  'product_deactivated': 'Deactivated a product',
+  // Subscriptions & payments
+  'subscription_created': 'Started a subscription',
+  'subscription_cancelled': 'Cancelled a subscription',
+  'subscription_renewed': 'Renewed a subscription',
+  'subscription_payment_initiated': 'Started a payment',
+  'subscription_payment_success': 'Payment completed',
+  // Branches
+  'branch_created': 'Added a branch',
+  'branch_updated': 'Updated a branch',
+  'branch_deleted': 'Removed a branch',
+  'branch_assigned': 'Assigned a member to a branch',
+  'branch_unassigned': 'Removed a member from a branch',
+  // Payments
+  'payment_configured': 'Configured payment settings',
+  'payment_ipn_registered': 'Registered a payment IPN',
+  'payment_initiated': 'Started a payment',
+  'payment_ipn_received': 'Received a payment confirmation',
+  // KxTill
+  'kxtill_product_created': 'Added a product',
+  'kxtill_product_updated': 'Updated a product',
+  'kxtill_product_deleted': 'Removed a product',
+  'kxtill_sale_created': 'Recorded a sale',
+  'kxtill_sale_refunded': 'Refunded a sale',
   'kxtill_settings_updated': 'Updated store settings',
-  'user_login': 'Logged in',
-  'user_logout': 'Logged out',
-  'user_registered': 'Registered',
-  'password_changed': 'Changed password',
-  'password_reset_requested': 'Requested password reset',
-  'password_reset_completed': 'Reset password',
-  'email_verified': 'Verified email',
-  'logout_all_devices': 'Logged out all devices',
+  // Auth
+  'user_login': 'Signed in',
+  'user_logout': 'Signed out',
+  'user_registered': 'Created an account',
+  'password_changed': 'Changed their password',
+  'password_reset_requested': 'Requested a password reset',
+  'password_reset_completed': 'Reset their password',
+  'email_verified': 'Verified their email',
+  'logout_all_devices': 'Signed out of all devices',
 };
 
 // ============================================================
-// ACTION ICONS - Memoized with proper types
+// ACTION ICONS
 // ============================================================
-
-type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
 const ACTION_ICONS: Record<string, IconComponent> = {
   'organization': Building2,
@@ -156,65 +167,154 @@ const ACTION_ICONS: Record<string, IconComponent> = {
   'email': Mail,
 };
 
-// ============================================================
-// HELPERS - Memoized functions
-// ============================================================
-
 function getActionIcon(action: string): IconComponent {
   for (const [key, icon] of Object.entries(ACTION_ICONS)) {
-    if (action.includes(key) || action.startsWith(key)) {
-      return icon;
-    }
+    if (action.includes(key) || action.startsWith(key)) return icon;
   }
   return FileText;
 }
 
-function getResourceIcon(resource: string): IconComponent {
-  const icons: Record<string, IconComponent> = {
-    'organization': Building2,
-    'membership': Users,
-    'user': User,
-    'invitation': Mail,
-    'role': Briefcase,
-    'permission': Key,
-    'product': Package,
-    'subscription': CreditCard,
-    'payment': CreditCard,
-    'branch': Store,
-    'sale': ShoppingBag,
-    'settings': Settings,
-  };
-  return icons[resource] || FileText;
+// ============================================================
+// TIME HELPERS
+// ============================================================
+
+function formatClock(dateStr: string): string {
+  return new Date(dateStr).toLocaleTimeString('en-KE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
+function dayKey(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function dayLabel(key: string): string {
+  const today = new Date();
+  const todayKey = dayKey(today.toISOString());
+
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = dayKey(yesterday.toISOString());
 
-  if (date >= today) {
-    return `Today ${date.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}`;
-  } else if (date >= yesterday) {
-    return `Yesterday ${date.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}`;
-  } else {
-    return date.toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+  if (key === todayKey) return 'Today';
+  if (key === yesterdayKey) return 'Yesterday';
+
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-KE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function actionLabel(action: string): string {
+  return (
+    ACTION_LABELS[action] ||
+    action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toLowerCase())
+  );
 }
 
 // ============================================================
-// STATS CARD - Memoized
+// TOAST
 // ============================================================
 
-const StatsCard = React.memo(function StatsCard({ 
-  value, 
-  label, 
-  icon: Icon 
-}: { 
-  value: number; 
-  label: string; 
+function Toast({
+  type,
+  message,
+  onClose,
+}: {
+  type: 'success' | 'error' | 'info';
+  message: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const icons = {
+    success: <FileText size={16} />,
+    error: <AlertTriangle size={16} />,
+    info: <FileText size={16} />,
+  };
+
+  const classes = {
+    success: styles.toastSuccess,
+    error: styles.toastError,
+    info: styles.toastInfo,
+  };
+
+  return (
+    <div className={`${styles.toast} ${classes[type]}`}>
+      {icons[type]}
+      <span>{message}</span>
+      <button className={styles.toastClose} onClick={onClose}>
+        ×
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// SKELETON
+// ============================================================
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={`${styles.skeleton} ${className ?? ''}`} />;
+}
+
+function AuditSkeleton() {
+  return (
+    <div className={styles.page} aria-busy="true" aria-live="polite">
+      <span className={styles.srOnly}>Loading audit log…</span>
+
+      <div className={styles.headerCard}>
+        <div className={styles.headerLeft}>
+          <SkeletonBlock className={styles.skeletonAvatar} />
+          <div style={{ flex: 1 }}>
+            <SkeletonBlock className={styles.skeletonTitle} />
+            <SkeletonBlock className={styles.skeletonSubtitle} />
+          </div>
+        </div>
+        <SkeletonBlock className={styles.skeletonButton} />
+      </div>
+
+      <div className={styles.statsGrid}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={`s-${i}`} className={styles.statCard}>
+            <SkeletonBlock className={styles.skeletonStat} />
+            <SkeletonBlock className={styles.skeletonStatLabel} />
+          </div>
+        ))}
+      </div>
+
+      <SkeletonBlock className={styles.skeletonFilterBar} />
+
+      <div className={styles.timeline}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonBlock key={`e-${i}`} className={styles.skeletonEvent} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// STATS CARD
+// ============================================================
+
+const StatsCard = React.memo(function StatsCard({
+  value,
+  label,
+  hint,
+  icon: Icon,
+}: {
+  value: number;
+  label: string;
+  hint: string;
   icon: IconComponent;
 }) {
   return (
@@ -224,6 +324,7 @@ const StatsCard = React.memo(function StatsCard({
       </div>
       <div className={styles.statValue}>{value.toLocaleString()}</div>
       <div className={styles.statLabel}>{label}</div>
+      <div className={styles.statHint}>{hint}</div>
     </div>
   );
 });
@@ -234,9 +335,15 @@ const StatsCard = React.memo(function StatsCard({
 
 export default function AuditPage() {
   const { activeOrganization, suiteContext } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<AuditEvent[]>([]);
-  const [stats, setStats] = useState<AuditStats>({ total: 0, thisWeek: 0, today: 0, activeUsers: 0 });
+  const [stats, setStats] = useState<AuditStats>({
+    total: 0,
+    thisWeek: 0,
+    today: 0,
+    activeUsers: 0,
+  });
   const [total, setTotal] = useState(0);
   const [limit] = useState(20);
   const [offset, setOffset] = useState(0);
@@ -248,10 +355,10 @@ export default function AuditPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [exporting, setExporting] = useState(false);
-
-  // ============================================================
-  // REFS
-  // ============================================================
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
 
   const isMounted = useRef(true);
   const hasFetched = useRef(false);
@@ -261,25 +368,34 @@ export default function AuditPage() {
   // ============================================================
 
   const permissions = suiteContext?.permissions ?? [];
-  const hasAuditPermission = permissions.includes('*') || permissions.includes('audit.logs.view');
-  const hasExportPermission = permissions.includes('*') || permissions.includes('audit.logs.export');
+  const hasAuditPermission =
+    permissions.includes('*') || permissions.includes('audit.logs.view');
+  const hasExportPermission =
+    permissions.includes('*') || permissions.includes('audit.logs.export');
 
   // ============================================================
-  // FETCH DATA
+  // FETCH
   // ============================================================
 
   const fetchUsers = useCallback(async () => {
     if (!activeOrganization || !isMounted.current) return;
     try {
-      const res = await api.get(`/api/v1/organizations/${activeOrganization.id}/members`);
+      const res = await api.get(
+        `/api/v1/organizations/${activeOrganization.id}/members`,
+      );
       const members = res.data.members || [];
-      
       if (!isMounted.current) return;
-      
-      setUsers(members.map((m: { userId: string; user: { firstName: string; lastName: string } }) => ({
-        id: m.userId,
-        name: `${m.user.firstName} ${m.user.lastName}`,
-      })));
+      setUsers(
+        members.map(
+          (m: {
+            userId: string;
+            user: { firstName: string; lastName: string };
+          }) => ({
+            id: m.userId,
+            name: `${m.user.firstName} ${m.user.lastName}`.trim() || 'Unknown',
+          }),
+        ),
+      );
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }
@@ -292,10 +408,10 @@ export default function AuditPage() {
     try {
       const orgId = activeOrganization.id;
 
-      const statsRes = await api.get(`/api/v1/organizations/${orgId}/audit-logs/stats`);
-      if (isMounted.current) {
-        setStats(statsRes.data);
-      }
+      const statsRes = await api.get(
+        `/api/v1/organizations/${orgId}/audit-logs/stats`,
+      );
+      if (isMounted.current) setStats(statsRes.data);
 
       const params = new URLSearchParams();
       params.set('limit', String(limit));
@@ -304,23 +420,26 @@ export default function AuditPage() {
       if (filters.startDate) params.set('startDate', filters.startDate);
       if (filters.endDate) params.set('endDate', filters.endDate);
 
-      const res = await api.get(`/api/v1/organizations/${orgId}/audit-logs?${params.toString()}`);
-      
+      const res = await api.get(
+        `/api/v1/organizations/${orgId}/audit-logs?${params.toString()}`,
+      );
+
       if (isMounted.current) {
         setEvents(res.data.items || []);
         setTotal(res.data.total || 0);
       }
     } catch (error) {
       console.error('Failed to fetch audit logs:', error);
-    } finally {
       if (isMounted.current) {
-        setLoading(false);
+        setToast({ type: 'error', message: 'Failed to load audit log' });
       }
+    } finally {
+      if (isMounted.current) setLoading(false);
     }
   }, [activeOrganization, hasAuditPermission, limit, offset, filters]);
 
   // ============================================================
-  // EFFECTS - FIXED with isMounted and async wrapper
+  // EFFECTS
   // ============================================================
 
   useEffect(() => {
@@ -330,26 +449,27 @@ export default function AuditPage() {
     const loadData = async () => {
       if (!activeOrganization || !isMounted.current) return;
       if (hasFetched.current) return;
-      
       hasFetched.current = true;
       await Promise.all([fetchAuditLogs(), fetchUsers()]);
     };
 
     loadData();
-
     return () => {
       isMounted.current = false;
     };
   }, [activeOrganization, fetchAuditLogs, fetchUsers]);
 
   // ============================================================
-  // HANDLERS - Memoized
+  // HANDLERS
   // ============================================================
 
-  const handleFilterChange = useCallback((key: keyof FilterState, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setOffset(0);
-  }, []);
+  const handleFilterChange = useCallback(
+    (key: keyof FilterState, value: string) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+      setOffset(0);
+    },
+    [],
+  );
 
   const handleClearFilters = useCallback(() => {
     setFilters({ userId: '', startDate: '', endDate: '' });
@@ -358,7 +478,6 @@ export default function AuditPage() {
 
   const handleExport = useCallback(async () => {
     if (!activeOrganization || !hasExportPermission) return;
-
     setExporting(true);
     try {
       const orgId = activeOrganization.id;
@@ -369,38 +488,68 @@ export default function AuditPage() {
 
       const res = await api.get(
         `/api/v1/organizations/${orgId}/audit-logs/export?${params.toString()}`,
-        { responseType: 'blob' }
+        { responseType: 'blob' },
       );
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        'download',
+        `audit-logs-${new Date().toISOString().split('T')[0]}.csv`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+
+      setToast({ type: 'success', message: 'Export started' });
     } catch (error) {
       console.error('Failed to export audit logs:', error);
+      setToast({ type: 'error', message: 'Failed to export' });
     } finally {
       setExporting(false);
     }
   }, [activeOrganization, hasExportPermission, filters]);
 
   // ============================================================
-  // MEMOIZED COMPUTATIONS
+  // DERIVED
   // ============================================================
 
-  const totalPages = useMemo(() => Math.ceil(total / limit), [total, limit]);
+  const totalPages = useMemo(
+    () => Math.ceil(total / limit),
+    [total, limit],
+  );
 
-  const paginationInfo = useMemo(() => ({
-    start: offset + 1,
-    end: Math.min(offset + limit, total),
-    currentPage: Math.floor(offset / limit) + 1,
-  }), [offset, limit, total]);
+  const paginationInfo = useMemo(
+    () => ({
+      start: total === 0 ? 0 : offset + 1,
+      end: Math.min(offset + limit, total),
+      currentPage: Math.floor(offset / limit) + 1,
+    }),
+    [offset, limit, total],
+  );
+
+  // Group events by day
+  const groupedEvents = useMemo(() => {
+    const groups: { key: string; label: string; events: AuditEvent[] }[] = [];
+    const map = new Map<string, AuditEvent[]>();
+
+    for (const ev of events) {
+      const k = dayKey(ev.createdAt);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(ev);
+    }
+
+    for (const [key, list] of map.entries()) {
+      groups.push({ key, label: dayLabel(key), events: list });
+    }
+
+    return groups;
+  }, [events]);
 
   // ============================================================
-  // PERMISSION CHECK
+  // NO PERMISSION
   // ============================================================
 
   if (!hasAuditPermission) {
@@ -408,12 +557,21 @@ export default function AuditPage() {
       <div className={styles.page}>
         <div className={styles.noAccess}>
           <Lock size={48} />
-          <h2>Access Denied</h2>
-          <p>You do not have permission to view audit logs.</p>
+          <h2>You don&apos;t have access</h2>
+          <p>
+            Only members with the Audit Logs permission can view this page.
+            Ask your organization owner for access.
+          </p>
         </div>
       </div>
     );
   }
+
+  // ============================================================
+  // LOADING
+  // ============================================================
+
+  if (loading && events.length === 0) return <AuditSkeleton />;
 
   // ============================================================
   // RENDER
@@ -421,51 +579,89 @@ export default function AuditPage() {
 
   return (
     <div className={styles.page}>
-      {/* ===== HEADER CARD ===== */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* ===== HEADER ===== */}
       <div className={styles.headerCard}>
         <div className={styles.headerLeft}>
           <div className={styles.headerAvatar}>
-            <FileText size={20} />
+            <Shield size={20} />
           </div>
           <div className={styles.headerInfo}>
-            <h1 className={styles.headerTitle}>Audit Logs</h1>
-            <p className={styles.headerSubtitle}>View all activity across your organization</p>
+            <h1 className={styles.headerTitle}>Audit Log</h1>
+            <p className={styles.headerSubtitle}>
+              Everything that happens in your organization, in order.
+            </p>
           </div>
         </div>
-        <div className={styles.headerActions}>
+        {hasExportPermission && (
           <button
             className={styles.exportButton}
             onClick={handleExport}
             disabled={exporting || total === 0}
+            title="Download as CSV"
           >
             <Download size={14} />
-            {exporting ? 'Exporting...' : 'Export'}
+            {exporting ? 'Exporting…' : 'Export'}
           </button>
-        </div>
+        )}
       </div>
 
       {/* ===== STATS ===== */}
       <div className={styles.statsGrid}>
-        <StatsCard value={stats.total} label="Total Events" icon={FileText} />
-        <StatsCard value={stats.thisWeek} label="This Week" icon={Calendar} />
-        <StatsCard value={stats.today} label="Today" icon={Clock} />
-        <StatsCard value={stats.activeUsers} label="Active Users" icon={Users} />
+        <StatsCard
+          value={stats.today}
+          label="Today"
+          hint="Events in the last 24 hours"
+          icon={Clock}
+        />
+        <StatsCard
+          value={stats.thisWeek}
+          label="This week"
+          hint="Events in the last 7 days"
+          icon={Calendar}
+        />
+        <StatsCard
+          value={stats.activeUsers}
+          label="Active users"
+          hint="Members with activity this week"
+          icon={UserCheck}
+        />
+        <StatsCard
+          value={stats.total}
+          label="All time"
+          hint="Every event on record"
+          icon={FileText}
+        />
       </div>
 
-      {/* ===== FILTERS ===== */}
+      {/* ===== FILTER BAR ===== */}
       <div className={styles.filtersBar}>
-        <div className={styles.filterActions}>
-          <button
-            className={`${styles.filterToggle} ${showFilters ? styles.filterToggleActive : ''}`}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={14} />
-            Filters
-          </button>
-          <button className={styles.refreshButton} onClick={fetchAuditLogs}>
-            <RefreshCw size={14} />
-          </button>
-        </div>
+        <button
+          className={`${styles.filterToggle} ${
+            showFilters ? styles.filterToggleActive : ''
+          }`}
+          onClick={() => setShowFilters((v) => !v)}
+        >
+          <Filter size={14} />
+          Filters
+          {(filters.userId || filters.startDate || filters.endDate) && (
+            <span className={styles.filterDot} />
+          )}
+        </button>
+        <button
+          className={styles.refreshButton}
+          onClick={fetchAuditLogs}
+          title="Refresh"
+        >
+          <RefreshCw size={14} />
+        </button>
       </div>
 
       {/* ===== FILTER PANEL ===== */}
@@ -473,31 +669,33 @@ export default function AuditPage() {
         <div className={styles.filterPanel}>
           <div className={styles.filterRow}>
             <div className={styles.filterGroup}>
-              <label>User</label>
+              <label>Who</label>
               <select
                 value={filters.userId}
                 onChange={(e) => handleFilterChange('userId', e.target.value)}
               >
-                <option value="">All Users</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
+                <option value="">Everyone</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className={styles.filterGroup}>
-              <label>Date From</label>
+              <label>From</label>
               <input
                 type="date"
                 value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange('startDate', e.target.value)
+                }
               />
             </div>
 
             <div className={styles.filterGroup}>
-              <label>Date To</label>
+              <label>To</label>
               <input
                 type="date"
                 value={filters.endDate}
@@ -505,75 +703,96 @@ export default function AuditPage() {
               />
             </div>
 
-            <button className={styles.clearFilters} onClick={handleClearFilters}>
-              Clear All
+            <button
+              className={styles.clearFilters}
+              onClick={handleClearFilters}
+            >
+              Clear
             </button>
           </div>
         </div>
       )}
 
-      {/* ===== TABLE ===== */}
-      <div className={styles.tableContainer}>
-        {loading ? (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>Loading audit logs...</p>
+      {/* ===== TIMELINE ===== */}
+      <div className={styles.timeline}>
+        {loading && events.length === 0 ? (
+          <div className={styles.loadingInline}>
+            <RefreshCw size={16} className={styles.spin} />
+            <span>Loading…</span>
           </div>
         ) : events.length === 0 ? (
           <div className={styles.emptyState}>
-            <FileText size={48} className={styles.emptyIcon} />
-            <h3>No audit logs found</h3>
-            <p>Try adjusting your filters</p>
+            <FileText size={40} className={styles.emptyIcon} />
+            <h3>No activity yet</h3>
+            <p>
+              {filters.userId || filters.startDate || filters.endDate
+                ? 'No events match your filters.'
+                : 'Events will appear here as your team uses the platform.'}
+            </p>
+            {(filters.userId || filters.startDate || filters.endDate) && (
+              <button
+                className={styles.clearFiltersInline}
+                onClick={handleClearFilters}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>User</th>
-                  <th>Action</th>
-                  <th>Resource</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((event) => {
+          groupedEvents.map((group) => (
+            <div key={group.key} className={styles.dayGroup}>
+              <div className={styles.dayHeader}>
+                <span className={styles.dayLabel}>{group.label}</span>
+                <span className={styles.dayCount}>
+                  {group.events.length}{' '}
+                  {group.events.length === 1 ? 'event' : 'events'}
+                </span>
+              </div>
+              <ul className={styles.dayEvents}>
+                {group.events.map((event) => {
                   const Icon = getActionIcon(event.action);
-                  const ResourceIcon = getResourceIcon(event.resource);
-                  const label = ACTION_LABELS[event.action] || event.action.replace(/_/g, ' ').toLowerCase();
                   const userName = event.user
-                    ? `${event.user.firstName} ${event.user.lastName}`
+                    ? `${event.user.firstName} ${event.user.lastName}`.trim() ||
+                      'System'
                     : 'System';
+                  const initials = userName.charAt(0).toUpperCase();
 
                   return (
-                    <tr key={event.id} className={styles.tableRow}>
-                      <td className={styles.timeCell}>
-                        <span className={styles.timeText}>{formatTime(event.createdAt)}</span>
-                      </td>
-                      <td className={styles.userCell}>
-                        <div className={styles.userAvatar}>
-                          {userName.charAt(0)}
+                    <li key={event.id} className={styles.eventRow}>
+                      <span className={styles.eventTime}>
+                        {formatClock(event.createdAt)}
+                      </span>
+
+                      <span className={styles.eventIconWrap}>
+                        <Icon size={13} />
+                      </span>
+
+                      <div className={styles.eventBody}>
+                        <div className={styles.eventText}>
+                          <strong className={styles.eventActor}>
+                            {userName}
+                          </strong>
+                          <span className={styles.eventAction}>
+                            {actionLabel(event.action)}
+                          </span>
                         </div>
-                        <span className={styles.userName}>{userName}</span>
-                      </td>
-                      <td className={styles.actionCell}>
-                        <div className={styles.actionBadge}>
-                          <Icon size={12} />
-                          <span>{label}</span>
-                        </div>
-                      </td>
-                      <td className={styles.resourceCell}>
-                        <div className={styles.resourceBadge}>
-                          <ResourceIcon size={12} />
-                          <span>{event.resource}</span>
-                        </div>
-                      </td>
-                    </tr>
+                        {event.resource && (
+                          <div className={styles.eventMeta}>
+                            <Building2 size={11} />
+                            <span>{event.resource}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className={styles.eventAvatar} title={userName}>
+                        {initials}
+                      </div>
+                    </li>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+              </ul>
+            </div>
+          ))
         )}
       </div>
 
@@ -581,7 +800,8 @@ export default function AuditPage() {
       {total > limit && (
         <div className={styles.pagination}>
           <div className={styles.paginationInfo}>
-            Showing {paginationInfo.start} - {paginationInfo.end} of {total}
+            Showing {paginationInfo.start}–{paginationInfo.end} of{' '}
+            {total.toLocaleString()}
           </div>
           <div className={styles.paginationControls}>
             <button

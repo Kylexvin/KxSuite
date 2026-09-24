@@ -1,0 +1,42 @@
+/* src/app/dashboard/Dashboard.module.css */
+
+.page {
+  padding: 32px 36px 48px;
+  max-width: 960px;
+  margin: 0 auto;
+  color: var(--text, #eceef2);
+}
+
+.welcome {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0;
+  color: var(--text, #eceef2);
+}
+
+.orgName {
+  font-size: 13px;
+  color: var(--text-faint, #62636e);
+  margin: 4px 0 0;
+}
+
+.notice {
+  font-size: 13px;
+  color: var(--text-muted, #a3a5b0);
+  margin: 24px 0 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--border-strong, rgba(255, 255, 255, 0.14));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 20px 16px 40px;
+  }
+
+  .welcome {
+    font-size: 20px;
+  }
+}

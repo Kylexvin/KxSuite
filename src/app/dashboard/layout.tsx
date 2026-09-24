@@ -5,8 +5,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import Sidebar from "./Sidebar";
-import TopBar from "@/components/layout/TopBar";
+import TopBar from "@/app/dashboard/TopBar";
 import styles from "./layout.module.css";
 
 export default function DashboardLayout({
@@ -15,7 +16,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, organizations, activeOrganization } = useAuth();
+  const { isAuthenticated, isLoading, organizations, activeOrganization } =
+    useAuth();
 
   const [isMounted, setIsMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -48,7 +50,14 @@ export default function DashboardLayout({
       router.push("/onboarding/select-organization");
       return;
     }
-  }, [isMounted, isLoading, isAuthenticated, organizations, activeOrganization, router]);
+  }, [
+    isMounted,
+    isLoading,
+    isAuthenticated,
+    organizations,
+    activeOrganization,
+    router,
+  ]);
 
   if (!isMounted || isLoading) {
     return (
@@ -61,31 +70,33 @@ export default function DashboardLayout({
   if (!isAuthenticated || !activeOrganization) return null;
 
   return (
-    <div className={styles.layout}>
-      <TopBar
-        isMobile={isMobile}
-        onToggleSidebar={() => setSidebarOpen((v) => !v)}
-      />
-
-      {isMobile && sidebarOpen && (
-        <div
-          className={styles.overlay}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <div
-        className={`${styles.sidebarWrap} ${sidebarOpen ? styles.open : ""}`}
-      >
-        <Sidebar
+    <PermissionsProvider>
+      <div className={styles.layout}>
+        <TopBar
           isMobile={isMobile}
-          onClose={() => setSidebarOpen(false)}
+          onToggleSidebar={() => setSidebarOpen((v) => !v)}
         />
-      </div>
 
-      <div className={styles.contentWrap}>
-        <main className={styles.content}>{children}</main>
+        {isMobile && sidebarOpen && (
+          <div
+            className={styles.overlay}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        <div
+          className={`${styles.sidebarWrap} ${sidebarOpen ? styles.open : ""}`}
+        >
+          <Sidebar
+            isMobile={isMobile}
+            onClose={() => setSidebarOpen(false)}
+          />
+        </div>
+
+        <div className={styles.contentWrap}>
+          <main className={styles.content}>{children}</main>
+        </div>
       </div>
-    </div>
+    </PermissionsProvider>
   );
 }

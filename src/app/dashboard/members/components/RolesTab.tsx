@@ -1,278 +1,154 @@
 // app/dashboard/members/components/RolesTab.tsx
 
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/axios";
-import { AxiosError } from "axios";
-import { Shield, Edit2, Trash2, X, Loader2, AlertCircle } from "lucide-react";
-import styles from "../page.module.css";
-import RoleModal from "./RoleModal";
-
-type Permission = {
-  id: string;
-  key: string;
-  name: string;
-  productKey: string;
-  description?: string;
-};
-
-type Branch = {
-  id: string;
-  name: string;
-  code: string;
-  isDefault: boolean;
-};
-
-type Role = {
-  id: string;
-  name: string;
-  description: string;
-  permissions: Permission[];
-  memberCount: number;
-  createdAt: string;
-};
+import { useState, useMemo } from 'react';
+import {
+  Shield,
+  Plus,
+  Edit2,
+  Crown,
+  Users,
+  Lock,
+} from 'lucide-react';
+import styles from '../page.module.css';
+import RoleModal from './RoleModal';
+import { isAdminRole } from '../page';
+import type { Role, Branch, Permission } from '../page';
 
 type Props = {
   roles: Role[];
   permissions: Permission[];
   branches: Branch[];
+  onOpenCreate: () => void;
   onRefresh: () => void;
-  setToast: (toast: { type: "success" | "error"; message: string } | null) => void;
+  setToast: (toast: { type: 'success' | 'error'; message: string } | null) => void;
 };
 
-// ============================================================
-// API ERROR TYPE
-// ============================================================
+export default function RolesTab({
+  roles,
+  permissions,
+  branches,
+  onOpenCreate,
+  onRefresh,
+  setToast,
+}: Props) {
+  const [editRole, setEditRole] = useState<Role | null>(null);
 
-type ApiErrorResponse = {
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
-};
+  const orderedRoles = useMemo(() => {
+    const admins = roles.filter(isAdminRole);
+    const rest = roles
+      .filter((r) => !isAdminRole(r))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return [...admins, ...rest];
+  }, [roles]);
 
-// ============================================================
-// HELPER: Get error message from unknown error
-// ============================================================
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  // Handle Axios errors
-  if (error instanceof AxiosError) {
-    const data = error.response?.data as ApiErrorResponse;
-    return data?.message || data?.error || fallback;
-  }
-  
-  // Handle standard errors
-  if (error instanceof Error) {
-    return error.message;
-  }
-  
-  // Handle string errors
-  if (typeof error === 'string') {
-    return error;
-  }
-  
-  return fallback;
-}
-
-export default function RolesTab({ roles, permissions = [], branches = [], onRefresh, setToast }: Props) {
-  const { activeOrganization } = useAuth();
-
-  const [showRoleModal, setShowRoleModal] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Role | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const handler = () => setShowRoleModal(true);
-    document.addEventListener("open-create-role", handler);
-    return () => document.removeEventListener("open-create-role", handler);
-  }, []);
-
-  const handleDeleteRole = async () => {
-    if (!activeOrganization || !showDeleteConfirm) return;
-
-    if (showDeleteConfirm.name === "Owner") {
-      setToast({ type: "error", message: "Owner role cannot be deleted" });
-      return;
-    }
-
-    if (showDeleteConfirm.memberCount > 0) {
-      setToast({ type: "error", message: "Cannot delete role that has members assigned" });
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await api.delete(`/api/v1/organizations/${activeOrganization.id}/roles/${showDeleteConfirm.id}`);
-      onRefresh();
-      setToast({ type: "success", message: "Role deleted successfully" });
-      setShowDeleteConfirm(null);
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to delete role");
-      setToast({
-        type: "error",
-        message,
-      });
-    } finally {
-      setSaving(false);
-    }
+  const openEdit = (role: Role) => {
+    if (isAdminRole(role)) return;
+    setEditRole(role);
   };
 
-  const isOwner = (role: Role) => role.name === "Owner";
+  const closeEdit = () => setEditRole(null);
 
   return (
     <>
-      <div className={styles.memberList}>
-        <div className={styles.memberListHeader}>
-          <span>Role</span>
-          <span>Description</span>
-          <span>Permissions</span>
-          <span>Members</span>
-          <span>Actions</span>
-        </div>
-
-        {roles.length === 0 ? (
-          <div className={styles.emptyState}>
-            <Shield size={48} className={styles.emptyIcon} />
-            <h3>No roles created yet</h3>
-            <p>Create your first role to start managing permissions</p>
+      {orderedRoles.length === 0 ? (
+        <div className={styles.friendlyEmpty}>
+          <div className={styles.friendlyEmptyIcon}>
+            <Shield size={28} />
           </div>
-        ) : (
-          roles.map((role) => {
-            const isOwnerRole = isOwner(role);
+          <h3>No roles yet</h3>
+          <p>
+            Roles group permissions and control what members can do. Starter
+            roles are created automatically when you invite your first member.
+          </p>
+          <button className={styles.primaryButton} onClick={onOpenCreate}>
+            <Plus size={16} />
+            Create a role
+          </button>
+        </div>
+      ) : (
+        <div className={styles.roleGrid}>
+          {orderedRoles.map((role) => {
+            const admin = isAdminRole(role);
 
             return (
-              <div key={role.id} className={styles.memberRow}>
-                <div className={styles.memberInfo}>
-                  <div className={styles.memberAvatar} style={{ background: "rgba(255,106,43,0.15)" }}>
-                    <Shield size={18} color="#ff6a2b" />
-                  </div>
-                  <div>
-                    <div className={styles.memberName}>
-                      {role.name}
-                      {isOwnerRole && (
-                        <span className={styles.ownerBadge}>
-                          <AlertCircle size={12} />
-                          Protected
+              <div
+                key={role.id}
+                className={`${styles.roleCard} ${
+                  admin ? styles.roleCardAdmin : ''
+                }`}
+              >
+                <div className={styles.roleCardHeader}>
+                  <div className={styles.roleCardTitleRow}>
+                    <span
+                      className={`${styles.roleCardIcon} ${
+                        admin ? styles.roleCardIconAdmin : ''
+                      }`}
+                    >
+                      {admin ? <Crown size={16} /> : <Shield size={16} />}
+                    </span>
+                    <div className={styles.roleCardTitleText}>
+                      <div className={styles.roleCardName}>{role.name}</div>
+                      {admin && (
+                        <span className={styles.roleLockedBadge}>
+                          <Lock size={10} />
+                          System role
                         </span>
                       )}
                     </div>
-                    <div className={styles.memberEmail}>{role.description || "No description"}</div>
                   </div>
+
+                  {!admin && (
+                    <button
+                      className={styles.actionButton}
+                      onClick={() => openEdit(role)}
+                      title="Edit role"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                  )}
                 </div>
 
-                <div className={styles.memberDescription}>
-                  {role.description || "—"}
-                </div>
+                {role.description && (
+                  <p className={styles.roleCardDescription}>
+                    {role.description}
+                  </p>
+                )}
 
-                <div className={styles.memberPermissions}>
-                  <span className={styles.permissionBadge}>
-                    {role.permissions.length} permissions
+                <div className={styles.roleCardMeta}>
+                  <span className={styles.roleMetaChip}>
+                    <Shield size={11} />
+                    {admin
+                      ? 'All permissions'
+                      : `${role.permissions.length} permission${
+                          role.permissions.length === 1 ? '' : 's'
+                        }`}
                   </span>
-                </div>
-
-                <div className={styles.memberMembers}>
-                  <span className={styles.memberCountBadge}>
-                    {role.memberCount}
+                  <span className={styles.roleMetaChip}>
+                    <Users size={11} />
+                    {role.memberCount} member
+                    {role.memberCount === 1 ? '' : 's'}
                   </span>
-                </div>
-
-                <div className={styles.memberActions}>
-                  <button
-                    className={styles.actionButton}
-                    onClick={() => {
-                      setEditingRole(role);
-                      setShowRoleModal(true);
-                    }}
-                    title="Edit role"
-                    disabled={isOwnerRole}
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                  <button
-                    className={`${styles.actionButton} ${styles.actionButtonDanger}`}
-                    onClick={() => setShowDeleteConfirm(role)}
-                    title="Delete role"
-                    disabled={isOwnerRole || role.memberCount > 0}
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
-      {showRoleModal && (
+      {editRole && (
         <RoleModal
-          role={editingRole}
+          role={editRole}
           permissions={permissions}
           branches={branches}
-          onClose={() => {
-            setShowRoleModal(false);
-            setEditingRole(null);
-          }}
-          onSuccess={() => {
+          onClose={closeEdit}
+          onSuccess={async () => {
+            closeEdit();
             onRefresh();
-            setShowRoleModal(false);
-            setEditingRole(null);
-            setToast({ type: "success", message: editingRole ? "Role updated" : "Role created" });
           }}
           setToast={setToast}
         />
-      )}
-
-      {showDeleteConfirm && (
-        <div className={styles.modalOverlay} onClick={() => setShowDeleteConfirm(null)}>
-          <div className={`${styles.modal} ${styles.modalDanger}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>
-                <Trash2 size={20} />
-                Delete Role
-              </h2>
-              <button className={styles.modalClose} onClick={() => setShowDeleteConfirm(null)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className={styles.deleteContent}>
-              <div className={styles.deleteIcon}>
-                <AlertCircle size={48} />
-              </div>
-              <h3>Are you sure?</h3>
-              <p>
-                This will delete <strong>{showDeleteConfirm.name}</strong>.
-                {showDeleteConfirm.memberCount > 0 && (
-                  <span className={styles.deleteWarning}>
-                    {" "}This role is assigned to {showDeleteConfirm.memberCount} members.
-                  </span>
-                )}
-                {showDeleteConfirm.name === "Owner" && (
-                  <span className={styles.deleteWarning}> The Owner role cannot be deleted.</span>
-                )}
-              </p>
-              <p className={styles.deleteWarning}>This action cannot be undone.</p>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.cancelButton} onClick={() => setShowDeleteConfirm(null)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.deleteButton}
-                onClick={handleDeleteRole}
-                disabled={saving || showDeleteConfirm.name === "Owner" || showDeleteConfirm.memberCount > 0}
-              >
-                {saving ? <Loader2 size={16} className={styles.spinning} /> : <Trash2 size={16} />}
-                Delete Role
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </>
   );

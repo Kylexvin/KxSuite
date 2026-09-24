@@ -1,105 +1,144 @@
 // app/dashboard/billing/page.tsx
 
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/axios";
-import { AxiosError } from "axios";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/axios';
+import { AxiosError } from 'axios';
 import {
   CreditCard,
-  Package,
   CheckCircle,
   Clock,
   AlertTriangle,
   XCircle,
+  Ban,
   ArrowRight,
-  Eye,
-  Search,
-  Plus,
   X,
   Check,
   AlertCircle,
   RefreshCw,
-  Ban,
-  Loader2,
   Wallet,
-} from "lucide-react";
-import styles from "./page.module.css";
+  Copy,
+  Send,
+  Receipt,
+  ExternalLink,
+  Info,
+} from 'lucide-react';
+import styles from './page.module.css';
 
 // ============================================================
-// TYPES
+// TYPES — mirror GET /organizations/:orgId/billing exactly
 // ============================================================
 
-type SubscriptionStatus = "TRIAL" | "ACTIVE" | "GRACE" | "EXPIRED" | "CANCELLED";
-
-type PlanLimits = {
-  maxUsers?: number;
-  maxBranches?: number;
-  maxProducts?: number;
-  storage?: number;
-  [key: string]: unknown;
+type BillingOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  currency: string;
 };
 
-type Subscription = {
-  id: string;
-  organizationId: string;
-  productKey: string;
-  planId: string;
-  status: SubscriptionStatus;
-  trialStart?: string;
-  trialEnd?: string;
-  graceStart?: string;
-  graceEnd?: string;
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  cancelledAt?: string;
-  expiredAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  plan: {
-    id: string;
-    productKey: string;
-    key: string;
-    name: string;
-    price: number;
-    currency: string;
-    interval: string;
-    trialDays: number;
-    features: string[];
-    limits: PlanLimits;
-  };
-  remainingDays?: number;
-  isActive: boolean;
-  isTrial: boolean;
-  isExpired: boolean;
+type BillingSummary = {
+  nextDueAt: string | null;
+  totalMonthly: number | null;
+  currency: string;
+  outstanding: number;
+  activeProductCount: number;
+  pendingPaymentCount: number;
 };
 
-type Product = {
-  id: string;
+type PlanInfo = {
   key: string;
   name: string;
-  description: string;
-  version: string;
-  isActive: boolean;
+  price: number;
+  currency: string;
+  interval: string;
+  trialDays: number;
+};
+
+type WhatHappensNext = {
+  title: string;
+  body: string;
+  graceStartsAt: string | null;
+  graceEndsAt: string | null;
+};
+
+type AccessInfo = {
+  included: string[];
+  restricted: string[];
+};
+
+type AmountInfo = {
+  accountNumber: string;
+  suggestedAmount: number | null;
+  currency: string;
+  amountIsCustom: boolean;
+  displayAmount: string;
+};
+
+type PaymentInstructions = {
+  paybill: string | null;
+  accountNumber: string | null;
+  tillNumber: string | null;
+  mpesaPhone: string | null;
+  bankName: string | null;
+  bankAccount: string | null;
+  bankAccountName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  steps: string[];
+  alternatives: string[];
 };
 
 type Payment = {
   id: string;
   amount: number;
   currency: string;
-  status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
   method: string;
   reference: string;
-  description: string;
-  paidAt: string;
+  paidAt: string | null;
   createdAt: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  notes: string | null;
 };
 
-// ============================================================
-// API ERROR TYPE
-// ============================================================
+type BillingProduct = {
+  productKey: string;
+  productName: string;
+  status: 'TRIAL' | 'ACTIVE' | 'GRACE' | 'EXPIRED' | 'SUSPENDED' | 'CANCELLED';
+  isActive: boolean;
+  isTrial: boolean;
+  isGrace: boolean;
+  isExpired: boolean;
+  isSuspended: boolean;
+  isCancelled: boolean;
+  remainingDays: number;
+  phaseStartAt: string | null;
+  phaseEndsAt: string | null;
+  trialStart: string | null;
+  trialEnd: string | null;
+  graceStart: string | null;
+  graceEnd: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  expiredAt: string | null;
+  nextDueAt: string | null;
+  plan: PlanInfo;
+  whatHappensNext: WhatHappensNext;
+  access: AccessInfo;
+  amount: AmountInfo;
+  paymentInstructions: PaymentInstructions;
+  payments: Payment[];
+};
+
+type BillingResponse = {
+  organization: BillingOrganization;
+  summary: BillingSummary;
+  products: BillingProduct[];
+};
 
 type ApiErrorResponse = {
   message?: string;
@@ -108,7 +147,7 @@ type ApiErrorResponse = {
 };
 
 // ============================================================
-// HELPER: Get error message from unknown error
+// HELPERS
 // ============================================================
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -116,20 +155,83 @@ function getErrorMessage(error: unknown, fallback: string): string {
     const data = error.response?.data as ApiErrorResponse;
     return data?.message || data?.error || fallback;
   }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
   return fallback;
+}
+
+function formatDate(date: string | null | undefined): string {
+  if (!date) return '—';
+  return new Date(date).toLocaleDateString('en-KE', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatDateTime(date: string | null | undefined): string {
+  if (!date) return '—';
+  return new Date(date).toLocaleString('en-KE', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatMoney(amount: number | null, currency = 'KES'): string {
+  if (amount === null || amount === undefined) return '—';
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+type StatusTone =
+  | 'active'
+  | 'trial'
+  | 'grace'
+  | 'expired'
+  | 'cancelled'
+  | 'suspended';
+
+function toneFromStatus(
+  status: BillingProduct['status'],
+): { tone: StatusTone; label: string } {
+  switch (status) {
+    case 'TRIAL':
+      return { tone: 'trial', label: 'Trial' };
+    case 'ACTIVE':
+      return { tone: 'active', label: 'Active' };
+    case 'GRACE':
+      return { tone: 'grace', label: 'Grace' };
+    case 'EXPIRED':
+      return { tone: 'expired', label: 'Expired' };
+    case 'SUSPENDED':
+      return { tone: 'suspended', label: 'Suspended' };
+    case 'CANCELLED':
+      return { tone: 'cancelled', label: 'Cancelled' };
+    default:
+      return { tone: 'expired', label: status };
+  }
 }
 
 // ============================================================
 // TOAST
 // ============================================================
 
-function Toast({ type, message, onClose }: { type: "success" | "error" | "info"; message: string; onClose: () => void }) {
+function Toast({
+  type,
+  message,
+  onClose,
+}: {
+  type: 'success' | 'error' | 'info';
+  message: string;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const timer = setTimeout(onClose, 4000);
     return () => clearTimeout(timer);
@@ -138,7 +240,7 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
   const icons = {
     success: <Check size={16} />,
     error: <AlertTriangle size={16} />,
-    info: <AlertCircle size={16} />,
+    info: <Info size={16} />,
   };
 
   const classes = {
@@ -159,167 +261,108 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
 }
 
 // ============================================================
-// STATUS BADGE - Memoized
+// STATUS PILL
 // ============================================================
 
-const StatusBadge = React.memo(function StatusBadge({ status }: { status: SubscriptionStatus }) {
-  const configs = {
-    TRIAL: { label: "Trial", icon: Clock, className: styles.statusTrial },
-    ACTIVE: { label: "Active", icon: CheckCircle, className: styles.statusActive },
-    GRACE: { label: "Grace Period", icon: AlertTriangle, className: styles.statusGrace },
-    EXPIRED: { label: "Expired", icon: XCircle, className: styles.statusExpired },
-    CANCELLED: { label: "Cancelled", icon: Ban, className: styles.statusCancelled },
-  };
-  const config = configs[status] || configs.EXPIRED;
-  const Icon = config.icon;
+function StatusPill({
+  tone,
+  label,
+  days,
+}: {
+  tone: StatusTone;
+  label: string;
+  days?: number;
+}) {
+  const toneClass = {
+    active: styles.pillActive,
+    trial: styles.pillTrial,
+    grace: styles.pillGrace,
+    expired: styles.pillExpired,
+    cancelled: styles.pillCancelled,
+    suspended: styles.pillSuspended,
+  }[tone];
+
   return (
-    <span className={`${styles.statusPill} ${config.className}`}>
-      <Icon size={12} />
-      {config.label}
+    <span className={`${styles.pill} ${toneClass}`}>
+      <span className={styles.pillDot} />
+      {label}
+      {typeof days === 'number' &&
+        (tone === 'trial' || tone === 'active' || tone === 'grace') &&
+        days >= 0 && <span className={styles.pillDays}>· {days}d left</span>}
     </span>
   );
-});
+}
 
 // ============================================================
-// SUBSCRIPTION CARD - Memoized
+// SKELETON
 // ============================================================
 
-const SubscriptionCard = React.memo(function SubscriptionCard({
-  subscription,
-  product,
-  onViewDetails,
-  onCancel,
-  onRenew,
-  onManage,
-  isRenewing,
-  formatCurrency,
-  formatDate,
-}: {
-  subscription: Subscription;
-  product?: Product;
-  onViewDetails: (sub: Subscription) => void;
-  onCancel: (sub: Subscription) => void;
-  onRenew: (productKey: string) => void;
-  onManage: (productKey: string) => void;
-  isRenewing: boolean;
-  formatCurrency: (amount: number, currency: string) => string;
-  formatDate: (date: string) => string;
-}) {
-  const productName = product?.name || subscription.productKey;
-  const isExpiring = subscription.status === "ACTIVE" && subscription.remainingDays && subscription.remainingDays < 30;
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={`${styles.skeleton} ${className ?? ''}`} />;
+}
 
+function BillingSkeleton() {
   return (
-    <div className={styles.subscriptionCard}>
-      <div className={styles.subscriptionHeader}>
-        <div className={styles.subscriptionProduct}>
-          <span className={styles.subscriptionIcon}>
-            {productName.charAt(0)}
-          </span>
-          <div>
-            <div className={styles.subscriptionName}>{productName}</div>
-            <div className={styles.subscriptionPlan}>
-              {subscription.plan?.name || subscription.plan?.key || "Plan"} Plan
-            </div>
-          </div>
+    <div className={styles.page} aria-busy="true" aria-live="polite">
+      <span className={styles.srOnly}>Loading billing…</span>
+
+      <div className={styles.header}>
+        <SkeletonBlock className={styles.skeletonHeaderIcon} />
+        <div style={{ flex: 1 }}>
+          <SkeletonBlock className={styles.skeletonTitle} />
+          <SkeletonBlock className={styles.skeletonSubtitle} />
         </div>
-        <StatusBadge status={subscription.status} />
       </div>
 
-      <div className={styles.subscriptionDetails}>
-        <div className={styles.subscriptionRow}>
-          <span className={styles.subscriptionLabel}>Amount</span>
-          <span className={styles.subscriptionValue}>
-            {formatCurrency(subscription.plan?.price || 0, subscription.plan?.currency || "KES")}
-            <span className={styles.subscriptionCycle}>
-              /{subscription.plan?.interval?.toLowerCase() || "monthly"}
-            </span>
-          </span>
-        </div>
-        <div className={styles.subscriptionRow}>
-          <span className={styles.subscriptionLabel}>Period</span>
-          <span className={styles.subscriptionValue}>
-            {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
-          </span>
-        </div>
-        {subscription.remainingDays !== undefined && subscription.remainingDays > 0 && (
-          <div className={styles.subscriptionRow}>
-            <span className={styles.subscriptionLabel}>Remaining</span>
-            <span className={styles.subscriptionValue}>
-              {subscription.remainingDays} days
-            </span>
-          </div>
-        )}
-        {isExpiring && (
-          <div className={styles.expiringWarning}>
-            <AlertTriangle size={14} />
-            Expires in {subscription.remainingDays} days
-          </div>
-        )}
-        {subscription.status === "GRACE" && (
-          <div className={styles.graceWarning}>
-            <AlertTriangle size={14} />
-            Grace period ends {formatDate(subscription.graceEnd || subscription.currentPeriodEnd)}
-          </div>
-        )}
+      <div className={styles.summaryBar}>
+        <SkeletonBlock className={styles.skeletonSummaryItem} />
+        <SkeletonBlock className={styles.skeletonSummaryItem} />
+        <SkeletonBlock className={styles.skeletonSummaryItem} />
       </div>
 
-      <div className={styles.subscriptionActions}>
-        <button
-          className={styles.subscriptionAction}
-          onClick={() => onViewDetails(subscription)}
-        >
-          <Eye size={14} />
-          Details
-        </button>
-
-        <button
-          className={styles.subscriptionAction}
-          onClick={() => onManage(subscription.productKey)}
-        >
-          <ArrowRight size={14} />
-          Manage
-        </button>
-
-        {(subscription.status === "TRIAL" || subscription.status === "ACTIVE") && (
-          <button
-            className={`${styles.subscriptionAction} ${styles.subscriptionActionDanger}`}
-            onClick={() => onCancel(subscription)}
-          >
-            <Ban size={14} />
-            {subscription.status === "TRIAL" ? "Deactivate" : "Cancel"}
-          </button>
-        )}
-
-        {(subscription.status === "ACTIVE" || subscription.status === "GRACE") && (
-          <button
-            className={subscription.status === "GRACE" ? styles.subscriptionActionPrimary : styles.subscriptionAction}
-            onClick={() => onRenew(subscription.productKey)}
-            disabled={isRenewing}
-          >
-            {isRenewing ? (
-              <Loader2 size={14} className={styles.spinnerSmall} />
-            ) : (
-              <>
-                <RefreshCw size={14} />
-                {subscription.status === "GRACE" ? "Renew Now" : "Renew"}
-              </>
-            )}
-          </button>
-        )}
-
-        {subscription.status === "EXPIRED" && (
-          <button
-            className={styles.subscriptionActionPrimary}
-            onClick={() => onManage(subscription.productKey)}
-          >
-            <ArrowRight size={14} />
-            Reactivate
-          </button>
-        )}
+      <div className={styles.productStack}>
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={`p-${i}`} className={styles.productCard}>
+            <SkeletonBlock className={styles.skeletonCardTitle} />
+            <SkeletonBlock className={styles.skeletonCardDesc} />
+            <SkeletonBlock className={styles.skeletonCardBody} />
+            <SkeletonBlock className={styles.skeletonCardBody} />
+          </div>
+        ))}
       </div>
     </div>
   );
-});
+}
+
+// ============================================================
+// COPY BUTTON
+// ============================================================
+
+function CopyButton({ value, label }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // no-op
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className={styles.copyBtn}
+      onClick={copy}
+      aria-label={label ?? `Copy ${value}`}
+      title={label ?? 'Copy'}
+    >
+      {copied ? <Check size={11} /> : <Copy size={11} />}
+    </button>
+  );
+}
 
 // ============================================================
 // MAIN PAGE
@@ -328,221 +371,118 @@ const SubscriptionCard = React.memo(function SubscriptionCard({
 export default function BillingPage() {
   const router = useRouter();
   const { activeOrganization, loadSuiteContext } = useAuth();
+
+  const [billing, setBilling] = useState<BillingResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [renewing, setRenewing] = useState<string | null>(null);
+  const [openProduct, setOpenProduct] = useState<string | null>(null);
+  const [openTab, setOpenTab] = useState<'instructions' | 'history'>(
+    'instructions',
+  );
+  const [notifyProduct, setNotifyProduct] = useState<BillingProduct | null>(
+    null,
+  );
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
 
   // ============================================================
-  // REFS
+  // LOAD
   // ============================================================
 
-  const isMounted = useRef(true);
-  const hasFetched = useRef(false);
-
-  // ============================================================
-  // HELPERS - Memoized
-  // ============================================================
-
-  const formatCurrency = useCallback((amount: number, currency: string) => {
-    return new Intl.NumberFormat("en-KE", {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }, []);
-
-  const formatDate = useCallback((date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }, []);
-
-  // ============================================================
-  // FETCH DATA
-  // ============================================================
-
-  const refreshEverything = useCallback(async () => {
+  const loadBilling = useCallback(async () => {
     if (!activeOrganization) return;
-    await loadSuiteContext(activeOrganization.id);
-  }, [activeOrganization, loadSuiteContext]);
-
-  const fetchData = useCallback(async () => {
-    if (!activeOrganization || !isMounted.current) return;
 
     setLoading(true);
     try {
-      const [subsRes, productsRes] = await Promise.all([
-        api.get(`/api/v1/organizations/${activeOrganization.id}/subscriptions`),
-        api.get("/api/v1/products"),
-      ]);
-
-      if (!isMounted.current) return;
-
-      const allProducts = productsRes.data.products || [];
-      setProducts(allProducts);
-
-      const allSubs = subsRes.data.subscriptions || [];
-      const activeSubs = allSubs.filter((sub: Subscription) => {
-        const product = allProducts.find((p: Product) => p.key === sub.productKey);
-        return product !== undefined && product.isActive === true;
-      });
-      setSubscriptions(activeSubs);
-
-      try {
-        const paymentsRes = await api.get(`/api/v1/organizations/${activeOrganization.id}/payments`);
-        if (isMounted.current) {
-          setPayments(paymentsRes.data.payments || []);
-        }
-      } catch {
-        if (isMounted.current) {
-          setPayments([]);
-        }
-      }
+      const res = await api.get<{ data: BillingResponse }>(
+        `/api/v1/organizations/${activeOrganization.id}/billing`,
+      );
+      setBilling(res.data.data);
     } catch (err: unknown) {
-      if (isMounted.current) {
-        console.error("Failed to load billing data:", err);
-        setToast({ type: "error", message: "Failed to load subscriptions. Please try again." });
-      }
+      console.error('Failed to load billing:', err);
+      setToast({
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to load billing information.'),
+      });
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   }, [activeOrganization]);
 
-  // ============================================================
-  // EFFECTS - FIXED with isMounted and async wrapper
-  // ============================================================
-
   useEffect(() => {
-    isMounted.current = true;
-    hasFetched.current = false;
+    const controller = new AbortController();
+    let isMounted = true;
 
-    const loadData = async () => {
-      if (!activeOrganization || !isMounted.current) return;
-      if (hasFetched.current) return;
-      
-      hasFetched.current = true;
-      await fetchData();
+    const fetchData = async () => {
+      if (!activeOrganization) return;
+
+      setLoading(true);
+      try {
+        const res = await api.get<{ data: BillingResponse }>(
+          `/api/v1/organizations/${activeOrganization.id}/billing`,
+        );
+        if (isMounted) {
+          setBilling(res.data.data);
+        }
+      } catch (err: unknown) {
+        if (isMounted) {
+          console.error('Failed to load billing:', err);
+          setToast({
+            type: 'error',
+            message: getErrorMessage(err, 'Failed to load billing information.'),
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    loadData();
-
+    fetchData();
     return () => {
-      isMounted.current = false;
+      isMounted = false;
+      controller.abort();
     };
-  }, [activeOrganization, fetchData]);
+  }, [activeOrganization]);
 
   // ============================================================
-  // HANDLERS
+  // DERIVED
   // ============================================================
 
-  const handleCancelSubscription = useCallback(async (subscriptionId: string) => {
-    if (!activeOrganization) return;
+  const summary = billing?.summary;
+  const products = billing?.products ?? [];
 
-    setCancelling(true);
-    try {
-      const sub = subscriptions.find((s) => s.id === subscriptionId);
-      if (!sub) return;
+  const currency = summary?.currency ?? billing?.organization.currency ?? 'KES';
 
-      await api.delete(
-        `/api/v1/products/organizations/${activeOrganization.id}/products/${sub.productKey}`
-      );
-
-      await fetchData();
-      await refreshEverything();
-      setToast({ type: "success", message: "Subscription cancelled successfully" });
-      setShowCancelModal(false);
-      setSelectedSubscription(null);
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to cancel subscription");
-      setToast({
-        type: "error",
-        message,
-      });
-    } finally {
-      setCancelling(false);
-    }
-  }, [activeOrganization, subscriptions, fetchData, refreshEverything]);
-
-  const handleRenew = useCallback(async (productKey: string) => {
-    if (!activeOrganization) return;
-
-    setRenewing(productKey);
-    try {
-      await api.post(
-        `/api/v1/organizations/${activeOrganization.id}/subscriptions/${productKey}/renew`
-      );
-      await fetchData();
-      await refreshEverything();
-      setToast({ type: "success", message: "Subscription renewed successfully" });
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to renew subscription");
-      setToast({
-        type: "error",
-        message,
-      });
-    } finally {
-      setRenewing(null);
-    }
-  }, [activeOrganization, fetchData, refreshEverything]);
+  const hasAnything = products.length > 0;
 
   // ============================================================
-  // MEMOIZED COMPUTATIONS
+  // ACTIONS
   // ============================================================
 
-  const filteredSubscriptions = useMemo(() => {
-    const search = searchQuery.toLowerCase();
-    return subscriptions.filter((sub) => {
-      const product = products.find((p) => p.key === sub.productKey);
-      const productName = product?.name || sub.productKey;
-      return productName.toLowerCase().includes(search);
-    });
-  }, [subscriptions, products, searchQuery]);
+  const handleOpenProduct = (productKey: string) => {
+    router.push(`/kx/${productKey}`);
+  };
 
-  const stats = useMemo(() => ({
-    total: subscriptions.length,
-    active: subscriptions.filter((s) => s.status === "ACTIVE").length,
-    trial: subscriptions.filter((s) => s.status === "TRIAL").length,
-    grace: subscriptions.filter((s) => s.status === "GRACE").length,
-  }), [subscriptions]);
-
-  const paymentStats = useMemo(() => {
-    const completedPayments = payments.filter((p) => p.status === "COMPLETED");
-    const totalSpent = completedPayments.reduce((sum, p) => sum + p.amount, 0);
-    const lastPayment = completedPayments[completedPayments.length - 1];
-    const nextPayment = subscriptions
-      .filter((s) => s.status === "ACTIVE" || s.status === "TRIAL")
-      .reduce((sum, s) => sum + (s.plan?.price || 0), 0);
-
-    return { totalSpent, lastPayment, nextPayment };
-  }, [payments, subscriptions]);
-
-  const productMap = useMemo(() => {
-    return new Map(products.map((p) => [p.key, p]));
-  }, [products]);
+  const handleNotify = (product: BillingProduct) => {
+    setNotifyProduct(product);
+  };
 
   // ============================================================
-  // LOADING
+  // LOADING / EMPTY
   // ============================================================
 
-  if (loading) {
+  if (loading) return <BillingSkeleton />;
+
+  if (!billing) {
     return (
       <div className={styles.page}>
-        <div className={styles.loadingState}>
-          <Loader2 size={32} className={styles.spinner} />
-          <p>Loading billing information...</p>
+        <div className={styles.emptyState}>
+          <CreditCard size={40} className={styles.emptyIcon} />
+          <h3>Could not load billing</h3>
+          <p>Try again in a moment.</p>
         </div>
       </div>
     );
@@ -554,7 +494,6 @@ export default function BillingPage() {
 
   return (
     <div className={styles.page}>
-      {/* Toast */}
       {toast && (
         <Toast
           type={toast.type}
@@ -564,309 +503,702 @@ export default function BillingPage() {
       )}
 
       {/* ===== HEADER ===== */}
-      <div className={styles.orgHeader}>
-        <div className={styles.orgIdentity}>
-          <span className={styles.orgAvatar}>
-            <CreditCard size={24} />
-          </span>
-          <div>
-            <div className={styles.orgNameRow}>
-              <h1 className={styles.orgName}>Billing & Subscriptions</h1>
-              <span className={`${styles.statusPill} ${styles.statusActive}`}>
-                {stats.total} products
-              </span>
-            </div>
-            <div className={styles.orgMeta}>Manage your subscriptions and billing information</div>
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          <div className={styles.headerIcon}>
+            <CreditCard size={22} />
+          </div>
+          <div className={styles.headerText}>
+            <h1 className={styles.headerTitle}>Billing</h1>
+            <p className={styles.headerSubtitle}>
+              What you own, what&apos;s due, and how to pay. Browse new products in
+              the{' '}
+              <button
+                type="button"
+                className={styles.inlineLink}
+                onClick={() => router.push('/dashboard/marketplace')}
+              >
+                Marketplace
+              </button>
+              .
+            </p>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* ===== STATS ===== */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{stats.active}</div>
-          <div className={styles.statLabel}>Active</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{stats.trial}</div>
-          <div className={styles.statLabel}>Trial</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{stats.grace}</div>
-          <div className={styles.statLabel}>Expiring Soon</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statValue}>{formatCurrency(paymentStats.totalSpent, "KES")}</div>
-          <div className={styles.statLabel}>Total Spent</div>
-        </div>
-      </div>
-
-      {/* ===== PAYMENT STATUS ===== */}
-      <div className={styles.paymentStatusCard}>
-        <div className={styles.paymentStatusHeader}>
-          <Wallet size={18} />
-          <span>Payment Status</span>
-        </div>
-        <div className={styles.paymentStatusGrid}>
-          <div className={styles.paymentStatusItem}>
-            <span className={styles.paymentStatusLabel}>Current Balance</span>
-            <span className={styles.paymentStatusValue}>
-              {formatCurrency(0, "KES")}
+      {/* ===== SUMMARY BAR ===== */}
+      {hasAnything && summary && (
+        <div className={styles.summaryBar}>
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>Next due</span>
+            <span className={styles.summaryValue}>
+              {formatDate(summary.nextDueAt)}
             </span>
           </div>
-          <div className={styles.paymentStatusItem}>
-            <span className={styles.paymentStatusLabel}>Last Payment</span>
-            <span className={styles.paymentStatusValue}>
-              {paymentStats.lastPayment ? formatCurrency(paymentStats.lastPayment.amount, paymentStats.lastPayment.currency) : "—"}
+          <div className={styles.summaryDivider} />
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>Active products</span>
+            <span className={styles.summaryValue}>
+              {summary.activeProductCount}
             </span>
           </div>
-          <div className={styles.paymentStatusItem}>
-            <span className={styles.paymentStatusLabel}>Last Payment Date</span>
-            <span className={styles.paymentStatusValue}>
-              {paymentStats.lastPayment ? formatDate(paymentStats.lastPayment.paidAt) : "—"}
+          <div className={styles.summaryDivider} />
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>Outstanding</span>
+            <span
+              className={`${styles.summaryValue} ${
+                summary.outstanding > 0 ? styles.summaryWarn : ''
+              }`}
+            >
+              {formatMoney(summary.outstanding, currency)}
             </span>
           </div>
-          <div className={styles.paymentStatusItem}>
-            <span className={styles.paymentStatusLabel}>Next Payment</span>
-            <span className={styles.paymentStatusValue}>
-              {paymentStats.nextPayment > 0 ? formatCurrency(paymentStats.nextPayment, "KES") : "—"}
+          <div className={styles.summaryDivider} />
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>Pending payments</span>
+            <span
+              className={`${styles.summaryValue} ${
+                summary.pendingPaymentCount > 0 ? styles.summaryWarn : ''
+              }`}
+            >
+              {summary.pendingPaymentCount}
             </span>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ===== SUBSCRIPTIONS ===== */}
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>
-          <Package size={18} />
-          Your Products
-        </h2>
-        <span className={styles.sectionCount}>{stats.total}</span>
-      </div>
-
-      {/* Search */}
-      <div className={styles.searchWrap}>
-        <Search size={16} className={styles.searchIcon} />
-        <input
-          type="text"
-          className={styles.searchInput}
-          placeholder="Search products..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      {filteredSubscriptions.length === 0 ? (
+      {/* ===== EMPTY ===== */}
+      {!hasAnything && (
         <div className={styles.emptyState}>
-          <Package size={48} className={styles.emptyIcon} />
-          <h3>No active subscriptions</h3>
-          <p>Browse the marketplace to activate products for your organization.</p>
+          <CreditCard size={40} className={styles.emptyIcon} />
+          <h3>No products yet</h3>
+          <p>
+            Once you activate a product in the Marketplace, it will show up
+            here.
+          </p>
           <button
-            className={styles.primaryButton}
-            onClick={() => router.push("/dashboard/marketplace")}
+            type="button"
+            className={styles.primaryBtn}
+            onClick={() => router.push('/dashboard/marketplace')}
           >
-            <Plus size={16} />
             Browse Marketplace
+            <ArrowRight size={14} />
           </button>
         </div>
-      ) : (
-        <div className={styles.subscriptionGrid}>
-          {filteredSubscriptions.map((sub) => {
-            const product = productMap.get(sub.productKey);
-            const isRenewingProduct = renewing === sub.productKey;
+      )}
 
-            return (
-              <SubscriptionCard
-                key={sub.id}
-                subscription={sub}
-                product={product}
-                onViewDetails={(s) => {
-                  setSelectedSubscription(s);
-                  setShowDetailModal(true);
-                }}
-                onCancel={(s) => {
-                  setSelectedSubscription(s);
-                  setShowCancelModal(true);
-                }}
-                onRenew={handleRenew}
-                onManage={(productKey) => router.push(`/kx/${productKey}`)}
-                isRenewing={isRenewingProduct}
-                formatCurrency={formatCurrency}
-                formatDate={formatDate}
-              />
-            );
-          })}
+      {/* ===== PRODUCTS ===== */}
+      {hasAnything && (
+        <div className={styles.productStack}>
+          {products.map((product) => (
+            <ProductBillingCard
+              key={product.productKey}
+              product={product}
+              isOpen={openProduct === product.productKey}
+              activeTab={
+                openProduct === product.productKey ? openTab : 'instructions'
+              }
+              onToggle={() => {
+                if (openProduct === product.productKey) {
+                  setOpenProduct(null);
+                } else {
+                  setOpenProduct(product.productKey);
+                  setOpenTab('instructions');
+                }
+              }}
+              onTabChange={setOpenTab}
+              onOpenProduct={handleOpenProduct}
+              onNotify={handleNotify}
+            />
+          ))}
         </div>
       )}
 
-      {/* ===== DETAIL MODAL ===== */}
-      {showDetailModal && selectedSubscription && (
-        <div className={styles.modalOverlay} onClick={() => setShowDetailModal(false)}>
-          <div className={styles.modalLarge} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>
-                <Package size={20} />
-                Subscription Details
-              </h2>
-              <button className={styles.modalClose} onClick={() => setShowDetailModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
+      {/* ===== NOTIFY PAYMENT MODAL ===== */}
+      {notifyProduct && (
+        <NotifyPaymentModal
+          product={notifyProduct}
+          currency={currency}
+          organizationId={billing.organization.id}
+          onClose={() => setNotifyProduct(null)}
+          onSuccess={async (msg) => {
+            setNotifyProduct(null);
+            setToast({ type: 'success', message: msg });
+            await loadBilling();
+            await loadSuiteContext(billing.organization.id);
+          }}
+          onError={(msg) => setToast({ type: 'error', message: msg })}
+        />
+      )}
+    </div>
+  );
+}
 
-            <div className={styles.subscriptionDetailContent}>
-              <div className={styles.detailSection}>
-                <h3>Product Information</h3>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Product</span>
-                  <span className={styles.detailValue}>
-                    {productMap.get(selectedSubscription.productKey)?.name ||
-                      selectedSubscription.productKey}
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Plan</span>
-                  <span className={styles.detailValue}>
-                    {selectedSubscription.plan?.name || selectedSubscription.plan?.key || "Plan"}
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Status</span>
-                  <span className={styles.detailValue}>
-                    <StatusBadge status={selectedSubscription.status} />
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Amount</span>
-                  <span className={styles.detailValue}>
-                    {formatCurrency(
-                      selectedSubscription.plan?.price || 0,
-                      selectedSubscription.plan?.currency || "KES"
-                    )}
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Billing Cycle</span>
-                  <span className={styles.detailValue}>
-                    {selectedSubscription.plan?.interval?.toLowerCase() || "monthly"}
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Start Date</span>
-                  <span className={styles.detailValue}>
-                    {formatDate(selectedSubscription.currentPeriodStart)}
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>End Date</span>
-                  <span className={styles.detailValue}>
-                    {formatDate(selectedSubscription.currentPeriodEnd)}
-                  </span>
-                </div>
-                {selectedSubscription.trialEnd && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Trial Ends</span>
-                    <span className={styles.detailValue}>
-                      {formatDate(selectedSubscription.trialEnd)}
-                    </span>
-                  </div>
-                )}
+// ============================================================
+// PRODUCT BILLING CARD
+// ============================================================
+
+function ProductBillingCard({
+  product,
+  isOpen,
+  activeTab,
+  onToggle,
+  onTabChange,
+  onOpenProduct,
+  onNotify,
+}: {
+  product: BillingProduct;
+  isOpen: boolean;
+  activeTab: 'instructions' | 'history';
+  onToggle: () => void;
+  onTabChange: (tab: 'instructions' | 'history') => void;
+  onOpenProduct: (key: string) => void;
+  onNotify: (product: BillingProduct) => void;
+}) {
+  const { tone, label } = toneFromStatus(product.status);
+
+  const cardClass = {
+    active: styles.productCardActive,
+    trial: styles.productCardTrial,
+    grace: styles.productCardGrace,
+    expired: styles.productCardExpired,
+    cancelled: styles.productCardExpired,
+    suspended: styles.productCardExpired,
+  }[tone];
+
+  return (
+    <article className={`${styles.productCard} ${cardClass}`}>
+      {/* === HEAD === */}
+      <div className={styles.productHead}>
+        <div className={styles.productHeadLeft}>
+          <div className={styles.productIcon}>
+            {product.productName.charAt(0).toUpperCase()}
+          </div>
+          <div className={styles.productHeadText}>
+            <h3 className={styles.productName}>{product.productName}</h3>
+            <div className={styles.productPlanLine}>
+              {product.plan.name} Plan ·{' '}
+              {product.plan.price > 0
+                ? `${formatMoney(product.plan.price, product.plan.currency)} / ${product.plan.interval.toLowerCase()}`
+                : 'Custom pricing'}
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.productHeadRight}>
+          <StatusPill
+            tone={tone}
+            label={label}
+            days={product.remainingDays}
+          />
+        </div>
+      </div>
+
+      {/* === PHASE === */}
+      <div className={styles.productPhase}>
+        <div className={styles.phaseRow}>
+          <span className={styles.phaseLabel}>
+            {product.status === 'TRIAL' ? 'Trial ends' : 'Renews on'}
+          </span>
+          <span className={styles.phaseValue}>
+            {formatDate(product.phaseEndsAt ?? product.currentPeriodEnd)}
+          </span>
+        </div>
+        {product.whatHappensNext?.body && (
+          <p className={styles.whatNext}>{product.whatHappensNext.body}</p>
+        )}
+      </div>
+
+      {/* === AMOUNT === */}
+      <div className={styles.productAmount}>
+        <div className={styles.amountRow}>
+          <span className={styles.amountLabel}>Amount due</span>
+          <span className={styles.amountValue}>
+            {product.amount.displayAmount}
+          </span>
+        </div>
+        <div className={styles.amountRow}>
+          <span className={styles.amountLabel}>Account number</span>
+          <span className={styles.amountValueMono}>
+            {product.amount.accountNumber}
+            <CopyButton value={product.amount.accountNumber} />
+          </span>
+        </div>
+      </div>
+
+      {/* === ACTIONS === */}
+      <div className={styles.productActions}>
+        <button
+          type="button"
+          className={styles.primaryBtn}
+          onClick={() => onNotify(product)}
+        >
+          <Send size={14} />
+          I&apos;ve paid
+        </button>
+
+        <button
+          type="button"
+          className={styles.secondaryBtn}
+          onClick={onToggle}
+          aria-expanded={isOpen}
+        >
+          {isOpen ? 'Hide details' : 'Payment details'}
+        </button>
+
+        <button
+          type="button"
+          className={styles.ghostBtn}
+          onClick={() => onOpenProduct(product.productKey)}
+        >
+          Open {product.productName}
+          <ExternalLink size={12} />
+        </button>
+      </div>
+
+      {/* === EXPANDED === */}
+      {isOpen && (
+        <div className={styles.expanded}>
+          <div className={styles.tabBar}>
+            <button
+              type="button"
+              className={`${styles.tab} ${
+                activeTab === 'instructions' ? styles.tabActive : ''
+              }`}
+              onClick={() => onTabChange('instructions')}
+            >
+              <Wallet size={13} />
+              Payment instructions
+            </button>
+            <button
+              type="button"
+              className={`${styles.tab} ${
+                activeTab === 'history' ? styles.tabActive : ''
+              }`}
+              onClick={() => onTabChange('history')}
+            >
+              <Receipt size={13} />
+              Payment history
+              {product.payments.length > 0 && (
+                <span className={styles.tabBadge}>
+                  {product.payments.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {activeTab === 'instructions' && (
+            <PaymentInstructionsPanel
+              instructions={product.paymentInstructions}
+              amount={product.amount}
+            />
+          )}
+
+          {activeTab === 'history' && (
+            <PaymentHistoryPanel
+              payments={product.payments}
+              currency={product.amount.currency}
+            />
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+// ============================================================
+// PAYMENT INSTRUCTIONS PANEL
+// ============================================================
+
+function PaymentInstructionsPanel({
+  instructions,
+  amount,
+}: {
+  instructions: PaymentInstructions;
+  amount: AmountInfo;
+}) {
+  const hasMpesa = instructions.paybill || instructions.tillNumber;
+  const hasBank = instructions.bankName && instructions.bankAccount;
+
+  return (
+    <div className={styles.panel}>
+      {/* Steps */}
+      {instructions.steps.length > 0 && (
+        <div className={styles.panelSection}>
+          <h4 className={styles.panelHeading}>How to pay</h4>
+          <ol className={styles.stepsList}>
+            {instructions.steps.map((step, i) => (
+              <li key={i} className={styles.stepItem}>
+                <span className={styles.stepNumber}>{i + 1}</span>
+                <span className={styles.stepText}>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* Channels */}
+      <div className={styles.panelGrid}>
+        {hasMpesa && (
+          <div className={styles.channelBox}>
+            <div className={styles.channelHead}>
+              <Wallet size={13} />
+              M-PESA
+            </div>
+            {instructions.paybill && (
+              <div className={styles.channelRow}>
+                <span className={styles.channelLabel}>Paybill</span>
+                <span className={styles.channelValue}>
+                  {instructions.paybill}
+                  <CopyButton value={instructions.paybill} />
+                </span>
               </div>
+            )}
+            {instructions.tillNumber && (
+              <div className={styles.channelRow}>
+                <span className={styles.channelLabel}>Till</span>
+                <span className={styles.channelValue}>
+                  {instructions.tillNumber}
+                  <CopyButton value={instructions.tillNumber} />
+                </span>
+              </div>
+            )}
+            {instructions.accountNumber && (
+              <div className={styles.channelRow}>
+                <span className={styles.channelLabel}>Account</span>
+                <span className={styles.channelValue}>
+                  {instructions.accountNumber}
+                  <CopyButton value={instructions.accountNumber} />
+                </span>
+              </div>
+            )}
+            {instructions.mpesaPhone && (
+              <div className={styles.channelRow}>
+                <span className={styles.channelLabel}>Send money</span>
+                <span className={styles.channelValue}>
+                  {instructions.mpesaPhone}
+                  <CopyButton value={instructions.mpesaPhone} />
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
-              {selectedSubscription.plan?.features &&
-                selectedSubscription.plan.features.length > 0 && (
-                  <div className={styles.detailSection}>
-                    <h3>Features</h3>
-                    <div className={styles.featuresList}>
-                      {selectedSubscription.plan.features.map((feature, index) => (
-                        <div key={index} className={styles.featureItem}>
-                          <CheckCircle size={14} className={styles.featureCheck} />
-                          {feature}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        {hasBank && (
+          <div className={styles.channelBox}>
+            <div className={styles.channelHead}>
+              <CreditCard size={13} />
+              Bank transfer
             </div>
+            <div className={styles.channelRow}>
+              <span className={styles.channelLabel}>Bank</span>
+              <span className={styles.channelValue}>
+                {instructions.bankName}
+              </span>
+            </div>
+            <div className={styles.channelRow}>
+              <span className={styles.channelLabel}>Account</span>
+              <span className={styles.channelValue}>
+                {instructions.bankAccount}
+                <CopyButton value={instructions.bankAccount!} />
+              </span>
+            </div>
+            {instructions.bankAccountName && (
+              <div className={styles.channelRow}>
+                <span className={styles.channelLabel}>Name</span>
+                <span className={styles.channelValue}>
+                  {instructions.bankAccountName}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.cancelButton}
-                onClick={() => setShowDetailModal(false)}
+      {/* Contact */}
+      {(instructions.contactEmail || instructions.contactPhone) && (
+        <div className={styles.panelSection}>
+          <h4 className={styles.panelHeading}>Send proof of payment</h4>
+          <div className={styles.contactRow}>
+            {instructions.contactEmail && (
+              <a
+                className={styles.contactChip}
+                href={`mailto:${instructions.contactEmail}`}
               >
-                Close
-              </button>
-              <button
-                className={styles.subscriptionActionPrimary}
-                onClick={() => {
-                  router.push(`/kx/${selectedSubscription.productKey}`);
-                  setShowDetailModal(false);
-                }}
+                {instructions.contactEmail}
+              </a>
+            )}
+            {instructions.contactPhone && (
+              <a
+                className={styles.contactChip}
+                href={`tel:${instructions.contactPhone}`}
               >
-                <ArrowRight size={14} />
-                Manage Product
-              </button>
-            </div>
+                {instructions.contactPhone}
+              </a>
+            )}
           </div>
         </div>
       )}
 
-      {/* ===== CANCEL MODAL ===== */}
-      {showCancelModal && selectedSubscription && (
-        <div className={styles.modalOverlay} onClick={() => setShowCancelModal(false)}>
-          <div className={`${styles.modal} ${styles.modalDanger}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>
-                <Ban size={20} />
-                Cancel Subscription
-              </h2>
-              <button className={styles.modalClose} onClick={() => setShowCancelModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className={styles.deleteContent}>
-              <div className={styles.deleteIcon}>
-                <AlertCircle size={48} />
-              </div>
-              <h3>Cancel {productMap.get(selectedSubscription.productKey)?.name || selectedSubscription.productKey}?</h3>
-              <p>
-                This will cancel your subscription and you will lose access to this product on{" "}
-                <strong>{formatDate(selectedSubscription.currentPeriodEnd)}</strong>.
-              </p>
-              <p className={styles.deleteWarning}>All data associated with this product will be archived.</p>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.cancelButton}
-                onClick={() => setShowCancelModal(false)}
-              >
-                Keep Subscription
-              </button>
-              <button
-                type="button"
-                className={styles.deleteButton}
-                onClick={() => handleCancelSubscription(selectedSubscription.id)}
-                disabled={cancelling}
-              >
-                {cancelling ? (
-                  <>
-                    <Loader2 size={16} className={styles.spinnerSmall} />
-                    Cancelling...
-                  </>
-                ) : (
-                  <>
-                    <Ban size={16} />
-                    Cancel Subscription
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+      {/* Alternatives */}
+      {instructions.alternatives.length > 0 && (
+        <div className={styles.panelSection}>
+          <h4 className={styles.panelHeading}>Alternatives</h4>
+          <ul className={styles.alternativesList}>
+            {instructions.alternatives.map((alt, i) => (
+              <li key={i} className={styles.alternativeItem}>
+                {alt}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
+
+      {amount.amountIsCustom && (
+        <p className={styles.customAmountNote}>
+          <Info size={12} />
+          Amount is custom for this product. Contact us to confirm before
+          paying.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// PAYMENT HISTORY PANEL
+// ============================================================
+
+function PaymentHistoryPanel({
+  payments,
+
+}: {
+  payments: Payment[];
+  currency: string;
+}) {
+  if (payments.length === 0) {
+    return (
+      <div className={styles.historyEmpty}>
+        <Receipt size={20} />
+        <p>No payments yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.panel}>
+      <ul className={styles.historyList}>
+        {payments.map((p) => {
+          const statusClass =
+            p.status === 'COMPLETED'
+              ? styles.payCompleted
+              : p.status === 'PENDING'
+              ? styles.payPending
+              : p.status === 'FAILED'
+              ? styles.payFailed
+              : styles.payRefunded;
+
+          return (
+            <li key={p.id} className={styles.historyItem}>
+              <div className={styles.historyTop}>
+                <span className={styles.historyAmount}>
+                  {formatMoney(p.amount, p.currency)}
+                </span>
+                <span className={`${styles.payStatus} ${statusClass}`}>
+                  {p.status}
+                </span>
+              </div>
+              <div className={styles.historyMeta}>
+                <span>{p.method}</span>
+                <span>·</span>
+                <span className={styles.historyRef}>{p.reference}</span>
+              </div>
+              <div className={styles.historyTime}>
+                {p.paidAt
+                  ? `Paid ${formatDateTime(p.paidAt)}`
+                  : `Submitted ${formatDateTime(p.createdAt)}`}
+              </div>
+              {p.notes && <div className={styles.historyNotes}>{p.notes}</div>}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ============================================================
+// NOTIFY PAYMENT MODAL
+// ============================================================
+
+function NotifyPaymentModal({
+  product,
+  currency,
+  organizationId,
+  onClose,
+  onSuccess,
+  onError,
+}: {
+  product: BillingProduct;
+  currency: string;
+  organizationId: string;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+  onError: (message: string) => void;
+}) {
+  const [amount, setAmount] = useState<string>(
+    product.amount.suggestedAmount !== null
+      ? String(product.amount.suggestedAmount)
+      : '',
+  );
+  const [method, setMethod] = useState<string>('MPESA');
+  const [reference, setReference] = useState('');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const canSubmit =
+    reference.trim().length > 0 && !submitting;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+
+    try {
+      const body: Record<string, unknown> = {
+        productKey: product.productKey,
+        method,
+        reference: reference.trim(),
+      };
+      const numericAmount = parseFloat(amount);
+      if (!Number.isNaN(numericAmount) && numericAmount > 0) {
+        body.amount = numericAmount;
+      }
+      if (notes.trim()) body.notes = notes.trim();
+
+      const res = await api.post(
+        `/api/v1/organizations/${organizationId}/billing/notify-payment`,
+        body,
+      );
+
+      const msg =
+        res.data?.message ??
+        'Payment notice received. KxByte will verify and activate within 24 hours.';
+      onSuccess(msg);
+    } catch (err: unknown) {
+      onError(getErrorMessage(err, 'Failed to submit payment notice.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-labelledby="notify-title"
+      >
+        <div className={styles.modalHeader}>
+          <h2 id="notify-title" className={styles.modalTitle}>
+            <Send size={16} />
+            Notify payment — {product.productName}
+          </h2>
+          <button className={styles.modalClose} onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={styles.modalBody}>
+          <p className={styles.modalHint}>
+            Enter the M-Pesa / bank transaction details. We&apos;;ll verify and
+            activate within 24 hours.
+          </p>
+
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Amount ({currency})</label>
+            <input
+              className={styles.formInput}
+              type="number"
+              inputMode="decimal"
+              placeholder={
+                product.amount.suggestedAmount !== null
+                  ? String(product.amount.suggestedAmount)
+                  : 'e.g. 699'
+              }
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Method</label>
+            <select
+              className={styles.formInput}
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+            >
+              <option value="MPESA">M-PESA</option>
+              <option value="BANK">Bank transfer</option>
+              <option value="CASH">Cash</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>
+              Transaction reference <span className={styles.required}>*</span>
+            </label>
+            <input
+              className={styles.formInput}
+              type="text"
+              placeholder="e.g. ABC123XYZ"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label className={styles.formLabel}>Notes (optional)</label>
+            <textarea
+              className={styles.formTextarea}
+              rows={3}
+              placeholder="Anything we should know?"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button
+            type="button"
+            className={styles.modalCancel}
+            onClick={onClose}
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={styles.modalPrimary}
+            onClick={submit}
+            disabled={!canSubmit}
+          >
+            {submitting ? (
+              <>
+                <RefreshCw size={14} className={styles.spin} />
+                Submitting…
+              </>
+            ) : (
+              <>
+                <Check size={14} />
+                Submit payment notice
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

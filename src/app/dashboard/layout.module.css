@@ -15,6 +15,10 @@
   --danger: #ef5350;
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
 
+  /* Universal page spacing — change here, applies everywhere */
+  --page-padding-x: 20px;
+  --page-padding-y: 20px;
+
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -45,7 +49,7 @@
 
   .content {
     flex: 1;
-    padding: 0;
+    padding: var(--page-padding-y) var(--page-padding-x);
     overflow-y: auto;
   }
 
@@ -81,8 +85,12 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .contentWrap {
@@ -119,9 +127,13 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner { animation-duration: 1.6s; }
+  .spinner {
+    animation-duration: 1.6s;
+  }
 }

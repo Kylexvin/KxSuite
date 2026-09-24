@@ -1,0 +1,43 @@
+/* src/app/dashboard/<route>/page.module.css */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerIcon {
+  color: var(--accent-glow, #ff8c42);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin: 0;
+  color: var(--text, #eceef2);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-muted, #a3a5b0);
+  margin: 0;
+}
+
+.placeholder {
+  margin-top: 12px;
+  padding: 40px 24px;
+  border: 1px dashed var(--border-strong, rgba(255, 255, 255, 0.14));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--text-faint, #62636e);
+  font-size: 13px;
+  text-align: center;
+}

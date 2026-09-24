@@ -5,6 +5,7 @@
 import {
   createContext,
   useContext,
+  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -97,6 +98,12 @@ type AuthContextType = {
   branches: Branch[];
   activeBranch: Branch | null;
   suiteContext: SuiteContext | null;
+  /**
+   * True while a fresh /auth/me/dashboard is in flight for the currently
+   * selected org. Consumers (PermissionsContext, dashboard) should treat
+   * suiteContext as stale while this is true.
+   */
+  contextLoading: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ hasOrganizations: boolean }>;
   logout: () => void;
@@ -131,6 +138,22 @@ function safeLocalStorageGet<T>(key: string, defaultValue: T): T {
   }
 }
 
+// ---------------------------------------------------------------- helpers
+
+/**
+ * Wildcard-aware permission check. Handles:
+ *   - exact match: "members.view" matches "members.view"
+ *   - top-level wildcard: "*" matches everything
+ *   - prefix wildcard: "members.*" matches "members.view"
+ */
+function matchesPermission(permissions: string[], key: string): boolean {
+  return permissions.some((p) => {
+    if (p === "*") return true;
+    if (p.endsWith(".*")) return key.startsWith(p.slice(0, -1));
+    return p === key;
+  });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   // ---- State: initialized synchronously from localStorage ----
   const [user, setUser] = useState<User | null>(() =>
@@ -161,6 +184,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     safeLocalStorageGet<SuiteContext | null>("suiteContext", null)
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
+
+  // Tracks the in-flight dashboard request so a rapid org switch can cancel
+  // the previous one before firing a new fetch. Without this, a slow Org A
+  // response can land after Org B's and overwrite the correct data.
+  const contextRequestRef = useRef<AbortController | null>(null);
 
   // ============================================================
   // LOGIN — does NOT touch org loading, lets caller navigate
@@ -255,6 +284,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ============================================================
 
   const logout = () => {
+    // Cancel any in-flight context load so it can't repopulate state
+    // after we've cleared everything.
+    contextRequestRef.current?.abort();
+    contextRequestRef.current = null;
+
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
@@ -264,6 +298,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBranches([]);
     setActiveBranchState(null);
     setSuiteContext(null);
+    setContextLoading(false);
+
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -280,32 +316,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ============================================================
 
   const loadSuiteContext = async (organizationId: string): Promise<SuiteContext> => {
-    const response = await api.get<SuiteContext>(
-      `/api/v1/auth/me/dashboard?organizationId=${organizationId}`
-    );
-    const context = response.data;
+    // Cancel any previous in-flight request before starting a new one.
+    contextRequestRef.current?.abort();
+    const controller = new AbortController();
+    contextRequestRef.current = controller;
 
-    setSuiteContext(context);
-    localStorage.setItem("suiteContext", JSON.stringify(context));
+    setContextLoading(true);
 
-    setActiveOrganizationDetail(context.organization);
-    localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
+    try {
+      const response = await api.get<SuiteContext>(
+        `/api/v1/auth/me/dashboard?organizationId=${organizationId}`,
+        { signal: controller.signal }
+      );
 
-    setBranches(context.branches);
-    localStorage.setItem("branches", JSON.stringify(context.branches));
+      if (controller.signal.aborted) {
+        // A newer request superseded this one — discard without touching state.
+        return response.data;
+      }
 
-    if (context.branches.length > 0) {
-      const stillValid =
-        activeBranch && context.branches.some((b) => b.id === activeBranch.id);
-      const branchToSet = stillValid ? activeBranch : context.branches[0];
-      setActiveBranchState(branchToSet);
-      localStorage.setItem("activeBranch", JSON.stringify(branchToSet));
-    } else {
-      setActiveBranchState(null);
-      localStorage.removeItem("activeBranch");
+      const context = response.data;
+
+      setSuiteContext(context);
+      localStorage.setItem("suiteContext", JSON.stringify(context));
+
+      setActiveOrganizationDetail(context.organization);
+      localStorage.setItem("activeOrganizationDetail", JSON.stringify(context.organization));
+
+      setBranches(context.branches);
+      localStorage.setItem("branches", JSON.stringify(context.branches));
+
+      // Branch reset: keep the current branch if it still exists in the new
+      // org's branch list, otherwise fall back to the first available.
+      setActiveBranchState((current) => {
+        if (context.branches.length === 0) {
+          localStorage.removeItem("activeBranch");
+          return null;
+        }
+        const stillValid =
+          current && context.branches.some((b) => b.id === current.id);
+        const branchToSet = stillValid ? current! : context.branches[0];
+        localStorage.setItem("activeBranch", JSON.stringify(branchToSet));
+        return branchToSet;
+      });
+
+      return context;
+    } catch (err) {
+      // Abort throws an axios CanceledError; swallow it so a rapid org
+      // switch doesn't surface a spurious error.
+      if (axios.isCancel(err) || (err as { name?: string })?.name === "CanceledError") {
+        // Re-return whatever's in state — the newer request will set the real value.
+        return suiteContext as SuiteContext;
+      }
+      throw err;
+    } finally {
+      // Only clear the loading flag if we're still the active request.
+      if (contextRequestRef.current === controller) {
+        setContextLoading(false);
+        contextRequestRef.current = null;
+      }
     }
-
-    return context;
   };
 
   // ============================================================
@@ -396,8 +465,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // PERMISSIONS
   // ============================================================
 
+  /**
+   * Wildcard-aware permission check. Prefer `usePermissions().hasPermission`
+   * for new code; this exists for legacy callers.
+   */
   const hasPermission = (permission: string): boolean => {
-    return suiteContext?.permissions.includes(permission) ?? false;
+    const perms = suiteContext?.permissions ?? [];
+    return matchesPermission(perms, permission);
   };
 
   const isAuthenticated = !!user && !!accessToken;
@@ -418,6 +492,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         branches,
         activeBranch,
         suiteContext,
+        contextLoading,
         isLoading,
         login,
         logout,

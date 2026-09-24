@@ -5,36 +5,10 @@
   flex-direction: column;
   gap: 16px;
   width: auto;
-  margin: 20px;
-}
-
-/* ===== LOADING ===== */
-.loadingState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  gap: 12px;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.spinner {
-  width: 28px;
-  height: 28px;
-  border: 2.5px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* ============================================================
-   TOP ROW: Org Header + AI
+   TOP ROW — Org header only
    ============================================================ */
 .topRow {
   display: grid;
@@ -42,24 +16,8 @@
   gap: 12px;
 }
 
-/* When AI is hidden, org header stretches full width */
 .topRowNoAI .orgHeader {
   grid-column: 1 / -1;
-}
-
-@media (min-width: 768px) {
-  .topRow {
-    grid-template-columns: 1fr 280px;
-  }
-  .topRowNoAI {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (min-width: 1024px) {
-  .topRow {
-    grid-template-columns: 1fr 320px;
-  }
 }
 
 /* ============================================================
@@ -74,7 +32,8 @@
   flex-direction: column;
   gap: 10px;
   height: 100%;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05),
+    3px 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .orgHeaderGrid {
@@ -149,457 +108,16 @@
 }
 
 /* ============================================================
-   ORG STATS STRIP
+   PLATFORM-ONLY NOTICE
    ============================================================ */
-.orgStatsStrip {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-
-.orgStatItem {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2px 4px;
-  min-width: 40px;
-}
-
-.orgStatValue {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.orgStatLabel {
-  font-size: 8px;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin-top: 1px;
-}
-
-.orgStatDivider {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  flex-shrink: 0;
-}
-
-/* ============================================================
-   AI CARD
-   ============================================================ */
-.aiCard {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 120px;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
-}
-
-.aiCardDesktop {
-  min-height: 140px;
-}
-
-.aiCardMobile {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 1000;
-  border-radius: 0;
-  padding: 16px;
-  background: var(--panel);
-  border: none;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.aiMobileClose {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: none;
-  border: none;
+.notice {
+  font-size: 13px;
   color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-}
-
-.aiHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  flex-shrink: 0;
-}
-
-.aiHeaderLeft {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.aiIcon {
-  color: var(--accent);
-}
-
-.aiTitle {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.aiBadge {
-  font-size: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  background: rgba(255, 106, 43, 0.15);
-  color: var(--accent);
-  padding: 1px 6px;
-  border-radius: 6px;
-}
-
-.aiConversation {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 4px 0;
-  min-height: 50px;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-.aiCardMobile .aiConversation {
-  max-height: 60vh;
-  min-height: 100px;
-}
-
-.aiAssistantMsg {
-  background: var(--raised);
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  color: var(--text);
-  max-width: 90%;
-  align-self: flex-start;
-  line-height: 1.4;
-}
-
-.aiUserMsg {
-  background: rgba(255, 106, 43, 0.12);
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  color: var(--text);
-  max-width: 85%;
-  align-self: flex-end;
-  line-height: 1.4;
-}
-
-.aiTyping {
-  display: flex;
-  gap: 3px;
-  padding: 6px 10px;
-  align-self: flex-start;
-}
-
-.aiTyping span {
-  width: 5px;
-  height: 5px;
-  background: var(--text-faint);
-  border-radius: 50%;
-  animation: bounce 1.2s infinite;
-}
-
-.aiTyping span:nth-child(2) { animation-delay: 0.2s; }
-.aiTyping span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-5px); }
-}
-
-.aiInputWrap {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
-  flex-shrink: 0;
-}
-
-.aiInputWrap input {
-  flex: 1;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  background: var(--raised);
-  border-radius: 6px;
-  font-size: 11px;
-  color: var(--text);
-  outline: none;
-}
-
-.aiInputWrap input::placeholder {
-  color: var(--text-faint);
-  font-size: 10px;
-}
-
-.aiInputWrap input:focus {
-  border-color: var(--accent);
-}
-
-.aiInputWrap button {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  border: none;
-  background: var(--accent);
-  color: #17181d;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-
-.aiInputWrap button:hover:not(:disabled) {
-  background: var(--accent-glow);
-}
-
-.aiInputWrap button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* ============================================================
-   AI FAB - MOBILE ONLY
-   ============================================================ */
-.aiFab {
-  display: none;
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #17181d;
-  border: none;
-  box-shadow: 0 4px 16px rgba(255, 106, 43, 0.4);
-  cursor: pointer;
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s;
-}
-
-.aiFab:hover {
-  transform: scale(1.05);
-}
-
-.aiFab:active {
-  transform: scale(0.95);
-}
-
-@media (max-width: 767px) {
-  .aiFab {
-    display: flex;
-  }
-}
-
-@media (max-width: 480px) {
-  .aiFab {
-    width: 46px;
-    height: 46px;
-    bottom: 16px;
-    right: 16px;
-  }
-  .aiFab svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-/* ============================================================
-   AI MOBILE OVERLAY
-   ============================================================ */
-.aiMobileOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  background: rgba(0, 0, 0, 0.6);
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* ============================================================
-   TWO COLUMN
-   ============================================================ */
-.twoCol {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-@media (min-width: 640px) {
-  .twoCol {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.chartCard {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
-}
-
-.chartHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.chartTitle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.chartMeta {
-  font-size: 9px;
-  color: var(--text-faint);
-}
-
-.chartBody {
-  min-height: 70px;
-  height: 80px;
-}
-
-@media (min-width: 768px) {
-  .chartBody {
-    height: 100px;
-  }
-}
-
-.chartEmpty {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-faint);
-  gap: 4px;
-  min-height: 60px;
-}
-
-.chartEmpty p {
-  font-size: 10px;
   margin: 0;
-}
-
-.chartEmpty svg {
-  opacity: 0.4;
-}
-
-/* ============================================================
-   PIE CHART
-   ============================================================ */
-.pieContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-@media (min-width: 400px) {
-  .pieContainer {
-    flex-direction: row;
-    justify-content: center;
-    gap: 16px;
-  }
-}
-
-.pieChart {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pieCenter {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-
-.pieCenterValue {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.pieCenterLabel {
-  font-size: 7px;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.pieLegend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  justify-content: center;
-}
-
-.legendRow {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-.legendDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.legendValue {
-  font-weight: 500;
-  color: var(--text);
-  font-size: 10px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.015);
 }
 
 /* ============================================================
@@ -636,6 +154,21 @@
   border-radius: 10px;
 }
 
+/* --- Subsection header (Your Products / Available Soon) --- */
+.subsectionHeader {
+  display: flex;
+  align-items: center;
+  margin: 12px 0 8px;
+}
+
+.subsectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a8b96;
+}
+
 .productsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -661,7 +194,8 @@
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05),
+    3px 3px 8px rgba(0, 0, 0, 0.4);
   transition: all 0.15s ease;
 }
 
@@ -720,10 +254,35 @@
   margin-top: 1px;
 }
 
-.badgeActive { background: rgba(76, 175, 130, 0.15); color: #4caf82; }
-.badgeTrial { background: rgba(255, 140, 66, 0.15); color: #ff8c42; }
-.badgeExpired { background: rgba(239, 83, 80, 0.15); color: #ef5350; }
-.badgeAvailable { background: rgba(98, 99, 110, 0.15); color: #62636e; }
+.badgeActive {
+  background: rgba(76, 175, 130, 0.15);
+  color: #4caf82;
+}
+
+.badgeTrial {
+  background: rgba(255, 140, 66, 0.15);
+  color: #ff8c42;
+}
+
+.badgeExpired {
+  background: rgba(239, 83, 80, 0.15);
+  color: #ef5350;
+}
+
+.badgeAvailable {
+  background: rgba(98, 99, 110, 0.15);
+  color: #62636e;
+}
+
+.badgeInactive {
+  background: rgba(239, 83, 80, 0.15);
+  color: #ef5350;
+}
+
+.badgeComingSoon {
+  background: rgba(255, 140, 66, 0.15);
+  color: #ff8c42;
+}
 
 .productCardCTA {
   display: flex;
@@ -750,21 +309,58 @@
 }
 
 /* ============================================================
-   BOTTOM ROW: Activity + Subscription
+   COMING SOON PRODUCTS
    ============================================================ */
-.bottomRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+.productCardPlaceholder {
+  background: var(--raised);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transition: all 0.15s ease;
 }
 
-/* Activity takes full width when subscription card is hidden */
-.activityCardFull {
-  grid-column: 1 / -1;
+.productCardPlaceholder:hover {
+  opacity: 0.7;
+  border-color: var(--border-strong);
+}
+
+.productCardIconPlaceholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.productCardCTADisabled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 4px 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 9px;
+  font-weight: 500;
+  cursor: not-allowed;
 }
 
 /* ============================================================
-   BOTTOM ROW: Activity + Subscription
+   BOTTOM ROW — Activity
    ============================================================ */
 .bottomRow {
   display: grid;
@@ -870,166 +466,315 @@
   padding: 20px 0;
   font-size: 11px;
 }
+
 /* ============================================================
-   SUBSCRIPTION CARD
+   TWO COLUMN (Activity chart wrapper)
    ============================================================ */
-.subscriptionCard {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
-.billingCard {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
-  width: 100%;
-}
-
-@media (max-width: 768px) {
-  .subscriptionCard {
-    min-width: unset;
-    max-width: unset;
+@media (min-width: 640px) {
+  .twoCol {
+    grid-template-columns: 1fr;
   }
 }
 
-.billingCard {
+/* ============================================================
+   CHART CARD
+   ============================================================ */
+.chartCard {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px 18px;
+  padding: 14px 16px;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05),
+    3px 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.chartTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.chartMeta {
+  font-size: 9px;
+  color: var(--text-faint);
+}
+
+.chartBody {
+  min-height: 70px;
+  height: 80px;
+}
+
+@media (min-width: 768px) {
+  .chartBody {
+    height: 100px;
+  }
+}
+
+.chartEmpty {
   height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.4);
-}
-
-.billingHeader {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.billingProduct {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.billingStatus {
-  font-size: 10px;
-  font-weight: 500;
-  padding: 2px 10px;
-  border-radius: 10px;
-}
-
-.badgeActive {
-  background: rgba(76, 175, 130, 0.15);
-  color: #4caf82;
-}
-
-.badgeInactive {
-  background: rgba(239, 83, 80, 0.15);
-  color: #ef5350;
-}
-
-.billingDetails {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.billingRow {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.billingRow span:last-child {
-  color: var(--text);
-  font-weight: 500;
-}
-
-.billingEmpty {
+  justify-content: center;
   color: var(--text-faint);
-  font-size: 12px;
+  gap: 4px;
+  min-height: 60px;
+}
+
+.chartEmpty p {
+  font-size: 10px;
   margin: 0;
 }
 
-.billingCTA {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100%;
-  padding: 6px 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-top: auto;
-}
-
-.billingCTA:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+.chartEmpty svg {
+  opacity: 0.4;
 }
 
 /* ============================================================
-   RESPONSIVE: BOTTOM ROW & ACTIVITY
+   SKELETON LOADING
    ============================================================ */
-@media (max-width: 768px) {
-  .bottomRow {
-    grid-template-columns: 1fr;
-  }
 
-  .subscriptionCard {
-    min-width: unset;
-    max-width: unset;
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* Shimmer sweep */
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    background: none;
+  }
+}
+
+/* --- Shape primitives --- */
+.skeletonAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.skeletonTitle {
+  width: 140px;
+  height: 16px;
+  border-radius: 6px;
+}
+
+.skeletonStat {
+  width: 44px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.skeletonLabel {
+  width: 90px;
+  height: 12px;
+  border-radius: 6px;
+}
+
+.skeletonSubLabel {
+  width: 100px;
+  height: 10px;
+  border-radius: 6px;
+}
+
+.skeletonMeta {
+  width: 70px;
+  height: 10px;
+  border-radius: 6px;
+}
+
+.skeletonPill {
+  width: 24px;
+  height: 12px;
+  border-radius: 10px;
+}
+
+.skeletonChart {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+}
+
+.skeletonLine {
+  width: 80%;
+  height: 10px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.skeletonLineShort {
+  width: 55%;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.skeletonBadge {
+  width: 42px;
+  height: 12px;
+  border-radius: 8px;
+}
+
+.skeletonProductIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.skeletonCTA {
+  width: 100%;
+  height: 22px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.skeletonActivityIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+/* --- Management section --- */
+.skeletonSection {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .skeletonGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .skeletonGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.skeletonCard {
+  width: 100%;
+  height: 72px;
+  border-radius: 8px;
+}
+
+/* --- Responsive tweaks --- */
+@media (min-width: 768px) {
+  .skeletonAvatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .skeletonChart {
+    height: 100px;
+  }
+
+  .skeletonTitle {
+    width: 180px;
+    height: 18px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .skeletonAvatar {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .skeletonAvatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .skeletonTitle {
+    width: 110px;
+    height: 13px;
+  }
+
+  .skeletonProductIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .skeletonCTA {
+    height: 18px;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 @media (max-width: 640px) {
   .activityGrid {
     grid-template-columns: 1fr;
   }
 }
 
-/* ============================================================
-   SCROLLBAR
-   ============================================================ */
-.aiConversation::-webkit-scrollbar {
-  width: 3px;
-}
-
-.aiConversation::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.aiConversation::-webkit-scrollbar-thumb {
-  background: var(--text-faint);
-  border-radius: 4px;
-}
-
-/* ============================================================
-   RESPONSIVE: REST
-   ============================================================ */
 @media (max-width: 480px) {
   .page {
     gap: 10px;
@@ -1063,22 +808,6 @@
 
   .headerStatDivider {
     height: 16px;
-  }
-
-  .orgStatValue {
-    font-size: 13px;
-  }
-
-  .orgStatLabel {
-    font-size: 7px;
-  }
-
-  .orgStatDivider {
-    height: 16px;
-  }
-
-  .orgStatsStrip {
-    padding-top: 8px;
   }
 
   .productsGrid {
@@ -1118,29 +847,8 @@
     font-size: 9px;
   }
 
-  .chartBody {
-    height: 60px;
-  }
-
-  .chartCard {
-    padding: 10px 12px;
-  }
-
-  .twoCol {
-    gap: 8px;
-  }
-
   .bottomRow {
     gap: 8px;
-  }
-
-  .aiCardMobile {
-    padding: 12px;
-  }
-
-  .aiConversation {
-    min-height: 60px;
-    max-height: 40vh;
   }
 }
 
@@ -1188,18 +896,6 @@
     font-size: 15px;
   }
 
-  .orgStatValue {
-    font-size: 17px;
-  }
-
-  .orgStatLabel {
-    font-size: 9px;
-  }
-
-  .chartBody {
-    height: 100px;
-  }
-
   .activityText {
     font-size: 11px;
   }
@@ -1240,68 +936,4 @@
   .headerStatValue {
     font-size: 17px;
   }
-
-  .orgStatValue {
-    font-size: 19px;
-  }
-
-  .orgStatLabel {
-    font-size: 10px;
-  }
-}
-
-/* ============================================================
-   COMING SOON PRODUCTS
-   ============================================================ */
-.productCardPlaceholder {
-  background: var(--raised);
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  opacity: 0.5;
-  cursor: not-allowed;
-  transition: all 0.15s ease;
-}
-
-.productCardPlaceholder:hover {
-  opacity: 0.7;
-  border-color: var(--border-strong);
-}
-
-.productCardIconPlaceholder {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-faint);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.badgeComingSoon {
-  background: rgba(255, 140, 66, 0.15);
-  color: #ff8c42;
-}
-
-.productCardCTADisabled {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100%;
-  margin-top: 8px;
-  padding: 4px 0;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-faint);
-  font-size: 9px;
-  font-weight: 500;
-  cursor: not-allowed;
 }
