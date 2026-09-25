@@ -1,24 +1,25 @@
-"use client";
+// app/dashboard/profile/page.tsx
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/axios";
-import { AxiosError } from "axios"; // Import AxiosError
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/axios';
+import { AxiosError } from 'axios';
 import {
-  User,
+  User as UserIcon,
   Mail,
   Lock,
   LogOut,
   Smartphone,
   Monitor,
-
+  Shield,
   Check,
   Loader2,
   Eye,
   EyeOff,
-
-} from "lucide-react";
-import styles from "./page.module.css";
+} from 'lucide-react';
+import styles from './page.module.css';
 
 // ============================================================
 // TYPES
@@ -33,39 +34,19 @@ type Session = {
   isRevoked: boolean;
 };
 
-
-
-// ============================================================
-// API ERROR TYPE
-// ============================================================
-
 type ApiErrorResponse = {
   message?: string;
   error?: string;
   [key: string]: unknown;
 };
 
-// ============================================================
-// HELPER: Get error message from unknown error
-// ============================================================
-
 function getErrorMessage(error: unknown, fallback: string): string {
-  // Handle Axios errors
   if (error instanceof AxiosError) {
     const data = error.response?.data as ApiErrorResponse;
     return data?.message || data?.error || fallback;
   }
-  
-  // Handle standard errors
-  if (error instanceof Error) {
-    return error.message;
-  }
-  
-  // Handle string errors
-  if (typeof error === 'string') {
-    return error;
-  }
-  
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
   return fallback;
 }
 
@@ -73,7 +54,15 @@ function getErrorMessage(error: unknown, fallback: string): string {
 // TOAST
 // ============================================================
 
-function Toast({ type, message, onClose }: { type: "success" | "error" | "info"; message: string; onClose: () => void }) {
+function Toast({
+  type,
+  message,
+  onClose,
+}: {
+  type: 'success' | 'error' | 'info';
+  message: string;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const timer = setTimeout(onClose, 4000);
     return () => clearTimeout(timer);
@@ -82,70 +71,152 @@ function Toast({ type, message, onClose }: { type: "success" | "error" | "info";
   return (
     <div className={`${styles.toast} ${styles[`toast${type.charAt(0).toUpperCase() + type.slice(1)}`]}`}>
       <span>{message}</span>
-      <button className={styles.toastClose} onClick={onClose}>×</button>
+      <button className={styles.toastClose} onClick={onClose}>
+        ×
+      </button>
     </div>
   );
 }
 
 // ============================================================
-// MAIN PAGE
+// SKELETON
+// ============================================================
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={`${styles.skeleton} ${className ?? ''}`} />;
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className={styles.page} aria-busy="true" aria-live="polite">
+      <span className={styles.srOnly}>Loading profile…</span>
+
+      <div className={styles.header}>
+        <SkeletonBlock className={styles.skeletonAvatar} />
+        <div style={{ flex: 1 }}>
+          <SkeletonBlock className={styles.skeletonTitle} />
+          <SkeletonBlock className={styles.skeletonSubtitle} />
+          <SkeletonBlock className={styles.skeletonBadges} />
+        </div>
+      </div>
+
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={`c-${i}`} className={styles.card}>
+          <div className={styles.cardHeader}>
+            <SkeletonBlock className={styles.skeletonCardTitle} />
+          </div>
+          <SkeletonBlock className={styles.skeletonRow} />
+          <SkeletonBlock className={styles.skeletonRow} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function getDeviceIcon(userAgent: string | null) {
+  if (!userAgent) return <Monitor size={16} />;
+  const ua = userAgent.toLowerCase();
+  if (ua.includes('mobile') || ua.includes('android') || ua.includes('ios')) {
+    return <Smartphone size={16} />;
+  }
+  return <Monitor size={16} />;
+}
+
+function formatSessionDate(date: string): string {
+  const d = new Date(date);
+  const now = new Date();
+  const diffMin = Math.floor((now.getTime() - d.getTime()) / (1000 * 60));
+
+  if (diffMin < 1) return 'Active now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffMin < 1440) return `${Math.floor(diffMin / 60)}h ago`;
+  return d.toLocaleDateString('en-KE', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatMemberSince(date: string | undefined): string {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('en-KE', {
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function shortenUserAgent(ua: string | null): string {
+  if (!ua) return 'Unknown device';
+  // Best-effort parse. Falls back to raw UA if nothing matches.
+  const browser =
+    ua.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[1] ?? 'Browser';
+  const os =
+    ua.match(/\(([^)]+)\)/)?.[1]?.split(';')[0]?.trim() ?? 'Unknown OS';
+  return `${browser} · ${os}`;
+}
+
+// ============================================================
+// MAIN
 // ============================================================
 
 export default function ProfilePage() {
- 
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
 
-  // Profile form
   const [profileData, setProfileData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
+    firstName: '',
+    lastName: '',
+    email: '',
   });
 
-  // Password form
   const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
+
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // ============================================================
-  // FETCH DATA
+  // FETCH
   // ============================================================
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
-
       setLoading(true);
       try {
-        // Get user profile
-        const meRes = await api.get("/api/v1/auth/me");
-        const userData = meRes.data;
+        const [meRes, sessionsRes] = await Promise.all([
+          api.get('/api/v1/auth/me'),
+          api.get('/api/v1/auth/sessions'),
+        ]);
         setProfileData({
-          firstName: userData.firstName || "",
-          lastName: userData.lastName || "",
-          email: userData.email || "",
+          firstName: meRes.data.firstName || '',
+          lastName: meRes.data.lastName || '',
+          email: meRes.data.email || '',
         });
-
-        // Get sessions
-        const sessionsRes = await api.get("/api/v1/auth/sessions");
         setSessions(sessionsRes.data.sessions || []);
       } catch (err) {
-        console.error("Failed to load profile:", err);
-        setToast({ type: "error", message: "Failed to load profile data" });
+        console.error('Failed to load profile:', err);
+        setToast({ type: 'error', message: 'Failed to load profile' });
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [user]);
 
@@ -155,126 +226,110 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
+    if (savingProfile) return;
+    setSavingProfile(true);
     try {
-      await api.patch("/api/v1/auth/me", {
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
+      await api.patch('/api/v1/auth/me', {
+        firstName: profileData.firstName.trim(),
+        lastName: profileData.lastName.trim(),
       });
-      setToast({ type: "success", message: "Profile updated successfully" });
-      // Refresh user context
-      await api.get("/api/v1/auth/me");
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to update profile");
+      await refreshUser?.();
+      setToast({ type: 'success', message: 'Profile updated' });
+    } catch (err) {
       setToast({
-        type: "error",
-        message,
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to update profile'),
       });
     } finally {
-      setSaving(false);
+      setSavingProfile(false);
     }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingPassword) return;
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setToast({ type: "error", message: "New passwords do not match" });
+      setToast({ type: 'error', message: 'New passwords do not match' });
       return;
     }
-
     if (passwordData.newPassword.length < 8) {
-      setToast({ type: "error", message: "New password must be at least 8 characters" });
+      setToast({
+        type: 'error',
+        message: 'New password must be at least 8 characters',
+      });
       return;
     }
 
-    setSaving(true);
+    setSavingPassword(true);
     try {
-      await api.post("/api/v1/auth/change-password", {
+      await api.post('/api/v1/auth/change-password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      setToast({ type: "success", message: "Password changed successfully" });
-      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to change password");
-      setToast({ type: "error", message });
+      setToast({ type: 'success', message: 'Password updated' });
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (err) {
+      setToast({
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to change password'),
+      });
     } finally {
-      setSaving(false);
+      setSavingPassword(false);
     }
   };
 
   const handleLogoutSession = async (sessionId: string) => {
     try {
       await api.post(`/api/v1/auth/sessions/${sessionId}/revoke`);
-      setSessions(sessions.filter((s) => s.id !== sessionId));
-      setToast({ type: "success", message: "Session logged out" });
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to logout session");
-      setToast({ type: "error", message });
-    }
-  };
-
-  const handleLogoutAllDevices = async () => {
-    if (!confirm("Logout all other devices? You will be logged out everywhere except this device.")) return;
-
-    try {
-      await api.post("/api/v1/auth/logout-all");
-      setToast({ type: "success", message: "Logged out all devices" });
-      // Refresh sessions
-      const res = await api.get("/api/v1/auth/sessions");
-      setSessions(res.data.sessions || []);
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, "Failed to logout all devices");
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      setToast({ type: 'success', message: 'Session signed out' });
+    } catch (err) {
       setToast({
-        type: "error",
-        message,
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to sign out session'),
       });
     }
   };
 
-
-
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
-  const getDeviceIcon = (userAgent: string | null) => {
-    if (!userAgent) return <Monitor size={16} />;
-    const ua = userAgent.toLowerCase();
-    if (ua.includes("mobile") || ua.includes("android") || ua.includes("ios")) {
-      return <Smartphone size={16} />;
+  const handleLogoutAllDevices = async () => {
+    if (
+      !window.confirm(
+        'Sign out of all other devices? You will stay signed in on this one.',
+      )
+    ) {
+      return;
     }
-    return <Monitor size={16} />;
+    try {
+      await api.post('/api/v1/auth/logout-all');
+      const res = await api.get('/api/v1/auth/sessions');
+      setSessions(res.data.sessions || []);
+      setToast({ type: 'success', message: 'Signed out of all other devices' });
+    } catch (err) {
+      setToast({
+        type: 'error',
+        message: getErrorMessage(err, 'Failed to sign out'),
+      });
+    }
   };
-
-  const formatDate = (date: string) => {
-    const d = new Date(date);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60));
-
-    if (diff < 1) return "Now";
-    if (diff < 60) return `${diff}m ago`;
-    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-    return d.toLocaleDateString("en-KE", { day: "2-digit", month: "short", year: "numeric" });
-  };
-
-
 
   // ============================================================
   // LOADING
   // ============================================================
 
-  if (loading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.loadingState}>
-          <Loader2 size={32} className={styles.spinner} />
-          <p>Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <ProfileSkeleton />;
+
+  const initials =
+    `${profileData.firstName?.[0] ?? ''}${profileData.lastName?.[0] ?? ''}`.toUpperCase() ||
+    'U';
+
+  const memberSince = formatMemberSince(user?.createdAt);
+
+  const isVerified = user?.isEmailVerified;
 
   // ============================================================
   // RENDER
@@ -282,7 +337,6 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.page}>
-      {/* Toast */}
       {toast && (
         <Toast
           type={toast.type}
@@ -291,202 +345,282 @@ export default function ProfilePage() {
         />
       )}
 
-      {/* Header */}
+      {/* ===== HEADER ===== */}
       <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.avatarLarge}>
-            {profileData.firstName?.charAt(0) || "U"}
-          </div>
-          <div>
-            <h1 className={styles.title}>
-              {profileData.firstName} {profileData.lastName}
-            </h1>
-            <p className={styles.subtitle}>{profileData.email}</p>
-            <div className={styles.badgeRow}>
-              <span className={`${styles.badge} ${styles.badgeVerified}`}>
-                {user?.isEmailVerified ? "✓ Verified" : "Unverified"}
+        <div className={styles.avatarLarge}>{initials}</div>
+        <div className={styles.headerText}>
+          <h1 className={styles.title}>
+            {profileData.firstName} {profileData.lastName}
+          </h1>
+          <p className={styles.subtitle}>{profileData.email}</p>
+          <div className={styles.badgeRow}>
+            <span
+              className={`${styles.badge} ${
+                isVerified ? styles.badgeVerified : styles.badgePending
+              }`}
+            >
+              {isVerified ? <Check size={11} /> : null}
+              {isVerified ? 'Verified' : 'Unverified'}
+            </span>
+            {memberSince && (
+              <span className={styles.badgeNeutral}>
+                Member since {memberSince}
               </span>
-              <span className={`${styles.badge} ${user?.isActive ? styles.badgeActive : styles.badgeInactive}`}>
-                {user?.isActive ? "Active" : "Inactive"}
-              </span>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className={styles.grid}>
-        {/* ===== PROFILE FORM ===== */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <User size={18} />
-            <h2>Personal Information</h2>
+      {/* ===== ACCOUNT ===== */}
+      <section className={styles.card}>
+        <header className={styles.cardHeader}>
+          <span className={styles.cardIcon}>
+            <UserIcon size={16} />
+          </span>
+          <div className={styles.cardHeaderText}>
+            <h2 className={styles.cardTitle}>Account</h2>
+            <p className={styles.cardDesc}>
+              Your name appears across every product. Email is managed by your
+              organization.
+            </p>
+          </div>
+        </header>
+
+        <form onSubmit={handleUpdateProfile} className={styles.form}>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>First name</label>
+              <input
+                type="text"
+                value={profileData.firstName}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, firstName: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Last name</label>
+              <input
+                type="text"
+                value={profileData.lastName}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, lastName: e.target.value })
+                }
+                required
+              />
+            </div>
           </div>
 
-          <form onSubmit={handleUpdateProfile} className={styles.form}>
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label>First Name</label>
-                <input
-                  type="text"
-                  value={profileData.firstName}
-                  onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
-                  required
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Last Name</label>
-                <input
-                  type="text"
-                  value={profileData.lastName}
-                  onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
-                  required
-                />
-              </div>
+          <div className={styles.formGroup}>
+            <label>Email</label>
+            <div className={styles.readOnlyField}>
+              <Mail size={14} />
+              <span>{profileData.email}</span>
             </div>
+          </div>
 
-            <div className={styles.formGroup}>
-              <label>Email</label>
-              <div className={styles.emailDisplay}>
-                <Mail size={16} />
-                <span>{profileData.email}</span>               
-              </div>
-            </div>
-
-            <button type="submit" className={styles.submitButton} disabled={saving}>
-              {saving ? <Loader2 size={16} className={styles.spinning} /> : <Check size={16} />}
-              Save Changes
+          <div className={styles.formActions}>
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={savingProfile}
+            >
+              {savingProfile ? (
+                <Loader2 size={15} className={styles.spinning} />
+              ) : (
+                <Check size={15} />
+              )}
+              {savingProfile ? 'Saving…' : 'Save changes'}
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
+      </section>
 
-        {/* ===== CHANGE PASSWORD ===== */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <Lock size={18} />
-            <h2>Change Password</h2>
+      {/* ===== PASSWORD ===== */}
+      <section className={styles.card}>
+        <header className={styles.cardHeader}>
+          <span className={styles.cardIcon}>
+            <Lock size={16} />
+          </span>
+          <div className={styles.cardHeaderText}>
+            <h2 className={styles.cardTitle}>Password</h2>
+            <p className={styles.cardDesc}>
+              Use at least 8 characters. You&apos;ll stay signed in on this
+              device.
+            </p>
+          </div>
+        </header>
+
+        <form onSubmit={handleChangePassword} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label>Current password</label>
+            <div className={styles.passwordInput}>
+              <input
+                type={showCurrentPassword ? 'text' : 'password'}
+                value={passwordData.currentPassword}
+                onChange={(e) =>
+                  setPasswordData({
+                    ...passwordData,
+                    currentPassword: e.target.value,
+                  })
+                }
+                required
+              />
+              <button
+                type="button"
+                className={styles.eyeButton}
+                onClick={() => setShowCurrentPassword((v) => !v)}
+              >
+                {showCurrentPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
           </div>
 
-          <form onSubmit={handleChangePassword} className={styles.form}>
+          <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label>Current Password</label>
+              <label>New password</label>
               <div className={styles.passwordInput}>
                 <input
-                  type={showCurrentPassword ? "text" : "password"}
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.eyeButton}
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                >
-                  {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>New Password</label>
-              <div className={styles.passwordInput}>
-                <input
-                  type={showNewPassword ? "text" : "password"}
+                  type={showNewPassword ? 'text' : 'password'}
                   value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  required
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      newPassword: e.target.value,
+                    })
+                  }
                   minLength={8}
+                  required
                 />
                 <button
                   type="button"
                   className={styles.eyeButton}
-                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  onClick={() => setShowNewPassword((v) => !v)}
                 >
-                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
-
             <div className={styles.formGroup}>
-              <label>Confirm New Password</label>
+              <label>Confirm new password</label>
               <div className={styles.passwordInput}>
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
                   required
                 />
                 <button
                   type="button"
                   className={styles.eyeButton}
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onClick={() => setShowConfirmPassword((v) => !v)}
                 >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPassword ? (
+                    <EyeOff size={15} />
+                  ) : (
+                    <Eye size={15} />
+                  )}
                 </button>
               </div>
             </div>
-
-            <button type="submit" className={styles.submitButton} disabled={saving}>
-              {saving ? <Loader2 size={16} className={styles.spinning} /> : <Lock size={16} />}
-              Update Password
-            </button>
-          </form>
-        </div>
-
-        {/* ===== SESSIONS ===== */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <Monitor size={18} />
-            <h2>Active Sessions</h2>
-            <span className={styles.sessionCount}>{sessions.length}</span>
           </div>
 
-          {sessions.length === 0 ? (
-            <p className={styles.emptyText}>No active sessions</p>
-          ) : (
-            <div className={styles.sessionList}>
-              {sessions.map((session, index) => (
+          <div className={styles.formActions}>
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={savingPassword}
+            >
+              {savingPassword ? (
+                <Loader2 size={15} className={styles.spinning} />
+              ) : (
+                <Lock size={15} />
+              )}
+              {savingPassword ? 'Updating…' : 'Update password'}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* ===== SESSIONS ===== */}
+      <section className={styles.card}>
+        <header className={styles.cardHeader}>
+          <span className={styles.cardIcon}>
+            <Shield size={16} />
+          </span>
+          <div className={styles.cardHeaderText}>
+            <h2 className={styles.cardTitle}>
+              Active sessions
+              <span className={styles.sessionCount}>{sessions.length}</span>
+            </h2>
+            <p className={styles.cardDesc}>
+              Devices currently signed in to your account.
+            </p>
+          </div>
+        </header>
+
+        {sessions.length === 0 ? (
+          <p className={styles.emptyText}>No active sessions</p>
+        ) : (
+          <div className={styles.sessionList}>
+            {sessions.map((session, index) => {
+              const isCurrent = index === 0;
+              return (
                 <div
                   key={session.id}
-                  className={`${styles.sessionItem} ${index === 0 ? styles.sessionCurrent : ""}`}
+                  className={`${styles.sessionItem} ${
+                    isCurrent ? styles.sessionCurrent : ''
+                  }`}
                 >
                   <div className={styles.sessionIcon}>
                     {getDeviceIcon(session.userAgent)}
                   </div>
                   <div className={styles.sessionInfo}>
                     <div className={styles.sessionDevice}>
-                      {session.userAgent || "Unknown Device"}
-                      {index === 0 && <span className={styles.currentBadge}>Current</span>}
+                      {shortenUserAgent(session.userAgent)}
+                      {isCurrent && (
+                        <span className={styles.currentBadge}>This device</span>
+                      )}
                     </div>
                     <div className={styles.sessionMeta}>
-                      {session.ipAddress || "Unknown IP"} • {formatDate(session.createdAt)}
+                      {session.ipAddress || 'Unknown IP'} ·{' '}
+                      {formatSessionDate(session.createdAt)}
                     </div>
                   </div>
-                  {index !== 0 && (
+                  {!isCurrent && (
                     <button
                       className={styles.sessionLogout}
                       onClick={() => handleLogoutSession(session.id)}
+                      title="Sign out this device"
                     >
                       <LogOut size={14} />
                     </button>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
+        )}
 
-          {sessions.length > 1 && (
+        {sessions.length > 1 && (
+          <div className={styles.formActions}>
             <button
-              className={styles.logoutAllButton}
+              type="button"
+              className={styles.secondaryButton}
               onClick={handleLogoutAllDevices}
             >
               <LogOut size={14} />
-              Logout All Other Devices
+              Sign out of all other devices
             </button>
-          )}
-        </div>
-
-
-      </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

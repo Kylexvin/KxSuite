@@ -116,6 +116,8 @@ type AuthContextType = {
   hasPermission: (permission: string) => boolean;
   setActiveBranch: (branch: Branch | null) => void;
   switchBranch: (branchId: string | null) => Promise<void>;
+  /** Re-fetches /auth/me and updates user state + localStorage. */
+  refreshUser: () => Promise<User>;
   isAuthenticated: boolean;
 };
 
@@ -474,6 +476,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return matchesPermission(perms, permission);
   };
 
+  // ============================================================
+  // REFRESH USER
+  // ============================================================
+  // Re-fetches /auth/me and updates context + localStorage.
+  // Used after profile updates (name change, etc.) so the whole
+  // app sees the new values.
+
+  const refreshUser = async (): Promise<User> => {
+    const response = await api.get<User>("/api/v1/auth/me");
+    const fresh = response.data;
+
+    setUser(fresh);
+    localStorage.setItem("user", JSON.stringify(fresh));
+
+    return fresh;
+  };
+
   const isAuthenticated = !!user && !!accessToken;
 
   // ============================================================
@@ -505,6 +524,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasPermission,
         setActiveBranch,
         switchBranch,
+        refreshUser,
         isAuthenticated,
       }}
     >
