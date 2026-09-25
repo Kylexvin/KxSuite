@@ -32,6 +32,10 @@ export const STARTER_ROLES: readonly StarterRole[] = [
       PLATFORM.CUSTOMERS.CREATE,
       PLATFORM.CUSTOMERS.UPDATE,
       'settings.view',
+      // Support — branch-scoped manager tier
+      'support.tickets.view',
+      'support.tickets.create',
+      'support.tickets.manage',
       // KxTill — broad but not wildcard
       'kxtill.sales.view',
       'kxtill.sales.create',
@@ -51,6 +55,8 @@ export const STARTER_ROLES: readonly StarterRole[] = [
     description: 'Point of sale access for daily work',
     permissionKeys: [
       PLATFORM.CUSTOMERS.VIEW,
+      'support.tickets.view',
+      'support.tickets.create',
       'kxtill.sales.view',
       'kxtill.sales.create',
       'kxtill.inventory.view',
