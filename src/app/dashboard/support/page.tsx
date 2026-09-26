@@ -23,6 +23,11 @@ import {
   Clock,
   Tag,
   Filter,
+  BookOpen,
+  ExternalLink,
+  Inbox,
+  ChevronDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import styles from './page.module.css';
 
@@ -77,11 +82,23 @@ type TicketDetail = TicketListItem & {
   messages: TicketMessage[];
 };
 
+type Guide = {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  productKey: string | null;
+  url: string | null;
+  updatedAt: string;
+};
+
 type ApiErrorResponse = {
   message?: string;
   error?: string;
   [key: string]: unknown;
 };
+
+type SortOrder = 'recent' | 'oldest' | 'priority';
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof AxiosError) {
@@ -127,6 +144,20 @@ function userName(u: TicketUser | null | undefined): string {
   return `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email;
 }
 
+function initials(u: TicketUser | null | undefined): string {
+  if (!u) return '?';
+  const f = u.firstName?.[0] ?? '';
+  const l = u.lastName?.[0] ?? '';
+  return (f + l || u.email[0] || '?').toUpperCase();
+}
+
+const PRIORITY_WEIGHT: Record<TicketPriority, number> = {
+  URGENT: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
 // ============================================================
 // TOAST
 // ============================================================
@@ -168,10 +199,10 @@ function SkeletonBlock({ className }: { className?: string }) {
   return <div className={`${styles.skeleton} ${className ?? ''}`} />;
 }
 
-function ListSkeleton() {
+function PageSkeleton() {
   return (
     <div className={styles.page} aria-busy="true" aria-live="polite">
-      <span className={styles.srOnly}>Loading support tickets…</span>
+      <span className={styles.srOnly}>Loading support…</span>
 
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -184,20 +215,23 @@ function ListSkeleton() {
         <SkeletonBlock className={styles.skeletonButton} />
       </div>
 
-      <div className={styles.filtersBar}>
-        <SkeletonBlock className={styles.skeletonSearch} />
-        <SkeletonBlock className={styles.skeletonFilter} />
-        <SkeletonBlock className={styles.skeletonFilter} />
-      </div>
-
-      <div className={styles.ticketList}>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={`t-${i}`} className={styles.skeletonTicket}>
-            <SkeletonBlock className={styles.skeletonLine} />
-            <SkeletonBlock className={styles.skeletonLineShort} />
-            <SkeletonBlock className={styles.skeletonLineTiny} />
+      <div className={styles.inboxGrid}>
+        <div className={styles.listPane}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={`t-${i}`} className={styles.skeletonThread}>
+              <SkeletonBlock className={styles.skeletonAvatarSm} />
+              <div style={{ flex: 1 }}>
+                <SkeletonBlock className={styles.skeletonLine} />
+                <SkeletonBlock className={styles.skeletonLineShort} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className={styles.detailPane}>
+          <div className={styles.detailEmpty}>
+            <Loader2 size={20} className={styles.spinning} />
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
@@ -229,9 +263,21 @@ function PriorityPill({ priority }: { priority: TicketPriority }) {
   return <span className={`${styles.pill} ${cfg.className}`}>{cfg.label}</span>;
 }
 
+function PriorityDot({ priority }: { priority: TicketPriority }) {
+  const map: Record<TicketPriority, string> = {
+    LOW: styles.dotLow,
+    MEDIUM: styles.dotMedium,
+    HIGH: styles.dotHigh,
+    URGENT: styles.dotUrgent,
+  };
+  return <span className={`${styles.priorityDot} ${map[priority]}`} />;
+}
+
 // ============================================================
 // MAIN PAGE
 // ============================================================
+
+type Tab = 'tickets' | 'guides';
 
 export default function SupportPage() {
   const { activeOrganization, suiteContext } = useAuth();
@@ -239,10 +285,15 @@ export default function SupportPage() {
 
   const activeOrgId = activeOrganization?.id;
 
+  const [activeTab, setActiveTab] = useState<Tab>('tickets');
+
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<TicketDetail | null>(
+    null,
+  );
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(
     null,
   );
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -252,10 +303,16 @@ export default function SupportPage() {
     message: string;
   } | null>(null);
 
+  // Guides
+  const [guides, setGuides] = useState<Guide[]>([]);
+  const [guidesLoaded, setGuidesLoaded] = useState(false);
+  const [loadingGuides, setLoadingGuides] = useState(false);
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | TicketStatus>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('recent');
 
   const canViewAll = isOwner || hasPermission('support.tickets.view');
   const canCreate = isOwner || hasPermission('support.tickets.create');
@@ -313,11 +370,48 @@ export default function SupportPage() {
   }, [activeOrgId, isReady, loadList]);
 
   // ============================================================
+  // FETCH GUIDES (lazy — first time the Guides tab is opened)
+  // ============================================================
+
+  const loadGuides = useCallback(async () => {
+    if (!activeOrgId || guidesLoaded) return;
+    setLoadingGuides(true);
+    try {
+      const res = await api.get(
+        `/api/v1/organizations/${activeOrgId}/support/guides`,
+      );
+      if (!mountedRef.current) return;
+      setGuides(res.data.guides ?? []);
+      setGuidesLoaded(true);
+    } catch (err) {
+      if (mountedRef.current) {
+        setToast({
+          type: 'error',
+          message: getErrorMessage(err, 'Failed to load guides'),
+        });
+      }
+    } finally {
+      if (mountedRef.current) setLoadingGuides(false);
+    }
+  }, [activeOrgId, guidesLoaded]);
+
+  const handleTabChange = useCallback(
+    (nextTab: Tab) => {
+      setActiveTab(nextTab);
+      if (nextTab === 'guides') {
+        void loadGuides();
+      }
+    },
+    [loadGuides],
+  );
+
+  // ============================================================
   // FETCH DETAIL
   // ============================================================
 
   const openTicket = async (ticketId: string) => {
     if (!activeOrgId) return;
+    setSelectedTicketId(ticketId);
     setLoadingDetail(true);
     try {
       const res = await api.get(
@@ -349,13 +443,18 @@ export default function SupportPage() {
     }
   };
 
+  const closeDetail = () => {
+    setSelectedTicket(null);
+    setSelectedTicketId(null);
+  };
+
   // ============================================================
-  // FILTERED LIST
+  // FILTERED + SORTED LIST
   // ============================================================
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return tickets.filter((t) => {
+    const rows = tickets.filter((t) => {
       if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
       if (categoryFilter !== 'ALL' && t.category?.id !== categoryFilter)
         return false;
@@ -365,7 +464,28 @@ export default function SupportPage() {
         t.description.toLowerCase().includes(q)
       );
     });
-  }, [tickets, searchQuery, statusFilter, categoryFilter]);
+
+    const sorted = [...rows].sort((a, b) => {
+      if (sortOrder === 'priority') {
+        return PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority];
+      }
+      const aTime = new Date(a.updatedAt).getTime();
+      const bTime = new Date(b.updatedAt).getTime();
+      return sortOrder === 'oldest' ? aTime - bTime : bTime - aTime;
+    });
+
+    return sorted;
+  }, [tickets, searchQuery, statusFilter, categoryFilter, sortOrder]);
+
+  const stats = useMemo(() => {
+    return {
+      open: tickets.filter((t) => t.status === 'OPEN').length,
+      inProgress: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
+      resolved: tickets.filter(
+        (t) => t.status === 'RESOLVED' || t.status === 'CLOSED',
+      ).length,
+    };
+  }, [tickets]);
 
   // ============================================================
   // GATES
@@ -374,9 +494,6 @@ export default function SupportPage() {
   if (!isReady) return null;
 
   if (!canCreate && !canViewAll) {
-    // No permission to even see anything.
-    // In practice, every member has `support.tickets.create` by default
-    // via org defaults, but the guard is here for safety.
     return (
       <div className={styles.page}>
         <div className={styles.noAccess}>
@@ -391,33 +508,9 @@ export default function SupportPage() {
     );
   }
 
-  if (loading) return <ListSkeleton />;
+  if (loading) return <PageSkeleton />;
 
-  // ============================================================
-  // DETAIL VIEW
-  // ============================================================
-
-  if (selectedTicket) {
-    return (
-      <TicketDetailView
-        ticket={selectedTicket}
-        loading={loadingDetail}
-        canManage={canManage}
-        activeOrgId={activeOrgId!}
-        currentUserId={suiteContext?.user?.id}
-        onBack={() => setSelectedTicket(null)}
-        onRefresh={() => refreshDetail(selectedTicket.id)}
-        onRefreshList={loadList}
-        setToast={setToast}
-        toast={toast}
-        setToastNull={() => setToast(null)}
-      />
-    );
-  }
-
-  // ============================================================
-  // LIST VIEW
-  // ============================================================
+  const view: 'list' | 'detail' = selectedTicketId ? 'detail' : 'list';
 
   return (
     <div className={styles.page}>
@@ -444,12 +537,12 @@ export default function SupportPage() {
             </div>
             <p className={styles.headerSubtitle}>
               {isInboxView
-                ? 'Tickets from your team'
-                : 'Your support tickets'}
+                ? 'Tickets and guides for your team'
+                : 'Get help or browse guides'}
             </p>
           </div>
         </div>
-        {canCreate && !isInboxView && (
+        {canCreate && activeTab === 'tickets' && (
           <button
             className={styles.primaryButton}
             onClick={() => setShowCreate(true)}
@@ -460,121 +553,246 @@ export default function SupportPage() {
         )}
       </div>
 
-      {/* FILTERS */}
-      {tickets.length > 0 && (
-        <div className={styles.filtersBar}>
-          <div className={styles.searchWrap}>
-            <Search size={15} className={styles.searchIcon} />
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder="Search tickets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      {/* TABS */}
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${
+            activeTab === 'tickets' ? styles.tabActive : ''
+          }`}
+          onClick={() => handleTabChange('tickets')}
+        >
+          <Inbox size={14} />
+          Tickets
+          {tickets.length > 0 && (
+            <span className={styles.tabCount}>{tickets.length}</span>
+          )}
+        </button>
+        <button
+          className={`${styles.tab} ${
+            activeTab === 'guides' ? styles.tabActive : ''
+          }`}
+          onClick={() => handleTabChange('guides')}
+        >
+          <BookOpen size={14} />
+          Guides
+        </button>
+      </div>
+
+      {activeTab === 'tickets' && tickets.length > 0 && (
+        <div className={styles.statsRow}>
+          <div className={styles.statCard}>
+            <span className={`${styles.statDot} ${styles.dotOpen}`} />
+            <span className={styles.statValue}>{stats.open}</span>
+            <span className={styles.statLabel}>Open</span>
           </div>
-          <div className={styles.filterGroup}>
-            <select
-              className={styles.filterSelect}
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as typeof statusFilter)
-              }
-            >
-              <option value="ALL">All statuses</option>
-              <option value="OPEN">Open</option>
-              <option value="IN_PROGRESS">In progress</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="CLOSED">Closed</option>
-            </select>
-            <select
-              className={styles.filterSelect}
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <option value="ALL">All categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+          <div className={styles.statCard}>
+            <span className={`${styles.statDot} ${styles.dotProgress}`} />
+            <span className={styles.statValue}>{stats.inProgress}</span>
+            <span className={styles.statLabel}>In progress</span>
+          </div>
+          <div className={styles.statCard}>
+            <span className={`${styles.statDot} ${styles.dotResolved}`} />
+            <span className={styles.statValue}>{stats.resolved}</span>
+            <span className={styles.statLabel}>Resolved</span>
           </div>
         </div>
       )}
 
-      {/* LIST */}
-      {tickets.length === 0 ? (
-        <div className={styles.friendlyEmpty}>
-          <div className={styles.friendlyEmptyIcon}>
-            <LifeBuoy size={28} />
-          </div>
-          <h3>No tickets yet</h3>
-          <p>
-            {isInboxView
-              ? "When your team runs into an issue, it'll show up here."
-              : 'Something not working? Open a ticket and your organization owner will get back to you.'}
-          </p>
-          {!isInboxView && canCreate && (
-            <button
-              className={styles.primaryButton}
-              onClick={() => setShowCreate(true)}
-            >
-              <Plus size={16} />
-              Open a ticket
-            </button>
-          )}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className={styles.emptyState}>
-          <Filter size={32} className={styles.emptyIcon} />
-          <h3>No tickets match your filters</h3>
-          <p>Try adjusting the search or filters.</p>
-        </div>
-      ) : (
-        <div className={styles.ticketList}>
-          {filtered.map((t) => (
-            <button
-              key={t.id}
-              className={styles.ticketCard}
-              onClick={() => openTicket(t.id)}
-            >
-              <div className={styles.ticketCardTop}>
-                <div className={styles.ticketCardBadges}>
-                  <StatusPill status={t.status} />
-                  <PriorityPill priority={t.priority} />
-                  {t.productKey && (
-                    <span className={styles.productTag}>{t.productKey}</span>
-                  )}
-                </div>
-                <span className={styles.ticketTime}>
-                  <Clock size={11} />
-                  {formatRelative(t.createdAt)}
-                </span>
+      {/* TICKETS TAB */}
+      {activeTab === 'tickets' && (
+        <>
+          {tickets.length === 0 ? (
+            <div className={styles.friendlyEmpty}>
+              <div className={styles.friendlyEmptyIcon}>
+                <LifeBuoy size={28} />
               </div>
+              <h3>No tickets yet</h3>
+              <p>
+                {isInboxView
+                  ? "When your team runs into an issue, it'll show up here."
+                  : 'Something not working? Open a ticket and your organization owner will get back to you.'}
+              </p>
+              {!isInboxView && canCreate && (
+                <button
+                  className={styles.primaryButton}
+                  onClick={() => setShowCreate(true)}
+                >
+                  <Plus size={16} />
+                  Open a ticket
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className={styles.inboxGrid} data-view={view}>
+              {/* LIST PANE */}
+              <div className={styles.listPane}>
+                <div className={styles.filtersBar}>
+                  <div className={styles.searchWrap}>
+                    <Search size={15} className={styles.searchIcon} />
+                    <input
+                      type="text"
+                      className={styles.searchInput}
+                      placeholder="Search tickets..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.filterGroup}>
+                    <select
+                      className={styles.filterSelect}
+                      value={statusFilter}
+                      onChange={(e) =>
+                        setStatusFilter(e.target.value as typeof statusFilter)
+                      }
+                    >
+                      <option value="ALL">All statuses</option>
+                      <option value="OPEN">Open</option>
+                      <option value="IN_PROGRESS">In progress</option>
+                      <option value="RESOLVED">Resolved</option>
+                      <option value="CLOSED">Closed</option>
+                    </select>
+                    {categories.length > 0 && (
+                      <select
+                        className={styles.filterSelect}
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                      >
+                        <option value="ALL">All categories</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      title="Change sort order"
+                      onClick={() =>
+                        setSortOrder((prev) =>
+                          prev === 'recent'
+                            ? 'priority'
+                            : prev === 'priority'
+                              ? 'oldest'
+                              : 'recent',
+                        )
+                      }
+                    >
+                      <ArrowUpDown size={13} />
+                      {sortOrder === 'recent'
+                        ? 'Recent'
+                        : sortOrder === 'priority'
+                          ? 'Priority'
+                          : 'Oldest'}
+                    </button>
+                  </div>
+                </div>
 
-              <div className={styles.ticketTitle}>{t.title}</div>
-              <div className={styles.ticketDesc}>{t.description}</div>
-
-              <div className={styles.ticketMeta}>
-                <span className={styles.ticketMetaItem}>
-                  <Tag size={11} />
-                  {t.category?.name ?? 'Uncategorized'}
-                </span>
-                <span className={styles.ticketMetaItem}>
-                  <MessageSquare size={11} />
-                  {t._count?.messages ?? 0} message
-                  {(t._count?.messages ?? 0) === 1 ? '' : 's'}
-                </span>
-                {canViewAll && (
-                  <span className={styles.ticketMetaItem}>
-                    by {userName(t.user)}
-                  </span>
+                {filtered.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <Filter size={28} className={styles.emptyIcon} />
+                    <h3>No tickets match</h3>
+                    <p>Try adjusting the search or filters.</p>
+                  </div>
+                ) : (
+                  <div className={styles.threadList}>
+                    {filtered.map((t) => {
+                      const preview = t.description;
+                      const isActive = t.id === selectedTicketId;
+                      return (
+                        <button
+                          key={t.id}
+                          className={`${styles.threadItem} ${
+                            isActive ? styles.threadItemActive : ''
+                          }`}
+                          onClick={() => openTicket(t.id)}
+                        >
+                          <div className={styles.threadAvatar}>
+                            {initials(t.user)}
+                          </div>
+                          <div className={styles.threadMain}>
+                            <div className={styles.threadTop}>
+                              <span className={styles.threadName}>
+                                {canViewAll ? userName(t.user) : t.title}
+                              </span>
+                              <span className={styles.threadTime}>
+                                {formatRelative(t.updatedAt)}
+                              </span>
+                            </div>
+                            <div className={styles.threadTitleRow}>
+                              <PriorityDot priority={t.priority} />
+                              <span className={styles.threadTitle}>
+                                {canViewAll ? t.title : preview}
+                              </span>
+                            </div>
+                            {canViewAll && (
+                              <div className={styles.threadPreview}>
+                                {preview}
+                              </div>
+                            )}
+                            <div className={styles.threadMeta}>
+                              <StatusPill status={t.status} />
+                              <span className={styles.threadMetaItem}>
+                                <Tag size={10} />
+                                {t.category?.name ?? 'Uncategorized'}
+                              </span>
+                              <span className={styles.threadMetaItem}>
+                                <MessageSquare size={10} />
+                                {t._count?.messages ?? 0}
+                              </span>
+                              {t.productKey && (
+                                <span className={styles.productTag}>
+                                  {t.productKey}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            </button>
-          ))}
-        </div>
+
+              {/* DETAIL PANE */}
+              <div className={styles.detailPane}>
+                {selectedTicketId && selectedTicket ? (
+                  <ThreadPanel
+                    ticket={selectedTicket}
+                    loading={loadingDetail}
+                    canManage={canManage}
+                    activeOrgId={activeOrgId!}
+                    currentUserId={suiteContext?.user?.id}
+                    onBack={closeDetail}
+                    onRefresh={() => refreshDetail(selectedTicket.id)}
+                    onRefreshList={loadList}
+                    setToast={setToast}
+                  />
+                ) : selectedTicketId && loadingDetail ? (
+                  <div className={styles.detailEmpty}>
+                    <Loader2 size={22} className={styles.spinning} />
+                  </div>
+                ) : (
+                  <div className={styles.detailEmpty}>
+                    <MessageSquare size={30} />
+                    <h3>Select a ticket</h3>
+                    <p>Pick a conversation from the list to read and reply.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* GUIDES TAB */}
+      {activeTab === 'guides' && (
+        <GuidesPanel
+          guides={guides}
+          loading={loadingGuides}
+          products={suiteContext?.products ?? []}
+        />
       )}
 
       {/* CREATE MODAL */}
@@ -594,6 +812,150 @@ export default function SupportPage() {
           }}
           setToast={setToast}
         />
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// GUIDES PANEL
+// ============================================================
+
+function GuidesPanel({
+  guides,
+  loading,
+  products,
+}: {
+  guides: Guide[];
+  loading: boolean;
+  products: { key: string; name: string; isActive: boolean }[];
+}) {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('ALL');
+
+  const categories = useMemo(() => {
+    const set = new Set(guides.map((g) => g.category).filter(Boolean));
+    return Array.from(set);
+  }, [guides]);
+
+  const productName = (key: string | null) =>
+    products.find((p) => p.key === key)?.name ?? key;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return guides.filter((g) => {
+      if (category !== 'ALL' && g.category !== category) return false;
+      if (!q) return true;
+      return (
+        g.title.toLowerCase().includes(q) ||
+        g.summary.toLowerCase().includes(q)
+      );
+    });
+  }, [guides, query, category]);
+
+  if (loading) {
+    return (
+      <div className={styles.guidesGrid}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={`g-${i}`} className={styles.skeletonGuide}>
+            <SkeletonBlock className={styles.skeletonLine} />
+            <SkeletonBlock className={styles.skeletonLineShort} />
+            <SkeletonBlock className={styles.skeletonLineTiny} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (guides.length === 0) {
+    return (
+      <div className={styles.friendlyEmpty}>
+        <div className={styles.friendlyEmptyIcon}>
+          <BookOpen size={28} />
+        </div>
+        <h3>No guides yet</h3>
+        <p>Help articles and how-tos will show up here once published.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className={styles.filtersBar}>
+        <div className={styles.searchWrap}>
+          <Search size={15} className={styles.searchIcon} />
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search guides..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        {categories.length > 0 && (
+          <div className={styles.filterGroup}>
+            <select
+              className={styles.filterSelect}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="ALL">All topics</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className={styles.emptyState}>
+          <Filter size={28} className={styles.emptyIcon} />
+          <h3>No guides match</h3>
+          <p>Try a different search or topic.</p>
+        </div>
+      ) : (
+        <div className={styles.guidesGrid}>
+          {filtered.map((g) => {
+            const content = (
+              <>
+                <div className={styles.guideTop}>
+                  <span className={styles.guideCategory}>{g.category}</span>
+                  {g.url && <ExternalLink size={13} className={styles.guideLinkIcon} />}
+                </div>
+                <h3 className={styles.guideTitle}>{g.title}</h3>
+                <p className={styles.guideSummary}>{g.summary}</p>
+                <div className={styles.guideMeta}>
+                  {g.productKey && (
+                    <span className={styles.productTag}>
+                      {productName(g.productKey)}
+                    </span>
+                  )}
+                  <span className={styles.guideUpdated}>
+                    Updated {formatRelative(g.updatedAt)}
+                  </span>
+                </div>
+              </>
+            );
+            return g.url ? (
+              <a
+                key={g.id}
+                href={g.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.guideCard}
+              >
+                {content}
+              </a>
+            ) : (
+              <div key={g.id} className={styles.guideCard}>
+                {content}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -793,10 +1155,10 @@ function CreateTicketModal({
 }
 
 // ============================================================
-// TICKET DETAIL VIEW
+// THREAD PANEL (ticket conversation)
 // ============================================================
 
-function TicketDetailView({
+function ThreadPanel({
   ticket,
   loading,
   canManage,
@@ -806,8 +1168,6 @@ function TicketDetailView({
   onRefresh,
   onRefreshList,
   setToast,
-  toast,
-  setToastNull,
 }: {
   ticket: TicketDetail;
   loading: boolean;
@@ -818,13 +1178,16 @@ function TicketDetailView({
   onRefresh: () => void;
   onRefreshList: () => void;
   setToast: (t: { type: 'success' | 'error'; message: string } | null) => void;
-  toast: { type: 'success' | 'error'; message: string } | null;
-  setToastNull: () => void;
 }) {
   const [reply, setReply] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [sending, setSending] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const threadEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ block: 'end' });
+  }, [ticket.messages.length, loading]);
 
   const handleSend = async () => {
     if (!reply.trim() || reply.trim().length < 2) return;
@@ -893,41 +1256,31 @@ function TicketDetailView({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      {toast && (
-        <Toast type={toast.type} message={toast.message} onClose={setToastNull} />
-      )}
-
-      {/* BACK */}
-      <button className={styles.backButton} onClick={onBack}>
-        <ArrowLeft size={14} />
-        Back to tickets
-      </button>
-
+    <div className={styles.thread}>
       {/* HEADER */}
-      <div className={styles.detailHeader}>
-        <div className={styles.detailHeaderMain}>
-          <h1 className={styles.detailTitle}>{ticket.title}</h1>
-          <div className={styles.detailBadges}>
-            <StatusPill status={ticket.status} />
-            <PriorityPill priority={ticket.priority} />
-            {ticket.category && (
-              <span className={styles.categoryPill}>
-                <Tag size={11} />
-                {ticket.category.name}
-              </span>
-            )}
-            {ticket.productKey && (
-              <span className={styles.productTag}>{ticket.productKey}</span>
-            )}
-          </div>
+      <div className={styles.threadHeader}>
+        <button className={styles.backButton} onClick={onBack}>
+          <ArrowLeft size={14} />
+          <span className={styles.backButtonLabel}>Back</span>
+        </button>
+
+        <div className={styles.threadHeaderMain}>
+          <h2 className={styles.threadHeaderTitle}>{ticket.title}</h2>
           <div className={styles.detailMeta}>
             Opened by {userName(ticket.user)} · {formatAbsolute(ticket.createdAt)}
+            {ticket.category && ` · ${ticket.category.name}`}
           </div>
         </div>
 
-        {canManage && (
+        {canManage ? (
           <div className={styles.detailControls}>
             <select
               className={styles.detailSelect}
@@ -956,68 +1309,55 @@ function TicketDetailView({
               <option value="URGENT">Urgent</option>
             </select>
           </div>
+        ) : (
+          <div className={styles.detailBadges}>
+            <StatusPill status={ticket.status} />
+            <PriorityPill priority={ticket.priority} />
+          </div>
         )}
       </div>
 
-      {/* ORIGINAL DESCRIPTION */}
-      <div className={styles.originalMessage}>
-        <div className={styles.messageHeader}>
-          <span className={styles.messageAuthor}>
-            {userName(ticket.user)}
-          </span>
-          <span className={styles.messageTime}>
-            {formatAbsolute(ticket.createdAt)}
-          </span>
-        </div>
-        <div className={styles.messageBody}>{ticket.description}</div>
+      {/* CONVERSATION */}
+      <div className={styles.threadBody}>
+        {/* Original description, as the first bubble */}
+        <MessageBubble
+          author={userName(ticket.user)}
+          initials={initials(ticket.user)}
+          time={formatAbsolute(ticket.createdAt)}
+          body={ticket.description}
+          isMine={ticket.user.id === currentUserId}
+          isInternal={false}
+        />
+
+        {loading ? (
+          <div className={styles.detailLoading}>
+            <Loader2 size={18} className={styles.spinning} />
+            <span>Loading…</span>
+          </div>
+        ) : (
+          ticket.messages.map((m) => (
+            <MessageBubble
+              key={m.id}
+              author={userName(m.user)}
+              initials={initials(m.user)}
+              time={formatAbsolute(m.createdAt)}
+              body={m.message}
+              isMine={m.userId === currentUserId}
+              isInternal={m.isInternal}
+            />
+          ))
+        )}
+        <div ref={threadEndRef} />
       </div>
 
-      {/* THREAD */}
-      {loading ? (
-        <div className={styles.detailLoading}>
-          <Loader2 size={20} className={styles.spinning} />
-          <span>Loading…</span>
-        </div>
-      ) : ticket.messages.length === 0 ? (
-        <div className={styles.emptyThread}>
-          No replies yet.
-        </div>
-      ) : (
-        <div className={styles.thread}>
-          {ticket.messages.map((m) => {
-            const isMine = m.userId === currentUserId;
-            return (
-              <div
-                key={m.id}
-                className={`${styles.messageItem} ${
-                  isMine ? styles.messageMine : ''
-                } ${m.isInternal ? styles.messageInternal : ''}`}
-              >
-                <div className={styles.messageHeader}>
-                  <span className={styles.messageAuthor}>
-                    {userName(m.user)}
-                    {m.isInternal && (
-                      <span className={styles.internalTag}>Internal</span>
-                    )}
-                  </span>
-                  <span className={styles.messageTime}>
-                    {formatAbsolute(m.createdAt)}
-                  </span>
-                </div>
-                <div className={styles.messageBody}>{m.message}</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       {/* REPLY */}
-      {ticket.status !== 'CLOSED' && (
+      {ticket.status !== 'CLOSED' ? (
         <div className={styles.replyBox}>
           <textarea
             value={reply}
             onChange={(e) => setReply(e.target.value)}
-            placeholder="Write a reply…"
+            onKeyDown={handleKeyDown}
+            placeholder="Write a reply… (⌘/Ctrl + Enter to send)"
             rows={3}
             className={styles.replyInput}
           />
@@ -1046,15 +1386,57 @@ function TicketDetailView({
             </button>
           </div>
         </div>
-      )}
-
-      {ticket.status === 'CLOSED' && (
+      ) : (
         <div className={styles.closedBanner}>
           <AlertCircle size={14} />
           This ticket is closed. Reopen it from the status selector above if
           needed.
         </div>
       )}
+    </div>
+  );
+}
+
+function MessageBubble({
+  author,
+  initials: authorInitials,
+  time,
+  body,
+  isMine,
+  isInternal,
+}: {
+  author: string;
+  initials: string;
+  time: string;
+  body: string;
+  isMine: boolean;
+  isInternal: boolean;
+}) {
+  return (
+    <div
+      className={`${styles.messageRow} ${isMine ? styles.messageRowMine : ''}`}
+    >
+      <div
+        className={`${styles.avatarCircle} ${
+          isMine ? styles.avatarCircleMine : ''
+        }`}
+      >
+        {authorInitials}
+      </div>
+      <div
+        className={`${styles.messageBubble} ${
+          isMine ? styles.messageBubbleMine : ''
+        } ${isInternal ? styles.messageBubbleInternal : ''}`}
+      >
+        <div className={styles.messageHeader}>
+          <span className={styles.messageAuthor}>
+            {author}
+            {isInternal && <span className={styles.internalTag}>Internal</span>}
+          </span>
+          <span className={styles.messageTime}>{time}</span>
+        </div>
+        <div className={styles.messageBody}>{body}</div>
+      </div>
     </div>
   );
 }

@@ -40,6 +40,7 @@ export type OrganizationDetail = {
   slug: string;
   currency: string;
   timezone: string;
+  logo?: string | null;
 };
 
 export type Branch = {

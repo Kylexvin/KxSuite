@@ -172,8 +172,8 @@ function DashboardSkeleton() {
                   <SkeletonBlock className={styles.skeletonLine} />
                   <SkeletonBlock className={styles.skeletonLineShort} />
                 </div>
-                <SkeletonBlock className={styles.skeletonBadge} />
               </div>
+              <SkeletonBlock className={styles.skeletonBadge} />
               <SkeletonBlock className={styles.skeletonCTA} />
             </div>
           ))}
@@ -219,7 +219,12 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { activeOrganization, branches, suiteContext } = useAuth();
+  const {
+    activeOrganization,
+    activeOrganizationDetail,
+    branches,
+    suiteContext,
+  } = useAuth();
   const { permissions, isOwner, isReady, hasPermission } = usePermissions();
 
   const [loading, setLoading] = useState(true);
@@ -232,6 +237,15 @@ export default function DashboardPage() {
   const canViewSales = isOwner || hasPermission('kxtill.sales.view');
   const canViewMembers = isOwner || hasPermission('members.view');
   const currentUserId = suiteContext?.user?.id;
+
+  // ---- Org identity (name + logo) ----------------------------------
+  // Prefer the freshly-fetched detail object (per-org, carries `logo`),
+  // fall back to the login-time summary for the name.
+  const orgName =
+    activeOrganizationDetail?.name ??
+    activeOrganization?.name ??
+    'Organization';
+  const orgLogo = activeOrganizationDetail?.logo ?? null;
 
   const products = useMemo(
     () => suiteContext?.products ?? [],
@@ -426,11 +440,17 @@ export default function DashboardPage() {
           <div className={styles.orgHeaderGrid}>
             <div className={styles.orgHeaderMain}>
               <div className={styles.orgAvatar}>
-                {activeOrganization?.name?.charAt(0) || 'O'}
+                {orgLogo ? (
+                  <img
+                    src={orgLogo}
+                    alt={orgName}
+                    className={styles.orgLogo}
+                  />
+                ) : (
+                  orgName.charAt(0)
+                )}
               </div>
-              <h1 className={styles.orgHeaderName}>
-                {activeOrganization?.name || 'Organization'}
-              </h1>
+              <h1 className={styles.orgHeaderName}>{orgName}</h1>
             </div>
 
             <div className={styles.orgHeaderStats}>
@@ -577,8 +597,10 @@ export default function DashboardPage() {
                             {product.description}
                           </span>
                         </div>
-                        <ProductStatusBadge status={status} />
                       </div>
+
+                      <ProductStatusBadge status={status} />
+
                       <button
                         className={styles.productCardCTA}
                         onClick={() =>
@@ -618,8 +640,10 @@ export default function DashboardPage() {
                           {product.description}
                         </span>
                       </div>
-                      <ProductStatusBadge status="available" />
                     </div>
+
+                    <ProductStatusBadge status="available" />
+
                     <button
                       className={styles.productCardCTA}
                       onClick={() => router.push('/dashboard/marketplace')}
@@ -647,12 +671,14 @@ export default function DashboardPage() {
                           {product.description}
                         </span>
                       </div>
-                      <span
-                        className={`${styles.productBadge} ${styles.badgeComingSoon}`}
-                      >
-                        Coming Soon
-                      </span>
                     </div>
+
+                    <span
+                      className={`${styles.productBadge} ${styles.badgeComingSoon}`}
+                    >
+                      Coming Soon
+                    </span>
+
                     <div className={styles.productCardCTADisabled}>Coming Soon</div>
                   </div>
                 ))}

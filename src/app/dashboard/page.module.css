@@ -63,6 +63,15 @@
   font-weight: 700;
   flex-shrink: 0;
   box-shadow: 0 3px 10px rgba(255, 106, 43, 0.3);
+  overflow: hidden;
+}
+
+.orgLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
 }
 
 .orgHeaderName {
@@ -169,31 +178,40 @@
   color: #8a8b96;
 }
 
+/* --- Grid: 1 col on tiny, 2 on small, 3-4 on larger --- */
 .productsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 400px) {
+  .productsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 640px) {
   .productsGrid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .productsGrid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
+/* --- Card --- */
 .productCard {
   background: var(--raised);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
   box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.05),
     3px 3px 8px rgba(0, 0, 0, 0.4);
   transition: all 0.15s ease;
@@ -207,51 +225,59 @@
 .productCardTop {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
+  min-width: 0;
 }
 
 .productCardIcon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   background: rgba(255, 106, 43, 0.12);
   color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 11px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
 .productCardInfo {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .productCardName {
   display: block;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
+  line-height: 1.25;
 }
 
 .productCardDesc {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--text-muted);
+  line-height: 1.35;
 }
 
+/* Badge: sits below the icon+info row so it never squeezes the name */
 .productBadge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
+  gap: 4px;
+  padding: 3px 8px;
   border-radius: 8px;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 500;
   flex-shrink: 0;
-  margin-top: 1px;
+  align-self: flex-start;
+  margin-top: 2px;
 }
 
 .badgeActive {
@@ -284,22 +310,24 @@
   color: #ff8c42;
 }
 
+/* CTA: full-width, minimum 36px tap target */
 .productCardCTA {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
-  margin-top: 8px;
-  padding: 4px 0;
+  margin-top: 0;
+  padding: 9px 0;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 9px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
+  min-height: 36px;
 }
 
 .productCardCTA:hover {
@@ -308,16 +336,21 @@
   background: rgba(255, 106, 43, 0.05);
 }
 
+.productCardCTA:active {
+  transform: scale(0.98);
+}
+
 /* ============================================================
    COMING SOON PRODUCTS
    ============================================================ */
 .productCardPlaceholder {
   background: var(--raised);
   border: 1px dashed var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
   opacity: 0.5;
   cursor: not-allowed;
   transition: all 0.15s ease;
@@ -329,16 +362,16 @@
 }
 
 .productCardIconPlaceholder {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-faint);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 
@@ -346,17 +379,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
-  margin-top: 8px;
-  padding: 4px 0;
+  margin-top: 0;
+  padding: 9px 0;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-faint);
-  font-size: 9px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   cursor: not-allowed;
+  min-height: 36px;
 }
 
 /* ============================================================
@@ -667,16 +701,16 @@
 }
 
 .skeletonProductIcon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
 }
 
 .skeletonCTA {
   width: 100%;
-  height: 22px;
-  border-radius: 4px;
-  margin-top: 8px;
+  height: 36px;
+  border-radius: 8px;
+  margin-top: 0;
 }
 
 .skeletonActivityIcon {
@@ -757,12 +791,13 @@
   }
 
   .skeletonProductIcon {
-    width: 24px;
-    height: 24px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
   }
 
   .skeletonCTA {
-    height: 18px;
+    height: 36px;
   }
 }
 
@@ -810,39 +845,6 @@
     height: 16px;
   }
 
-  .productsGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-
-  .productCard {
-    padding: 8px 10px;
-  }
-
-  .productCardName {
-    font-size: 10px;
-  }
-
-  .productCardDesc {
-    font-size: 8px;
-  }
-
-  .productCardIcon {
-    width: 24px;
-    height: 24px;
-    font-size: 9px;
-  }
-
-  .productBadge {
-    font-size: 7px;
-    padding: 0 4px;
-  }
-
-  .productCardCTA {
-    font-size: 8px;
-    padding: 3px 0;
-  }
-
   .activityText {
     font-size: 9px;
   }
@@ -861,11 +863,6 @@
 
   .orgHeaderStats {
     justify-content: flex-start;
-  }
-
-  .productsGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
   }
 
   .page {
@@ -903,14 +900,6 @@
   .activityTime {
     font-size: 9px;
   }
-
-  .productCardName {
-    font-size: 12px;
-  }
-
-  .productCardDesc {
-    font-size: 10px;
-  }
 }
 
 @media (min-width: 1024px) {
@@ -935,5 +924,65 @@
 
   .headerStatValue {
     font-size: 17px;
+  }
+}
+
+/* ============================================================
+   MOBILE PRODUCT CARD TUNING
+   ============================================================ */
+@media (max-width: 480px) {
+  .productsRow {
+    padding: 12px;
+  }
+
+  .subsectionHeader {
+    margin: 10px 0 6px;
+  }
+
+  .subsectionTitle {
+    font-size: 10px;
+  }
+
+  .productCard,
+  .productCardPlaceholder {
+    padding: 12px;
+  }
+
+  .productCardIcon,
+  .productCardIconPlaceholder {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .productCardName {
+    font-size: 13px;
+  }
+
+  .productCardDesc {
+    font-size: 11px;
+  }
+
+  .productBadge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .productCardCTA,
+  .productCardCTADisabled {
+    font-size: 12px;
+    padding: 9px 0;
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 360px) {
+  .productCardName {
+    font-size: 12px;
+  }
+
+  .productCardDesc {
+    font-size: 10px;
   }
 }

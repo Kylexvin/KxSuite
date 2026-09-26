@@ -14,11 +14,13 @@
   --accent-glow: #ff8c42;
   --danger: #ef5350;
   --success: #4caf82;
+  --warn: #ffc107;
 
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   color: var(--text);
+  height: 100%;
 }
 
 /* ============================================================
@@ -89,7 +91,7 @@
 }
 
 /* ============================================================
-   PRIMARY BUTTON
+   PRIMARY / GENERIC BUTTONS
    ============================================================ */
 .primaryButton {
   display: inline-flex;
@@ -113,6 +115,94 @@
 }
 
 /* ============================================================
+   TABS
+   ============================================================ */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tabActive {
+  background: var(--raised-hi);
+  color: var(--text);
+  box-shadow: -2px -2px 4px rgba(255, 255, 255, 0.02),
+    2px 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.tabCount {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 106, 43, 0.15);
+  color: var(--accent-glow);
+}
+
+/* ============================================================
+   STATS ROW
+   ============================================================ */
+.statsRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 10px;
+}
+
+.statDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.dotOpen { background: #4caf82; }
+.dotProgress { background: #ffc107; }
+.dotResolved { background: #62636e; }
+
+.statValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ============================================================
    FILTERS
    ============================================================ */
 .filtersBar {
@@ -120,12 +210,15 @@
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
 }
 
 .searchWrap {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 160px;
 }
 
 .searchIcon {
@@ -161,20 +254,21 @@
 .filterGroup {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .filterSelect {
-  padding: 9px 32px 9px 12px;
+  padding: 9px 30px 9px 12px;
   border: 1px solid var(--border);
   background: var(--panel);
   border-radius: 10px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2362636e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 12px center;
+  background-position: right 11px center;
 }
 
 .filterSelect:focus {
@@ -182,93 +276,214 @@
   border-color: rgba(255, 106, 43, 0.4);
 }
 
-/* ============================================================
-   TICKET LIST
-   ============================================================ */
-.ticketList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.ticketCard {
+.sortButton:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/* ============================================================
+   INBOX GRID (list pane + detail pane)
+   ============================================================ */
+.inboxGrid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 14px;
+  min-height: 560px;
+  flex: 1;
+}
+
+.listPane {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
+  padding: 14px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.detailPane {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.detailEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-faint);
+  text-align: center;
+  padding: 40px;
+}
+
+.detailEmpty h3 {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.detailEmpty p {
+  font-size: 12px;
+  margin: 0;
+  max-width: 260px;
+}
+
+/* ============================================================
+   THREAD LIST (left pane rows)
+   ============================================================ */
+.threadList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+
+.threadItem {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 11px;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
   color: var(--text);
-  transition: all 0.15s ease;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02),
-    3px 3px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.12s ease;
 }
 
-.ticketCard:hover {
-  border-color: var(--border-strong);
-  transform: translateY(-1px);
+.threadItem:hover {
+  background: var(--raised);
 }
 
-.ticketCardTop {
+.threadItemActive {
+  background: rgba(255, 106, 43, 0.08);
+  border-color: rgba(255, 106, 43, 0.25);
+}
+
+.threadAvatar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.ticketCardBadges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.ticketTime {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 10px;
+  background: var(--raised-hi);
+  color: var(--text-muted);
   font-size: 11px;
+  font-weight: 700;
+}
+
+.threadMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.threadTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.threadName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threadTime {
+  font-size: 10px;
   color: var(--text-faint);
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
-.ticketTitle {
-  font-size: 14px;
+.threadTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.threadTitle {
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
-  line-height: 1.3;
-}
-
-.ticketDesc {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.ticketMeta {
+.threadPreview {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threadMeta {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-.ticketMetaItem {
+.threadMetaItem {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 3px;
+  font-size: 10px;
   color: var(--text-faint);
 }
 
+.priorityDot {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  border-radius: 50%;
+}
+
+.dotLow { background: #62636e; }
+.dotMedium { background: var(--accent-glow); }
+.dotHigh { background: #ff8c42; }
+.dotUrgent { background: #ef5350; }
+
 /* ============================================================
-   PILLS
+   PILLS (status / priority / category / product)
    ============================================================ */
 .pill {
   display: inline-flex;
@@ -399,10 +614,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 40px 16px;
   text-align: center;
   color: var(--text-faint);
-  gap: 8px;
+  gap: 6px;
 }
 
 .emptyIcon {
@@ -410,7 +625,7 @@
 }
 
 .emptyState h3 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   margin: 4px 0 0;
@@ -451,13 +666,29 @@
 }
 
 /* ============================================================
-   DETAIL VIEW
+   THREAD PANEL (right side — conversation)
    ============================================================ */
+.thread {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.threadHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
 .backButton {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -466,7 +697,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  align-self: flex-start;
+  flex-shrink: 0;
 }
 
 .backButton:hover {
@@ -474,44 +705,24 @@
   color: var(--text);
 }
 
-.detailHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  flex-wrap: wrap;
-  box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.02),
-    4px 4px 10px rgba(0, 0, 0, 0.4);
-}
-
-.detailHeaderMain {
+.threadHeaderMain {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
-.detailTitle {
-  font-size: 18px;
+.threadHeaderTitle {
+  font-size: 15px;
   font-weight: 700;
   color: var(--text);
   margin: 0;
-  line-height: 1.3;
-}
-
-.detailBadges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  line-height: 1.35;
 }
 
 .detailMeta {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-faint);
 }
 
@@ -521,18 +732,24 @@
   flex-shrink: 0;
 }
 
+.detailBadges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .detailSelect {
-  padding: 7px 28px 7px 10px;
+  padding: 7px 26px 7px 10px;
   border: 1px solid var(--border);
-  background: var(--panel);
+  background: var(--raised);
   border-radius: 8px;
   color: var(--text);
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2362636e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
+  background-position: right 9px center;
 }
 
 .detailSelect:focus {
@@ -541,55 +758,82 @@
 }
 
 /* ============================================================
-   MESSAGES
+   CONVERSATION BODY / BUBBLES
    ============================================================ */
-.originalMessage {
-  padding: 16px 18px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  border-left: 3px solid var(--accent);
-}
-
-.thread {
+.threadBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+.messageRow {
+  display: flex;
   gap: 10px;
+  align-items: flex-start;
+  max-width: 82%;
 }
 
-.messageItem {
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+.messageRowMine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+  max-width: 82%;
+}
+
+.avatarCircle {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: var(--raised-hi);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 2px;
 }
 
-.messageMine {
-  background: rgba(255, 106, 43, 0.04);
-  border-color: rgba(255, 106, 43, 0.2);
+.avatarCircleMine {
+  background: linear-gradient(135deg, var(--accent-glow), var(--accent));
+  color: #17181d;
 }
 
-.messageInternal {
-  background: rgba(255, 193, 7, 0.05);
+.messageBubble {
+  padding: 10px 13px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 14px 4px;
+  min-width: 0;
+}
+
+.messageBubbleMine {
+  background: rgba(255, 106, 43, 0.1);
+  border-color: rgba(255, 106, 43, 0.22);
+  border-radius: 14px 14px 4px 14px;
+}
+
+.messageBubbleInternal {
+  background: rgba(255, 193, 7, 0.06);
   border-color: rgba(255, 193, 7, 0.25);
-  border-left: 3px solid #ffc107;
 }
 
 .messageHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .messageAuthor {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-muted);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -607,24 +851,17 @@
 }
 
 .messageTime {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-faint);
+  white-space: nowrap;
 }
 
 .messageBody {
   font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.6;
+  color: var(--text);
+  line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.emptyThread {
-  padding: 24px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-faint);
-  font-style: italic;
 }
 
 .detailLoading {
@@ -645,9 +882,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border-top: 1px solid var(--border);
 }
 
 .replyInput {
@@ -662,7 +897,7 @@
   resize: vertical;
   outline: none;
   transition: border-color 0.15s;
-  min-height: 60px;
+  min-height: 56px;
 }
 
 .replyInput:focus {
@@ -699,10 +934,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
-  background: rgba(98, 99, 110, 0.1);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
   color: var(--text-faint);
   font-size: 12px;
 }
@@ -897,6 +1130,91 @@
 }
 
 /* ============================================================
+   GUIDES
+   ============================================================ */
+.guidesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.guideCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.15s ease;
+  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02),
+    3px 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+a.guideCard:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.guideTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.guideCategory {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 106, 43, 0.1);
+  color: var(--accent-glow);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.guideLinkIcon {
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.guideTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.guideSummary {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.guideMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.guideUpdated {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+/* ============================================================
    TOAST
    ============================================================ */
 .toast {
@@ -1010,6 +1328,12 @@
   border-radius: 12px;
 }
 
+.skeletonAvatarSm {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
 .skeletonTitle {
   width: 160px;
   height: 18px;
@@ -1030,20 +1354,13 @@
   border-radius: 10px;
 }
 
-.skeletonSearch {
-  flex: 1;
-  min-width: 200px;
-  height: 38px;
-  border-radius: 10px;
+.skeletonThread {
+  display: flex;
+  gap: 10px;
+  padding: 11px 10px;
 }
 
-.skeletonFilter {
-  width: 130px;
-  height: 38px;
-  border-radius: 10px;
-}
-
-.skeletonTicket {
+.skeletonGuide {
   padding: 16px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1074,24 +1391,30 @@
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+@media (max-width: 860px) {
+  .inboxGrid {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .inboxGrid[data-view='list'] .detailPane {
+    display: none;
+  }
+
+  .inboxGrid[data-view='detail'] .listPane {
+    display: none;
+  }
+
+  .detailPane {
+    min-height: 70vh;
+  }
+
+  .backButton {
+    display: inline-flex;
+  }
+}
+
 @media (max-width: 640px) {
-  .filtersBar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filterGroup {
-    width: 100%;
-  }
-
-  .filterSelect {
-    flex: 1;
-  }
-
-  .detailHeader {
-    padding: 14px;
-  }
-
   .detailControls {
     width: 100%;
   }
@@ -1100,8 +1423,13 @@
     flex: 1;
   }
 
-  .detailTitle {
-    font-size: 16px;
+  .threadHeaderTitle {
+    font-size: 14px;
+  }
+
+  .messageRow,
+  .messageRowMine {
+    max-width: 92%;
   }
 }
 
@@ -1128,5 +1456,9 @@
     right: 12px;
     left: 12px;
     max-width: none;
+  }
+
+  .guidesGrid {
+    grid-template-columns: 1fr;
   }
 }
