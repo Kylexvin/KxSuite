@@ -30,7 +30,8 @@ export default function DashboardLayout({
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth <= 768;
+      // Match the CSS breakpoint: tablet & phone use off-canvas sidebar
+      const mobile = window.innerWidth <= 1024;
       setIsMobile(mobile);
       if (!mobile) setSidebarOpen(false);
     };
