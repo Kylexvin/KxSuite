@@ -33,16 +33,6 @@ import {
 import styles from './page.module.css';
 
 // ============================================================
-// PRODUCT SSO — product key → base URL
-// ============================================================
-const PRODUCT_URLS: Record<string, string> = {
-  kxtill: 'https://kxtill.kxbyte.co.ke',
-  // kxbooks: 'https://kxbooks.kxbyte.co.ke',
-  // kxcrm:   'https://kxcrm.kxbyte.co.ke',
-  // kxhr:    'https://kxhr.kxbyte.co.ke',
-};
-
-// ============================================================
 // TYPES
 // ============================================================
 
@@ -235,6 +225,7 @@ export default function DashboardPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditEvent[]>([]);
   const [salesData, setSalesData] = useState<{ items: Sale[] }>({ items: [] });
+  const [ssoLoading, setSsoLoading] = useState(false);
 
   const canViewAudit = isOwner || hasPermission('audit.logs.view');
   const canViewSales = isOwner || hasPermission('kxtill.sales.view');
@@ -406,30 +397,24 @@ export default function DashboardPage() {
   ];
 
   // ============================================================
-  // PRODUCT SSO HANDLER
+  // PRODUCT SSO HANDLER — hardcoded to KxTill
   // ============================================================
 
-  const [ssoLoadingKey, setSsoLoadingKey] = useState<string | null>(null);
-
-  const handleOpenProduct = async (productKey: string) => {
-    const baseUrl = PRODUCT_URLS[productKey];
-    if (!baseUrl) {
-      router.push('/dashboard/marketplace');
-      return;
-    }
-
-    setSsoLoadingKey(productKey);
+  const handleOpenProduct = async () => {
+    setSsoLoading(true);
     try {
       const { data } = await api.post<{ code: string }>('/auth/sso/mint', {
-        target: productKey,
+        target: 'kxtill',
       });
-      const ssoUrl = `${baseUrl}/sso?code=${encodeURIComponent(data.code)}`;
-      window.open(ssoUrl, '_blank', 'noopener,noreferrer');
+      window.open(
+        `https://kxtill.kxbyte.co.ke/sso?code=${encodeURIComponent(data.code)}`,
+        '_blank',
+        'noopener,noreferrer',
+      );
     } catch (err) {
-      console.error(`Failed to open ${productKey}:`, err);
-      router.push('/dashboard/marketplace');
+      console.error('Failed to open KxTill:', err);
     } finally {
-      setSsoLoadingKey(null);
+      setSsoLoading(false);
     }
   };
 
@@ -598,8 +583,6 @@ export default function DashboardPage() {
                   ? 'expired'
                   : 'available';
 
-              const isLoading = ssoLoadingKey === product.key;
-
               return (
                 <div key={product.key} className={styles.productCard}>
                   <div className={styles.productCardTop}>
@@ -620,14 +603,14 @@ export default function DashboardPage() {
 
                   <button
                     className={styles.productCardCTA}
-                    disabled={isLoading}
+                    disabled={ssoLoading}
                     onClick={() =>
                       canOpen
-                        ? handleOpenProduct(product.key)
+                        ? handleOpenProduct()
                         : router.push('/dashboard/marketplace')
                     }
                   >
-                    {isLoading ? 'Opening…' : canOpen ? 'View' : 'Learn More'}
+                    {ssoLoading ? 'Opening…' : canOpen ? 'View' : 'Learn More'}
                     <ArrowUpRight size={12} />
                   </button>
                 </div>
