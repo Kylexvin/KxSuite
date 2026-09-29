@@ -403,9 +403,9 @@ export default function DashboardPage() {
   const handleOpenProduct = async () => {
     setSsoLoading(true);
     try {
-      const { data } = await api.post<{ code: string }>('/auth/sso/mint', {
-        target: 'kxtill',
-      });
+const { data } = await api.post<{ code: string }>('/api/v1/auth/sso/mint', {
+  target: 'kxtill',
+});
       window.open(
         `https://kxtill.kxbyte.co.ke/sso?code=${encodeURIComponent(data.code)}`,
         '_blank',
