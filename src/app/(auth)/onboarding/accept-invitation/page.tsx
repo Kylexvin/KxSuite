@@ -6,7 +6,8 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
-import styles from "../select-organization/page.module.css";
+import { CheckCircle2, AlertCircle, Mail } from "lucide-react";
+import styles from "./page.module.css";
 
 type Status = "working" | "ok" | "error" | "signin";
 
@@ -38,7 +39,7 @@ export default function AcceptInvitationPage() {
 
       if (!isAuthenticated) {
         setStatus("signin");
-        setMessage("Please sign in to accept this invitation.");
+        setMessage("Sign in to accept this invitation.");
         return;
       }
 
@@ -52,15 +53,15 @@ export default function AcceptInvitationPage() {
         if (user) setAuth(user, accessToken, refreshToken, freshOrgs);
 
         setStatus("ok");
-        setMessage("You've joined. Taking you to your workspace…");
+        setMessage("You&apos;ve joined. Taking you to your workspace…");
         toast.success("Invitation accepted");
 
         setTimeout(() => {
           router.replace("/onboarding/select-organization");
-        }, 700);
+        }, 800);
       } catch (err: unknown) {
         let text =
-          "We couldn't accept this invitation. It may have expired or already been used.";
+          "We couldn&apos;t accept this invitation. It may have expired or already been used.";
 
         if (axios.isAxiosError(err)) {
           const data = err.response?.data as
@@ -80,38 +81,57 @@ export default function AcceptInvitationPage() {
     void run();
   }, [isAuthenticated, isLoading, user, router, setAuth]);
 
-  const handleSignIn = () => router.push("/login");
-  const handleBack = () => router.push("/onboarding/select-organization");
-
   return (
     <div className={styles.page}>
       <div className={styles.glowAmber} />
       <div className={styles.glowMoss} />
 
-      <div className={styles.loadingCard}>
+      <div className={styles.card}>
         {status === "working" && (
           <>
             <div className={styles.spinner} />
-            <p>Accepting your invitation…</p>
+            <p className={styles.subtitle}>Accepting your invitation&hellip;</p>
           </>
         )}
 
         {status === "signin" && (
           <>
-            <p>{message}</p>
-            <button className={styles.submitBtn} onClick={handleSignIn}>
+            <div className={styles.iconWrap}>
+              <Mail />
+            </div>
+            <h1 className={styles.title}>Sign in to accept</h1>
+            <p className={styles.subtitle}>{message}</p>
+            <button
+              className={styles.primaryBtn}
+              onClick={() => router.push("/login")}
+            >
               Sign in
             </button>
           </>
         )}
 
-        {status === "ok" && <p>{message}</p>}
+        {status === "ok" && (
+          <>
+            <div className={`${styles.iconWrap} ${styles.iconSuccess}`}>
+              <CheckCircle2 />
+            </div>
+            <h1 className={styles.title}>Invitation accepted</h1>
+            <p className={styles.subtitle}>{message}</p>
+          </>
+        )}
 
         {status === "error" && (
           <>
-            <div className={styles.error}>{message}</div>
-            <button className={styles.backBtn} onClick={handleBack}>
-              ← Back to workspace
+            <div className={`${styles.iconWrap} ${styles.iconError}`}>
+              <AlertCircle />
+            </div>
+            <h1 className={styles.title}>Couldn&apos;t accept</h1>
+            <p className={styles.subtitle}>{message}</p>
+            <button
+              className={styles.ghostBtn}
+              onClick={() => router.push("/onboarding/select-organization")}
+            >
+              &larr; Back to workspace
             </button>
           </>
         )}

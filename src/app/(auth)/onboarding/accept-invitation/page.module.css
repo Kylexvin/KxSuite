@@ -1,0 +1,212 @@
+/* ============================================================
+   accept-invitation — minimal single-message card
+   ============================================================ */
+
+.page {
+  --bg: #0e0f13;
+  --panel: #16171d;
+  --raised: #1b1c23;
+  --raised-hi: #24252e;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #eceef2;
+  --text-muted: #a3a5b0;
+  --text-faint: #62636e;
+  --accent: #ff6a2b;
+  --accent-glow: #ff8c42;
+  --danger: #ef5350;
+  --success: #4caf82;
+  --gold: #d9a84e;
+  --moss: #4c7a5e;
+
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+
+  background:
+    linear-gradient(180deg, rgba(14, 15, 19, 0.82), rgba(14, 15, 19, 0.92)),
+    url("/assets/palmbg.jpg") center / cover no-repeat fixed;
+  background-color: var(--bg);
+}
+
+.glowAmber,
+.glowMoss {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glowAmber {
+  width: 460px;
+  height: 460px;
+  top: -140px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(217, 168, 78, 0.18) 0%, rgba(255, 106, 43, 0.06) 55%, transparent 75%);
+}
+
+.glowMoss {
+  width: 420px;
+  height: 420px;
+  bottom: -160px;
+  left: -140px;
+  background: radial-gradient(circle, rgba(76, 122, 94, 0.14) 0%, rgba(76, 122, 94, 0.04) 55%, transparent 75%);
+}
+
+/* ---------- card ---------- */
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 40px 32px 36px;
+  border-radius: 24px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(27, 28, 35, 0.62), rgba(22, 23, 29, 0.5));
+  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.55),
+    0 2px 0 rgba(255, 255, 255, 0.03) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.4) inset;
+}
+
+/* ---------- icon ---------- */
+
+.iconWrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(150deg, rgba(217, 168, 78, 0.15), rgba(255, 106, 43, 0.15));
+}
+
+.iconWrap svg {
+  width: 24px;
+  height: 24px;
+  color: var(--gold);
+}
+
+.iconSuccess {
+  background: linear-gradient(150deg, rgba(76, 175, 130, 0.22), rgba(76, 175, 130, 0.1));
+}
+
+.iconSuccess svg {
+  color: var(--success);
+}
+
+.iconError {
+  background: linear-gradient(150deg, rgba(239, 83, 80, 0.18), rgba(239, 83, 80, 0.08));
+}
+
+.iconError svg {
+  color: var(--danger);
+}
+
+/* ---------- text ---------- */
+
+.title {
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 300px;
+}
+
+/* ---------- actions ---------- */
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 13px;
+  border: none;
+  color: #17181e;
+  font-size: 13.5px;
+  font-weight: 700;
+  background: linear-gradient(150deg, var(--gold), var(--accent));
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255, 106, 43, 0.32);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(255, 106, 43, 0.42);
+}
+
+.primaryBtn:active {
+  transform: translateY(0);
+}
+
+.ghostBtn {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.ghostBtn:hover {
+  color: var(--text-muted);
+}
+
+/* ---------- spinner ---------- */
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border-strong);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 420px) {
+  .card {
+    padding: 32px 22px 28px;
+    border-radius: 20px;
+  }
+
+  .title {
+    font-size: 17px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+}
