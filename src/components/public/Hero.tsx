@@ -2,9 +2,9 @@
 
 "use client";
 
-import Link from "next/link";
+
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+
 import Navbar from "./Navbar";
 import styles from "./Hero.module.css";
 
@@ -42,7 +42,7 @@ export default function Hero() {
         <div className={styles.desktopMockup}>
           <div className={styles.desktopFrame}>
             <Image
-              src="/assets/dashboard.jpg"
+              src="/assets/dashboard.png"
               alt="KXBYTE Suite desktop dashboard"
               width={1400}
               height={560}
