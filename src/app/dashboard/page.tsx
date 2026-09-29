@@ -1,3 +1,5 @@
+// app/dashboard/page.tsx
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -29,6 +31,16 @@ import {
   Area,
 } from 'recharts';
 import styles from './page.module.css';
+
+// ============================================================
+// PRODUCT SSO — product key → base URL
+// ============================================================
+const PRODUCT_URLS: Record<string, string> = {
+  kxtill: 'https://kxtill.kxbyte.co.ke',
+  // kxbooks: 'https://kxbooks.kxbyte.co.ke',
+  // kxcrm:   'https://kxcrm.kxbyte.co.ke',
+  // kxhr:    'https://kxhr.kxbyte.co.ke',
+};
 
 // ============================================================
 // TYPES
@@ -128,7 +140,6 @@ function DashboardSkeleton() {
     <div className={styles.page} aria-busy="true" aria-live="polite">
       <span className={styles.srOnly}>Loading your organization…</span>
 
-      {/* ===== ORG HEADER ===== */}
       <div className={styles.topRow}>
         <div className={styles.orgHeader}>
           <div className={styles.orgHeaderGrid}>
@@ -145,7 +156,6 @@ function DashboardSkeleton() {
         </div>
       </div>
 
-      {/* ===== CHART ===== */}
       <div className={styles.chartCard}>
         <div className={styles.chartHeader}>
           <SkeletonBlock className={styles.skeletonLabel} />
@@ -154,14 +164,10 @@ function DashboardSkeleton() {
         <SkeletonBlock className={styles.skeletonChart} />
       </div>
 
-      {/* ===== PRODUCTS ===== */}
       <div className={styles.productsRow}>
         <div className={styles.sectionHeader}>
           <SkeletonBlock className={styles.skeletonLabel} />
           <SkeletonBlock className={styles.skeletonPill} />
-        </div>
-        <div className={styles.subsectionHeader}>
-          <SkeletonBlock className={styles.skeletonSubLabel} />
         </div>
         <div className={styles.productsGrid}>
           {Array.from({ length: 4 }).map((_, i) => (
@@ -180,7 +186,6 @@ function DashboardSkeleton() {
         </div>
       </div>
 
-      {/* ===== MANAGEMENT ===== */}
       <section className={styles.skeletonSection}>
         <SkeletonBlock className={styles.skeletonLabel} />
         <div className={styles.skeletonGrid}>
@@ -190,7 +195,6 @@ function DashboardSkeleton() {
         </div>
       </section>
 
-      {/* ===== ACTIVITY ===== */}
       <div className={styles.bottomRow}>
         <div className={`${styles.activityCard} ${styles.activityCardFull}`}>
           <div className={styles.sectionHeader}>
@@ -232,15 +236,11 @@ export default function DashboardPage() {
   const [auditLogs, setAuditLogs] = useState<AuditEvent[]>([]);
   const [salesData, setSalesData] = useState<{ items: Sale[] }>({ items: [] });
 
-  // Owner sees everything; otherwise gate by permission.
   const canViewAudit = isOwner || hasPermission('audit.logs.view');
   const canViewSales = isOwner || hasPermission('kxtill.sales.view');
   const canViewMembers = isOwner || hasPermission('members.view');
   const currentUserId = suiteContext?.user?.id;
 
-  // ---- Org identity (name + logo) ----------------------------------
-  // Prefer the freshly-fetched detail object (per-org, carries `logo`),
-  // fall back to the login-time summary for the name.
   const orgName =
     activeOrganizationDetail?.name ??
     activeOrganization?.name ??
@@ -257,7 +257,6 @@ export default function DashboardPage() {
     [permissions, products],
   );
 
-  // Redirect only once we know what the user actually has.
   useEffect(() => {
     if (!isReady) return;
     if (resolution.redirectTo) {
@@ -318,7 +317,6 @@ export default function DashboardPage() {
   const totalBranches = branches?.length || 0;
   const totalMembers = members.filter((m) => m.isActive).length;
 
-  // Split products into "live" (active/trial/expired) vs "available" (never subscribed).
   const liveProducts = products.filter(
     (p) =>
       p.subscriptionIsActive ||
@@ -336,7 +334,6 @@ export default function DashboardPage() {
 
   const salesItems = salesData.items || [];
 
-  // ---- Activity chart data -----------------------------------------
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -370,7 +367,6 @@ export default function DashboardPage() {
     count: activityCounts[date] || 0,
   }));
 
-  // ---- Recent activity list ----------------------------------------
   let activityItems: ActivityItem[] = [];
 
   if (canViewAudit) {
@@ -410,6 +406,34 @@ export default function DashboardPage() {
   ];
 
   // ============================================================
+  // PRODUCT SSO HANDLER
+  // ============================================================
+
+  const [ssoLoadingKey, setSsoLoadingKey] = useState<string | null>(null);
+
+  const handleOpenProduct = async (productKey: string) => {
+    const baseUrl = PRODUCT_URLS[productKey];
+    if (!baseUrl) {
+      router.push('/dashboard/marketplace');
+      return;
+    }
+
+    setSsoLoadingKey(productKey);
+    try {
+      const { data } = await api.post<{ code: string }>('/auth/sso/mint', {
+        target: productKey,
+      });
+      const ssoUrl = `${baseUrl}/sso?code=${encodeURIComponent(data.code)}`;
+      window.open(ssoUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error(`Failed to open ${productKey}:`, err);
+      router.push('/dashboard/marketplace');
+    } finally {
+      setSsoLoadingKey(null);
+    }
+  };
+
+  // ============================================================
   // GATES
   // ============================================================
 
@@ -434,18 +458,14 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-      {/* ===== ORG HEADER (metrics only) ===== */}
+      {/* ===== ORG HEADER ===== */}
       <div className={`${styles.topRow} ${styles.topRowNoAI}`}>
         <div className={styles.orgHeader}>
           <div className={styles.orgHeaderGrid}>
             <div className={styles.orgHeaderMain}>
               <div className={styles.orgAvatar}>
                 {orgLogo ? (
-                  <img
-                    src={orgLogo}
-                    alt={orgName}
-                    className={styles.orgLogo}
-                  />
+                  <img src={orgLogo} alt={orgName} className={styles.orgLogo} />
                 ) : (
                   orgName.charAt(0)
                 )}
@@ -548,7 +568,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ===== PRODUCTS (above Management) ===== */}
+      {/* ===== PRODUCTS — single unified grid ===== */}
       {showProductsSection && (
         <div className={styles.productsRow}>
           <div className={styles.sectionHeader}>
@@ -561,130 +581,118 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          {/* --- Live / subscribed products --- */}
-          {liveProducts.length > 0 && (
-            <>
-              <div className={styles.subsectionHeader}>
-                <span className={styles.subsectionTitle}>Your Products</span>
-              </div>
-              <div className={styles.productsGrid}>
-                {liveProducts.map((product) => {
-                  const canOpen =
-                    isOwner ||
-                    permissions.some((perm) => perm.startsWith(`${product.key}.`));
+          <div className={styles.productsGrid}>
+            {/* 1. Live / subscribed products */}
+            {liveProducts.map((product) => {
+              const canOpen =
+                isOwner ||
+                permissions.some((perm) => perm.startsWith(`${product.key}.`));
 
-                  const status: ProductStatus =
-                    product.subscriptionIsActive &&
-                    product.subscriptionStatus === 'active'
-                      ? 'active'
-                      : product.subscriptionStatus === 'trial'
-                      ? 'trial'
-                      : product.subscriptionStatus === 'expired'
-                      ? 'expired'
-                      : 'available';
+              const status: ProductStatus =
+                product.subscriptionIsActive &&
+                product.subscriptionStatus === 'active'
+                  ? 'active'
+                  : product.subscriptionStatus === 'trial'
+                  ? 'trial'
+                  : product.subscriptionStatus === 'expired'
+                  ? 'expired'
+                  : 'available';
 
-                  return (
-                    <div key={product.key} className={styles.productCard}>
-                      <div className={styles.productCardTop}>
-                        <div className={styles.productCardIcon}>
-                          {product.name.charAt(0) || product.key.charAt(0)}
-                        </div>
-                        <div className={styles.productCardInfo}>
-                          <span className={styles.productCardName}>
-                            {product.name}
-                          </span>
-                          <span className={styles.productCardDesc}>
-                            {product.description}
-                          </span>
-                        </div>
-                      </div>
+              const isLoading = ssoLoadingKey === product.key;
 
-                      <ProductStatusBadge status={status} />
-
-                      <button
-                        className={styles.productCardCTA}
-                        onClick={() =>
-                          canOpen
-                            ? router.push(`/kx/${product.key}`)
-                            : router.push('/dashboard/marketplace')
-                        }
-                      >
-                        {canOpen ? 'View' : 'Learn More'}
-                        <ArrowUpRight size={12} />
-                      </button>
+              return (
+                <div key={product.key} className={styles.productCard}>
+                  <div className={styles.productCardTop}>
+                    <div className={styles.productCardIcon}>
+                      {product.name.charAt(0) || product.key.charAt(0)}
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* --- Available (not subscribed) + Coming Soon --- */}
-          {(availableProducts.length > 0 || comingSoonProducts.length > 0) && (
-            <>
-              <div className={styles.subsectionHeader}>
-                <span className={styles.subsectionTitle}>Available Soon</span>
-              </div>
-              <div className={styles.productsGrid}>
-                {availableProducts.map((product) => (
-                  <div key={product.key} className={styles.productCard}>
-                    <div className={styles.productCardTop}>
-                      <div className={styles.productCardIcon}>
-                        {product.name.charAt(0) || product.key.charAt(0)}
-                      </div>
-                      <div className={styles.productCardInfo}>
-                        <span className={styles.productCardName}>
-                          {product.name}
-                        </span>
-                        <span className={styles.productCardDesc}>
-                          {product.description}
-                        </span>
-                      </div>
+                    <div className={styles.productCardInfo}>
+                      <span className={styles.productCardName}>
+                        {product.name}
+                      </span>
+                      <span className={styles.productCardDesc}>
+                        {product.description}
+                      </span>
                     </div>
-
-                    <ProductStatusBadge status="available" />
-
-                    <button
-                      className={styles.productCardCTA}
-                      onClick={() => router.push('/dashboard/marketplace')}
-                    >
-                      Learn More
-                      <ArrowUpRight size={12} />
-                    </button>
                   </div>
-                ))}
 
-                {comingSoonProducts.map((product, index) => (
-                  <div
-                    key={`coming-${index}`}
-                    className={styles.productCardPlaceholder}
+                  <ProductStatusBadge status={status} />
+
+                  <button
+                    className={styles.productCardCTA}
+                    disabled={isLoading}
+                    onClick={() =>
+                      canOpen
+                        ? handleOpenProduct(product.key)
+                        : router.push('/dashboard/marketplace')
+                    }
                   >
-                    <div className={styles.productCardTop}>
-                      <div className={styles.productCardIconPlaceholder}>
-                        <span>{product.icon}</span>
-                      </div>
-                      <div className={styles.productCardInfo}>
-                        <span className={styles.productCardName}>
-                          {product.name}
-                        </span>
-                        <span className={styles.productCardDesc}>
-                          {product.description}
-                        </span>
-                      </div>
-                    </div>
+                    {isLoading ? 'Opening…' : canOpen ? 'View' : 'Learn More'}
+                    <ArrowUpRight size={12} />
+                  </button>
+                </div>
+              );
+            })}
 
-                    <span
-                      className={`${styles.productBadge} ${styles.badgeComingSoon}`}
-                    >
-                      Coming Soon
-                    </span>
-
-                    <div className={styles.productCardCTADisabled}>Coming Soon</div>
+            {/* 2. Available (not subscribed) products */}
+            {availableProducts.map((product) => (
+              <div key={product.key} className={styles.productCard}>
+                <div className={styles.productCardTop}>
+                  <div className={styles.productCardIcon}>
+                    {product.name.charAt(0) || product.key.charAt(0)}
                   </div>
-                ))}
+                  <div className={styles.productCardInfo}>
+                    <span className={styles.productCardName}>
+                      {product.name}
+                    </span>
+                    <span className={styles.productCardDesc}>
+                      {product.description}
+                    </span>
+                  </div>
+                </div>
+
+                <ProductStatusBadge status="available" />
+
+                <button
+                  className={styles.productCardCTA}
+                  onClick={() => router.push('/dashboard/marketplace')}
+                >
+                  Learn More
+                  <ArrowUpRight size={12} />
+                </button>
               </div>
-            </>
-          )}
+            ))}
+
+            {/* 3. Coming Soon */}
+            {comingSoonProducts.map((product, index) => (
+              <div
+                key={`coming-${index}`}
+                className={styles.productCardPlaceholder}
+              >
+                <div className={styles.productCardTop}>
+                  <div className={styles.productCardIconPlaceholder}>
+                    <span>{product.icon}</span>
+                  </div>
+                  <div className={styles.productCardInfo}>
+                    <span className={styles.productCardName}>
+                      {product.name}
+                    </span>
+                    <span className={styles.productCardDesc}>
+                      {product.description}
+                    </span>
+                  </div>
+                </div>
+
+                <span
+                  className={`${styles.productBadge} ${styles.badgeComingSoon}`}
+                >
+                  Coming Soon
+                </span>
+
+                <div className={styles.productCardCTADisabled}>Coming Soon</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -703,7 +711,7 @@ export default function DashboardPage() {
         </p>
       )}
 
-      {/* ===== RECENT ACTIVITY (full width, no billing card) ===== */}
+      {/* ===== RECENT ACTIVITY ===== */}
       {showActivityList && (
         <div className={styles.bottomRow}>
           <div className={`${styles.activityCard} ${styles.activityCardFull}`}>
