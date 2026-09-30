@@ -23,10 +23,6 @@ import {
   Clock,
   Tag,
   Filter,
-  BookOpen,
-  ExternalLink,
-  Inbox,
-  ChevronDown,
   ArrowUpDown,
 } from 'lucide-react';
 import styles from './page.module.css';
@@ -80,16 +76,6 @@ type TicketListItem = {
 
 type TicketDetail = TicketListItem & {
   messages: TicketMessage[];
-};
-
-type Guide = {
-  id: string;
-  title: string;
-  summary: string;
-  category: string;
-  productKey: string | null;
-  url: string | null;
-  updatedAt: string;
 };
 
 type ApiErrorResponse = {
@@ -277,15 +263,11 @@ function PriorityDot({ priority }: { priority: TicketPriority }) {
 // MAIN PAGE
 // ============================================================
 
-type Tab = 'tickets' | 'guides';
-
 export default function SupportPage() {
   const { activeOrganization, suiteContext } = useAuth();
   const { isOwner, hasPermission, isReady } = usePermissions();
 
   const activeOrgId = activeOrganization?.id;
-
-  const [activeTab, setActiveTab] = useState<Tab>('tickets');
 
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
@@ -302,11 +284,6 @@ export default function SupportPage() {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-
-  // Guides
-  const [guides, setGuides] = useState<Guide[]>([]);
-  const [guidesLoaded, setGuidesLoaded] = useState(false);
-  const [loadingGuides, setLoadingGuides] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -368,42 +345,6 @@ export default function SupportPage() {
       mountedRef.current = false;
     };
   }, [activeOrgId, isReady, loadList]);
-
-  // ============================================================
-  // FETCH GUIDES (lazy — first time the Guides tab is opened)
-  // ============================================================
-
-  const loadGuides = useCallback(async () => {
-    if (!activeOrgId || guidesLoaded) return;
-    setLoadingGuides(true);
-    try {
-      const res = await api.get(
-        `/api/v1/organizations/${activeOrgId}/support/guides`,
-      );
-      if (!mountedRef.current) return;
-      setGuides(res.data.guides ?? []);
-      setGuidesLoaded(true);
-    } catch (err) {
-      if (mountedRef.current) {
-        setToast({
-          type: 'error',
-          message: getErrorMessage(err, 'Failed to load guides'),
-        });
-      }
-    } finally {
-      if (mountedRef.current) setLoadingGuides(false);
-    }
-  }, [activeOrgId, guidesLoaded]);
-
-  const handleTabChange = useCallback(
-    (nextTab: Tab) => {
-      setActiveTab(nextTab);
-      if (nextTab === 'guides') {
-        void loadGuides();
-      }
-    },
-    [loadGuides],
-  );
 
   // ============================================================
   // FETCH DETAIL
@@ -536,13 +477,11 @@ export default function SupportPage() {
               <span className={styles.orgBadge}>{activeOrganization?.name}</span>
             </div>
             <p className={styles.headerSubtitle}>
-              {isInboxView
-                ? 'Tickets and guides for your team'
-                : 'Get help or browse guides'}
+              {isInboxView ? 'Tickets from your team' : 'Your support tickets'}
             </p>
           </div>
         </div>
-        {canCreate && activeTab === 'tickets' && (
+        {canCreate && (
           <button
             className={styles.primaryButton}
             onClick={() => setShowCreate(true)}
@@ -553,32 +492,7 @@ export default function SupportPage() {
         )}
       </div>
 
-      {/* TABS */}
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${
-            activeTab === 'tickets' ? styles.tabActive : ''
-          }`}
-          onClick={() => handleTabChange('tickets')}
-        >
-          <Inbox size={14} />
-          Tickets
-          {tickets.length > 0 && (
-            <span className={styles.tabCount}>{tickets.length}</span>
-          )}
-        </button>
-        <button
-          className={`${styles.tab} ${
-            activeTab === 'guides' ? styles.tabActive : ''
-          }`}
-          onClick={() => handleTabChange('guides')}
-        >
-          <BookOpen size={14} />
-          Guides
-        </button>
-      </div>
-
-      {activeTab === 'tickets' && tickets.length > 0 && (
+      {tickets.length > 0 && (
         <div className={styles.statsRow}>
           <div className={styles.statCard}>
             <span className={`${styles.statDot} ${styles.dotOpen}`} />
@@ -598,32 +512,29 @@ export default function SupportPage() {
         </div>
       )}
 
-      {/* TICKETS TAB */}
-      {activeTab === 'tickets' && (
-        <>
-          {tickets.length === 0 ? (
-            <div className={styles.friendlyEmpty}>
-              <div className={styles.friendlyEmptyIcon}>
-                <LifeBuoy size={28} />
-              </div>
-              <h3>No tickets yet</h3>
-              <p>
-                {isInboxView
-                  ? "When your team runs into an issue, it'll show up here."
-                  : 'Something not working? Open a ticket and your organization owner will get back to you.'}
-              </p>
-              {!isInboxView && canCreate && (
-                <button
-                  className={styles.primaryButton}
-                  onClick={() => setShowCreate(true)}
-                >
-                  <Plus size={16} />
-                  Open a ticket
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className={styles.inboxGrid} data-view={view}>
+      {tickets.length === 0 ? (
+        <div className={styles.friendlyEmpty}>
+          <div className={styles.friendlyEmptyIcon}>
+            <LifeBuoy size={28} />
+          </div>
+          <h3>No tickets yet</h3>
+          <p>
+            {isInboxView
+              ? "When your team runs into an issue, it'll show up here."
+              : 'Something not working? Open a ticket and your organization owner will get back to you.'}
+          </p>
+          {!isInboxView && canCreate && (
+            <button
+              className={styles.primaryButton}
+              onClick={() => setShowCreate(true)}
+            >
+              <Plus size={16} />
+              Open a ticket
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className={styles.inboxGrid} data-view={view}>
               {/* LIST PANE */}
               <div className={styles.listPane}>
                 <div className={styles.filtersBar}>
@@ -782,17 +693,6 @@ export default function SupportPage() {
                 )}
               </div>
             </div>
-          )}
-        </>
-      )}
-
-      {/* GUIDES TAB */}
-      {activeTab === 'guides' && (
-        <GuidesPanel
-          guides={guides}
-          loading={loadingGuides}
-          products={suiteContext?.products ?? []}
-        />
       )}
 
       {/* CREATE MODAL */}
@@ -818,148 +718,6 @@ export default function SupportPage() {
 }
 
 // ============================================================
-// GUIDES PANEL
-// ============================================================
-
-function GuidesPanel({
-  guides,
-  loading,
-  products,
-}: {
-  guides: Guide[];
-  loading: boolean;
-  products: { key: string; name: string; isActive: boolean }[];
-}) {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('ALL');
-
-  const categories = useMemo(() => {
-    const set = new Set(guides.map((g) => g.category).filter(Boolean));
-    return Array.from(set);
-  }, [guides]);
-
-  const productName = (key: string | null) =>
-    products.find((p) => p.key === key)?.name ?? key;
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return guides.filter((g) => {
-      if (category !== 'ALL' && g.category !== category) return false;
-      if (!q) return true;
-      return (
-        g.title.toLowerCase().includes(q) ||
-        g.summary.toLowerCase().includes(q)
-      );
-    });
-  }, [guides, query, category]);
-
-  if (loading) {
-    return (
-      <div className={styles.guidesGrid}>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={`g-${i}`} className={styles.skeletonGuide}>
-            <SkeletonBlock className={styles.skeletonLine} />
-            <SkeletonBlock className={styles.skeletonLineShort} />
-            <SkeletonBlock className={styles.skeletonLineTiny} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (guides.length === 0) {
-    return (
-      <div className={styles.friendlyEmpty}>
-        <div className={styles.friendlyEmptyIcon}>
-          <BookOpen size={28} />
-        </div>
-        <h3>No guides yet</h3>
-        <p>Help articles and how-tos will show up here once published.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className={styles.filtersBar}>
-        <div className={styles.searchWrap}>
-          <Search size={15} className={styles.searchIcon} />
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Search guides..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        {categories.length > 0 && (
-          <div className={styles.filterGroup}>
-            <select
-              className={styles.filterSelect}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="ALL">All topics</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className={styles.emptyState}>
-          <Filter size={28} className={styles.emptyIcon} />
-          <h3>No guides match</h3>
-          <p>Try a different search or topic.</p>
-        </div>
-      ) : (
-        <div className={styles.guidesGrid}>
-          {filtered.map((g) => {
-            const content = (
-              <>
-                <div className={styles.guideTop}>
-                  <span className={styles.guideCategory}>{g.category}</span>
-                  {g.url && <ExternalLink size={13} className={styles.guideLinkIcon} />}
-                </div>
-                <h3 className={styles.guideTitle}>{g.title}</h3>
-                <p className={styles.guideSummary}>{g.summary}</p>
-                <div className={styles.guideMeta}>
-                  {g.productKey && (
-                    <span className={styles.productTag}>
-                      {productName(g.productKey)}
-                    </span>
-                  )}
-                  <span className={styles.guideUpdated}>
-                    Updated {formatRelative(g.updatedAt)}
-                  </span>
-                </div>
-              </>
-            );
-            return g.url ? (
-              <a
-                key={g.id}
-                href={g.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.guideCard}
-              >
-                {content}
-              </a>
-            ) : (
-              <div key={g.id} className={styles.guideCard}>
-                {content}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ============================================================
 // CREATE TICKET MODAL

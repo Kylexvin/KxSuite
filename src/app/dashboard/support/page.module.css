@@ -115,54 +115,6 @@
 }
 
 /* ============================================================
-   TABS
-   ============================================================ */
-.tabs {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  width: fit-content;
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border: none;
-  background: transparent;
-  border-radius: 9px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.tab:hover {
-  color: var(--text);
-}
-
-.tabActive {
-  background: var(--raised-hi);
-  color: var(--text);
-  box-shadow: -2px -2px 4px rgba(255, 255, 255, 0.02),
-    2px 2px 6px rgba(0, 0, 0, 0.35);
-}
-
-.tabCount {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(255, 106, 43, 0.15);
-  color: var(--accent-glow);
-}
-
-/* ============================================================
    STATS ROW
    ============================================================ */
 .statsRow {
@@ -1130,91 +1082,6 @@
 }
 
 /* ============================================================
-   GUIDES
-   ============================================================ */
-.guidesGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-}
-
-.guideCard {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  text-decoration: none;
-  color: var(--text);
-  transition: all 0.15s ease;
-  box-shadow: -2px -2px 5px rgba(255, 255, 255, 0.02),
-    3px 3px 8px rgba(0, 0, 0, 0.3);
-}
-
-a.guideCard:hover {
-  border-color: var(--border-strong);
-  transform: translateY(-1px);
-}
-
-.guideTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.guideCategory {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: rgba(255, 106, 43, 0.1);
-  color: var(--accent-glow);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.guideLinkIcon {
-  color: var(--text-faint);
-  flex-shrink: 0;
-}
-
-.guideTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-  line-height: 1.35;
-}
-
-.guideSummary {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.55;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.guideMeta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 2px;
-  flex-wrap: wrap;
-}
-
-.guideUpdated {
-  font-size: 10px;
-  color: var(--text-faint);
-}
-
-/* ============================================================
    TOAST
    ============================================================ */
 .toast {
@@ -1360,16 +1227,6 @@ a.guideCard:hover {
   padding: 11px 10px;
 }
 
-.skeletonGuide {
-  padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .skeletonLine {
   width: 60%;
   height: 14px;
@@ -1456,9 +1313,5 @@ a.guideCard:hover {
     right: 12px;
     left: 12px;
     max-width: none;
-  }
-
-  .guidesGrid {
-    grid-template-columns: 1fr;
   }
 }
