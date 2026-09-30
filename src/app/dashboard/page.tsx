@@ -323,6 +323,11 @@ export default function DashboardPage() {
       p.subscriptionStatus !== 'expired',
   );
 
+  // True when the org has nothing to open or learn about yet
+  // (new org: only the hardcoded Coming Soon cards would show).
+  const hasActionableProducts =
+    liveProducts.length > 0 || availableProducts.length > 0;
+
   const salesItems = salesData.items || [];
 
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -403,9 +408,9 @@ export default function DashboardPage() {
   const handleOpenProduct = async () => {
     setSsoLoading(true);
     try {
-const { data } = await api.post<{ code: string }>('/api/v1/auth/sso/mint', {
-  target: 'kxtill',
-});
+      const { data } = await api.post<{ code: string }>('/api/v1/auth/sso/mint', {
+        target: 'kxtill',
+      });
       window.open(
         `https://kxtill.kxbyte.co.ke/sso?code=${encodeURIComponent(data.code)}`,
         '_blank',
@@ -565,6 +570,34 @@ const { data } = await api.post<{ code: string }>('/api/v1/auth/sso/mint', {
               {totalProducts + comingSoonProducts.length}
             </span>
           </div>
+
+          {/* ===== GET STARTED — no live or available products yet ===== */}
+          {!hasActionableProducts && (
+            <div className={styles.getStarted}>
+              <div className={styles.getStartedIcon}>
+                <Package size={18} />
+              </div>
+              <div className={styles.getStartedText}>
+                <h2 className={styles.getStartedTitle}>
+                  Activate your first product
+                </h2>
+                <p className={styles.getStartedDesc}>
+                  {isOwner
+                    ? `${orgName} doesn't have any products yet. Head to the marketplace to start a free trial.`
+                    : 'Your organization has no active products yet. Ask your owner to activate one.'}
+                </p>
+              </div>
+              {isOwner && (
+                <button
+                  className={styles.getStartedCTA}
+                  onClick={() => router.push('/dashboard/marketplace')}
+                >
+                  Go to Marketplace
+                  <ArrowUpRight size={14} />
+                </button>
+              )}
+            </div>
+          )}
 
           <div className={styles.productsGrid}>
             {/* 1. Live / subscribed products */}
