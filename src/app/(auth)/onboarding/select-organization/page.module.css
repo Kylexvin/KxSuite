@@ -881,3 +881,52 @@
     font-size: 19px;
   }
 }
+
+/* Phone input with fixed country prefix */
+.phoneInput {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface, #fff);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.phoneInput:focus-within {
+  border-color: var(--accent, #ff6a2b);
+  box-shadow: 0 0 0 3px rgba(255, 106, 43, 0.12);
+}
+
+.phonePrefix {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted, #666);
+  background: var(--surface-muted, #f7f7f7);
+  border-right: 1px solid var(--border, #e5e5e5);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.phoneInput input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: inherit;
+  min-width: 0; /* lets flexbox shrink on narrow screens */
+}
+
+.fieldHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-faint, #999);
+  line-height: 1.3;
+}

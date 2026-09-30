@@ -24,6 +24,10 @@ import {
 } from "lucide-react";
 import styles from "./page.module.css";
 
+// ============================================================
+// TYPES
+// ============================================================
+
 type PendingInvitation = {
   id: string;
   organization: {
@@ -72,6 +76,30 @@ type ApiErrorResponse = {
   [key: string]: unknown;
 };
 
+// ============================================================
+// COUNTRY → DIAL CODE MAP
+// Keep in sync with the <select> options below.
+// ============================================================
+
+const COUNTRIES = [
+  { code: "KE", name: "Kenya",        flag: "🇰🇪", dial: "+254" },
+  { code: "UG", name: "Uganda",       flag: "🇺🇬", dial: "+256" },
+  { code: "TZ", name: "Tanzania",     flag: "🇹🇿", dial: "+255" },
+  { code: "RW", name: "Rwanda",       flag: "🇷🇼", dial: "+250" },
+  { code: "NG", name: "Nigeria",      flag: "🇳🇬", dial: "+234" },
+  { code: "ZA", name: "South Africa", flag: "🇿🇦", dial: "+27"  },
+] as const;
+
+const DEFAULT_COUNTRY = "KE";
+
+function getCountry(code: string) {
+  return COUNTRIES.find((c) => c.code === code) || COUNTRIES[0];
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
 function getErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiErrorResponse;
@@ -85,6 +113,15 @@ function getErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+// Strip everything except digits from the local part the user types.
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+// ============================================================
+// PAGE
+// ============================================================
 
 export default function SelectOrganizationPage() {
   const router = useRouter();
@@ -105,12 +142,24 @@ export default function SelectOrganizationPage() {
   const [error, setError] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [formData, setFormData] = useState({ name: "", country: "KE" });
+
+  // form state — country drives the dial code prefix for phone
+  const [formData, setFormData] = useState({
+    name: "",
+    country: DEFAULT_COUNTRY,
+    phoneLocal: "", // digits only, no dial code
+  });
+
   const [redirecting, setRedirecting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const hasLoaded = useRef(false);
   const redirectingRef = useRef(false);
+
+  const selectedCountry = useMemo(
+    () => getCountry(formData.country),
+    [formData.country]
+  );
 
   // ============================================================
   // LOAD DATA — ONLY ONCE
@@ -127,7 +176,9 @@ export default function SelectOrganizationPage() {
         const [orgsRes, invitesRes, archivedRes] = await Promise.all([
           api.get("/api/v1/organizations"),
           api.get("/api/v1/invitations/my"),
-          api.get("/api/v1/organizations/archived").catch(() => ({ data: { organizations: [] } })),
+          api
+            .get("/api/v1/organizations/archived")
+            .catch(() => ({ data: { organizations: [] } })),
         ]);
 
         if (!mounted) return;
@@ -162,57 +213,54 @@ export default function SelectOrganizationPage() {
     return () => {
       mounted = false;
     };
-  }, [user, setAuth]); // Fixed: added missing dependencies
+  }, [user, setAuth]);
 
- // ============================================================
-// AUTO-REDIRECT — when data is ready
-// ============================================================
+  // ============================================================
+  // AUTO-REDIRECT — when data is ready
+  // ============================================================
 
-useEffect(() => {
-  // Don't run if already redirecting or still loading
-  if (redirectingRef.current || loading) return;
-  if (!user) return;
-  
-  // Check if we should auto-redirect
-  if (
-    organizations.length === 1 &&
-    pendingInvites.length === 0 &&
-    archivedOrgs.length === 0
-  ) {
-    const org = organizations[0];
-    redirectingRef.current = true;
-    
-    // Move setState to a microtask to avoid synchronous setState in effect
-    Promise.resolve().then(() => {
-      setRedirecting(true);
-    });
-    
-    setActiveOrganizationDirect(org);
-    
-    loadSuiteContext(org.id)
-      .then(() => loadBranches(org.id))
-      .then(() => {
-        router.push("/dashboard");
-      })
-      .catch((err) => {
-        console.error("Auto-redirect failed:", err);
-        redirectingRef.current = false;
-        Promise.resolve().then(() => {
-          setRedirecting(false);
-        });
+  useEffect(() => {
+    if (redirectingRef.current || loading) return;
+    if (!user) return;
+
+    if (
+      organizations.length === 1 &&
+      pendingInvites.length === 0 &&
+      archivedOrgs.length === 0
+    ) {
+      const org = organizations[0];
+      redirectingRef.current = true;
+
+      Promise.resolve().then(() => {
+        setRedirecting(true);
       });
-  }
-}, [
-  organizations, 
-  pendingInvites, 
-  archivedOrgs, 
-  loading, 
-  user,
-  setActiveOrganizationDirect,
-  loadSuiteContext,
-  loadBranches,
-  router
-]);
+
+      setActiveOrganizationDirect(org);
+
+      loadSuiteContext(org.id)
+        .then(() => loadBranches(org.id))
+        .then(() => {
+          router.push("/dashboard");
+        })
+        .catch((err) => {
+          console.error("Auto-redirect failed:", err);
+          redirectingRef.current = false;
+          Promise.resolve().then(() => {
+            setRedirecting(false);
+          });
+        });
+    }
+  }, [
+    organizations,
+    pendingInvites,
+    archivedOrgs,
+    loading,
+    user,
+    setActiveOrganizationDirect,
+    loadSuiteContext,
+    loadBranches,
+    router,
+  ]);
 
   // ============================================================
   // HANDLERS
@@ -328,23 +376,59 @@ useEffect(() => {
     [pendingInvites, organizations]
   );
 
+  // ---------- form change ----------
   const handleCreateChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
+      const { name, value } = e.target;
+
+      if (name === "phoneLocal") {
+        // keep only digits, cap length so it stays sane
+        setFormData((prev) => ({
+          ...prev,
+          phoneLocal: digitsOnly(value).slice(0, 14),
+        }));
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, [name]: value }));
     },
     []
   );
 
+  // ---------- submit ----------
   const handleCreateSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       setError("");
+
+      const trimmedName = formData.name.trim();
+      const localDigits = formData.phoneLocal;
+
+      // client-side pre-flight (server validates again)
+      if (trimmedName.length < 2) {
+        toast.error("Organization name must be at least 2 characters.");
+        return;
+      }
+      if (localDigits.length < 6 || localDigits.length > 12) {
+        toast.error("Enter a valid phone number.");
+        return;
+      }
+
+      // Compose full E.164-ish phone: +<dial><localDigits>
+      const fullPhone = `${selectedCountry.dial}${localDigits}`;
+
       setCreating(true);
 
       try {
         const response = await api.post<CreateOrganizationResponse>(
           "/api/v1/organizations",
-          { name: formData.name, country: formData.country }
+          {
+            name: trimmedName,
+            country: formData.country,
+            phone: fullPhone,
+          }
         );
 
         const { organization, membership, defaultBranch } = response.data;
@@ -380,7 +464,17 @@ useEffect(() => {
         setCreating(false);
       }
     },
-    [formData, organizations, user, setAuth, setActiveOrganizationDirect, loadSuiteContext, loadBranches, router]
+    [
+      formData,
+      selectedCountry,
+      organizations,
+      user,
+      setAuth,
+      setActiveOrganizationDirect,
+      loadSuiteContext,
+      loadBranches,
+      router,
+    ]
   );
 
   const getOrgRole = useCallback((org: Organization): string => {
@@ -404,7 +498,11 @@ useEffect(() => {
         <div className={styles.glowMoss} />
         <div className={styles.loadingCard}>
           <div className={styles.spinner} />
-          <p>{redirecting ? "Redirecting to dashboard..." : "Loading your workspace..."}</p>
+          <p>
+            {redirecting
+              ? "Redirecting to dashboard..."
+              : "Loading your workspace..."}
+          </p>
         </div>
       </div>
     );
@@ -425,7 +523,7 @@ useEffect(() => {
       <div className={styles.glowMoss} />
 
       <div className={styles.glassCard}>
-        {/* ===== brand + user, always visible ===== */}
+        {/* ===== brand + user ===== */}
         <div className={styles.cardTopRow}>
           <div className={styles.brand}>
             <Image
@@ -461,21 +559,8 @@ useEffect(() => {
               {error && <div className={styles.error}>{error}</div>}
 
               <form onSubmit={handleCreateSubmit} className={styles.form}>
+                {/* Row 1: Country + Phone */}
                 <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="name">Organization name</label>
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={handleCreateChange}
-                      placeholder="e.g. Kamau Supermarket"
-                      required
-                      disabled={creating}
-                    />
-                  </div>
-
                   <div className={styles.formGroup}>
                     <label htmlFor="country">Country</label>
                     <select
@@ -485,17 +570,60 @@ useEffect(() => {
                       onChange={handleCreateChange}
                       disabled={creating}
                     >
-                      <option value="KE">🇰🇪 Kenya</option>
-                      <option value="UG">🇺🇬 Uganda</option>
-                      <option value="TZ">🇹🇿 Tanzania</option>
-                      <option value="RW">🇷🇼 Rwanda</option>
-                      <option value="NG">🇳🇬 Nigeria</option>
-                      <option value="ZA">🇿🇦 South Africa</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.name}
+                        </option>
+                      ))}
                     </select>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label htmlFor="phoneLocal">Phone number</label>
+                    <div className={styles.phoneInput}>
+                      <span className={styles.phonePrefix}>
+                        {selectedCountry.flag} {selectedCountry.dial}
+                      </span>
+                      <input
+                        id="phoneLocal"
+                        name="phoneLocal"
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        value={formData.phoneLocal}
+                        onChange={handleCreateChange}
+                        placeholder="712 345 678"
+                        required
+                        disabled={creating}
+                        maxLength={14}
+                      />
+                    </div>
+                    <span className={styles.fieldHint}>
+                      We&apos;ll only use this to reach you about your account.
+                    </span>
                   </div>
                 </div>
 
-                <button type="submit" className={styles.submitBtn} disabled={creating}>
+                {/* Row 2: Organization name (full width) */}
+                <div className={styles.formGroup}>
+                  <label htmlFor="name">Organization name</label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleCreateChange}
+                    placeholder="e.g. Kamau Supermarket"
+                    required
+                    disabled={creating}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={creating}
+                >
                   {creating ? (
                     <>
                       <span className={styles.spinnerSmall} />
@@ -526,7 +654,9 @@ useEffect(() => {
           <>
             <div className={styles.heroText}>
               <h1 className={styles.title}>Select a workspace</h1>
-              <p className={styles.subtitle}>Pick an organization to continue, or start a new one.</p>
+              <p className={styles.subtitle}>
+                Pick an organization to continue, or start a new one.
+              </p>
             </div>
 
             {error && <div className={styles.error}>{error}</div>}
@@ -573,7 +703,9 @@ useEffect(() => {
                           onClick={() => handleSelect(org.id)}
                           disabled={isLoading || redirecting}
                         >
-                          <div className={styles.orgIcon}>{org.name.charAt(0).toUpperCase()}</div>
+                          <div className={styles.orgIcon}>
+                            {org.name.charAt(0).toUpperCase()}
+                          </div>
                           <div className={styles.orgMeta}>
                             <span className={styles.orgName}>{org.name}</span>
                           </div>
@@ -585,18 +717,26 @@ useEffect(() => {
                           ) : (
                             <span className={styles.badgeMember}>Member</span>
                           )}
-                          <ChevronRight size={16} className={styles.chevron} />
+                          <ChevronRight
+                            size={16}
+                            className={styles.chevron}
+                          />
                         </button>
                       );
                     })}
 
                     {filteredOrganizations.length === 0 && (
                       <div className={styles.emptyNote}>
-                        {query ? `No organizations match "${query}"` : "No organizations yet"}
+                        {query
+                          ? `No organizations match "${query}"`
+                          : "No organizations yet"}
                       </div>
                     )}
 
-                    <button className={styles.addOrgCard} onClick={() => setShowCreateForm(true)}>
+                    <button
+                      className={styles.addOrgCard}
+                      onClick={() => setShowCreateForm(true)}
+                    >
                       <Plus size={15} />
                       <span>New organization</span>
                     </button>
@@ -604,7 +744,7 @@ useEffect(() => {
                 </section>
               </div>
 
-              {/* Invites + archived — side column (desktop); stacks below on mobile */}
+              {/* Invites + archived — side column */}
               {(hasInvites || hasArchived) && (
                 <div className={styles.sideCol}>
                   {hasInvites && (
@@ -618,21 +758,32 @@ useEffect(() => {
                           <div key={invite.id} className={styles.inviteCard}>
                             <div className={styles.inviteTop}>
                               <div className={styles.inviteIcon}>
-                                {invite.organization.name.charAt(0).toUpperCase()}
+                                {invite.organization.name
+                                  .charAt(0)
+                                  .toUpperCase()}
                               </div>
                               <div className={styles.inviteInfo}>
-                                <span className={styles.inviteName}>{invite.organization.name}</span>
+                                <span className={styles.inviteName}>
+                                  {invite.organization.name}
+                                </span>
                                 <span className={styles.inviteBy}>
-                                  Invited by {invite.invitedBy.firstName} {invite.invitedBy.lastName}
+                                  Invited by {invite.invitedBy.firstName}{" "}
+                                  {invite.invitedBy.lastName}
                                 </span>
                               </div>
                             </div>
                             <div className={styles.inviteActions}>
-                              <button className={styles.acceptBtn} onClick={() => handleAcceptInvite(invite.token)}>
+                              <button
+                                className={styles.acceptBtn}
+                                onClick={() => handleAcceptInvite(invite.token)}
+                              >
                                 <Check size={13} />
                                 Accept
                               </button>
-                              <button className={styles.rejectBtn} onClick={() => handleRejectInvite(invite.token)}>
+                              <button
+                                className={styles.rejectBtn}
+                                onClick={() => handleRejectInvite(invite.token)}
+                              >
                                 <X size={13} />
                                 Decline
                               </button>
@@ -651,18 +802,29 @@ useEffect(() => {
                       </div>
                       <div className={styles.inviteList}>
                         {archivedOrgs.map((org) => (
-                          <div key={org.id} className={`${styles.inviteCard} ${styles.archivedCard}`}>
+                          <div
+                            key={org.id}
+                            className={`${styles.inviteCard} ${styles.archivedCard}`}
+                          >
                             <div className={styles.inviteTop}>
-                              <div className={styles.inviteIcon}>{org.name.charAt(0).toUpperCase()}</div>
+                              <div className={styles.inviteIcon}>
+                                {org.name.charAt(0).toUpperCase()}
+                              </div>
                               <div className={styles.inviteInfo}>
-                                <span className={styles.inviteName}>{org.name}</span>
-                                <span className={styles.inviteBy}>Restore to regain access</span>
+                                <span className={styles.inviteName}>
+                                  {org.name}
+                                </span>
+                                <span className={styles.inviteBy}>
+                                  Restore to regain access
+                                </span>
                               </div>
                             </div>
                             <div className={styles.inviteActions}>
                               <button
                                 className={styles.restoreBtn}
-                                onClick={() => handleRestoreOrganization(org.id)}
+                                onClick={() =>
+                                  handleRestoreOrganization(org.id)
+                                }
                                 disabled={restoring === org.id}
                               >
                                 {restoring === org.id ? (
@@ -684,8 +846,13 @@ useEffect(() => {
           </>
         )}
 
-        {/* logout — pinned bottom-right corner of the glass card */}
-        <button className={styles.logoutCorner} onClick={handleLogout} title="Log out" type="button">
+        {/* logout */}
+        <button
+          className={styles.logoutCorner}
+          onClick={handleLogout}
+          title="Log out"
+          type="button"
+        >
           <LogOut size={15} />
         </button>
       </div>
