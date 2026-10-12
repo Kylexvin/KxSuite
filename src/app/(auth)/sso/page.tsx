@@ -8,7 +8,8 @@ import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AUTH_BASE_URL =
-  process.env.NEXT_PUBLIC_AUTH_BASE_URL || "https://kxbyte.onrender.com";
+  process.env.NEXT_PUBLIC_AUTH_BASE_URL || "https://auth.kxbyte.co.ke";
+  // process.env.NEXT_PUBLIC_AUTH_BASE_URL || "https://localhost:5000";
 
 function SigningInScreen() {
   return (

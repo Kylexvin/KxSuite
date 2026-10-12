@@ -157,6 +157,59 @@ function matchesPermission(permissions: string[], key: string): boolean {
   });
 }
 
+/**
+ * Normalize a thrown error from an axios call so callers can read
+ * `err.code`, `err.message`, `err.details` regardless of which envelope
+ * the backend used (new: { error: { code, message, details } },
+ * legacy: { message } or { error: "string" }).
+ */
+function normalizeApiError(err: unknown): Error & {
+  code?: string;
+  details?: Record<string, unknown>;
+  status?: number;
+} {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as
+      | {
+          error?:
+            | { code?: string; message?: string; details?: Record<string, unknown> }
+            | string;
+          message?: string;
+        }
+      | undefined;
+
+    const apiError = data?.error;
+
+    const message =
+      (typeof apiError === "object" && apiError?.message) ||
+      (typeof apiError === "string" && apiError) ||
+      data?.message ||
+      "Request failed";
+
+    const out = new Error(message) as Error & {
+      code?: string;
+      details?: Record<string, unknown>;
+      status?: number;
+    };
+
+    if (typeof apiError === "object" && apiError?.code) out.code = apiError.code;
+    if (typeof apiError === "object" && apiError?.details) out.details = apiError.details;
+    out.status = err.response?.status;
+
+    return out;
+  }
+
+  if (err instanceof Error) {
+    return err as Error & { code?: string; details?: Record<string, unknown>; status?: number };
+  }
+
+  return new Error("Something went wrong") as Error & {
+    code?: string;
+    details?: Record<string, unknown>;
+    status?: number;
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   // ---- State: initialized synchronously from localStorage ----
   const [user, setUser] = useState<User | null>(() =>
@@ -230,14 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { hasOrganizations: safeOrgs.length > 0 };
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        throw new Error(
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          "Login failed"
-        );
-      }
-      throw err;
+      throw normalizeApiError(err);
     } finally {
       setIsLoading(false);
     }
@@ -276,7 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Failed to set tokens:", error);
-      throw error;
+      throw normalizeApiError(error);
     } finally {
       setIsLoading(false);
     }
