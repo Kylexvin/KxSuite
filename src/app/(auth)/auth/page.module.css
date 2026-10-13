@@ -628,6 +628,7 @@
     color: var(--text-muted);
     letter-spacing: 0.02em;
     visibility: hidden;
+    display: none;
     white-space: nowrap;
   }
 
