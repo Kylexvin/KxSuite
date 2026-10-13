@@ -9,8 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import styles from "./page.module.css";
 
 const API_BASE_URL =
-
-//   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   process.env.NEXT_PUBLIC_API_URL || "https://auth.kxbyte.co.ke";
 
 type Mode = "signIn" | "signUp";
@@ -24,6 +22,18 @@ type FieldErrors = {
 };
 
 const PASSWORD_MIN = 8;
+
+const PRODUCTS = [
+  { name: "KxTill1", logo: "/assets/products/kxtillRetail.png" },
+  { name: "KxWork1", logo: "/assets/products/kxwork.jpg" },
+  { name: "KxCRM1", logo: "/assets/products/kxcrm.jpg" },
+  { name: "KxTill2", logo: "/assets/products/kxtillRetail.png" },
+  { name: "KxWork2", logo: "/assets/products/kxwork.jpg" },
+  { name: "KxCRM2", logo: "/assets/products/kxcrm.jpg" },
+  { name: "KxTill3", logo: "/assets/products/kxtillRetail.png" },
+  { name: "KxWork3", logo: "/assets/products/kxwork.jpg" },
+  { name: "KxCRM3", logo: "/assets/products/kxcrm.jpg" },
+];
 
 function AuthInner() {
   const router = useRouter();
@@ -573,46 +583,26 @@ function AuthInner() {
 
           <div className={styles.brandSideInner}>
             <p className={styles.brandSideMark}>
-              KXBYTE <span className={styles.brandSideMarkAccent}>Suite</span>
+              KXBYTE <span className={styles.brandSideMarkAccent}>SUITE</span>
             </p>
             <p className={styles.brandSideTag}>
               One account. Every Kx product. Manage your business from a single
               workspace.
             </p>
 
-            <div className={styles.productScatter}>
-              <div className={`${styles.productBubble} ${styles.bubble1}`}>
-                <Image
-                  src="/assets/products/logo.png"
-                  alt="KxSuite"
-                  width={44}
-                  height={44}
-                  className={styles.bubbleLogo}
-                />
-                <span className={styles.bubbleLabel}>KxSuite</span>
-              </div>
-
-              <div className={`${styles.productBubble} ${styles.bubble2}`}>
-                <Image
-                  src="/assets/products/kxtill.png"
-                  alt="KxTill Retail"
-                  width={44}
-                  height={44}
-                  className={styles.bubbleLogo}
-                />
-                <span className={styles.bubbleLabel}>KxTill Retail</span>
-              </div>
-
-              <div className={`${styles.productBubble} ${styles.bubble3}`}>
-                <Image
-                  src="/assets/products/kxtill.png"
-                  alt="KxTill Pharmacy"
-                  width={44}
-                  height={44}
-                  className={styles.bubbleLogo}
-                />
-                <span className={styles.bubbleLabel}>KxTill Pharmacy</span>
-              </div>
+            <div className={styles.productGrid}>
+              {PRODUCTS.map((p) => (
+                <div key={p.name} className={styles.productBubble}>
+                  <Image
+                    src={p.logo}
+                    alt={p.name}
+                    width={44}
+                    height={44}
+                    className={styles.bubbleLogo}
+                  />
+                  <span className={styles.bubbleLabel}>{p.name}</span>
+                </div>
+              ))}
             </div>
           </div>
         </aside>
