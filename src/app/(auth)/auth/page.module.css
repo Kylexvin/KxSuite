@@ -627,6 +627,7 @@
     font-weight: 600;
     color: var(--text-muted);
     letter-spacing: 0.02em;
+    visibility: hidden;
     white-space: nowrap;
   }
 
