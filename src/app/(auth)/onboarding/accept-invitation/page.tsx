@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import axios from "axios";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +11,18 @@ import { CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import styles from "./page.module.css";
 
 type Status = "working" | "ok" | "error" | "signin";
+
+// Kx products shown on the hero app grid (duplicated for now — swap in real ones later)
+const PRODUCTS = [
+  { name: "KxTill", logo: "/assets/products/kxtillRetail.png" },
+  { name: "KxWork", logo: "/assets/products/kxwork.jpg" },
+  { name: "KxCRM", logo: "/assets/products/kxcrm.jpg" },
+];
+
+const APP_TILES = Array.from(
+  { length: 16 },
+  (_, i) => PRODUCTS[i % PRODUCTS.length]
+);
 
 export default function AcceptInvitationPage() {
   const router = useRouter();
@@ -53,7 +66,7 @@ export default function AcceptInvitationPage() {
         if (user) setAuth(user, accessToken, refreshToken, freshOrgs);
 
         setStatus("ok");
-        setMessage("You&apos;ve joined. Taking you to your workspace…");
+        setMessage("You've joined. Taking you to your workspace…");
         toast.success("Invitation accepted");
 
         setTimeout(() => {
@@ -61,7 +74,7 @@ export default function AcceptInvitationPage() {
         }, 800);
       } catch (err: unknown) {
         let text =
-          "We couldn&apos;t accept this invitation. It may have expired or already been used.";
+          "We couldn't accept this invitation. It may have expired or already been used.";
 
         if (axios.isAxiosError(err)) {
           const data = err.response?.data as
@@ -86,55 +99,99 @@ export default function AcceptInvitationPage() {
       <div className={styles.glowAmber} />
       <div className={styles.glowMoss} />
 
+      {/* Big background photo with diagonal edge (desktop only) */}
+      <div className={styles.bgPhoto} />
+
       <div className={styles.card}>
-        {status === "working" && (
-          <>
-            <div className={styles.spinner} />
-            <p className={styles.subtitle}>Accepting your invitation&hellip;</p>
-          </>
-        )}
-
-        {status === "signin" && (
-          <>
-            <div className={styles.iconWrap}>
-              <Mail />
+        {/* ============ HERO (left, desktop only) — Kx products ============ */}
+        <aside className={styles.hero}>
+          <div className={styles.heroInner}>
+            <div className={styles.appGrid}>
+              {APP_TILES.map((p, i) => (
+                <div key={i} className={styles.appTile}>
+                  <div className={styles.appIcon}>
+                    <Image
+                      src={p.logo}
+                      alt={p.name}
+                      width={46}
+                      height={46}
+                      className={styles.appLogo}
+                    />
+                  </div>
+                  <span className={styles.appName}>{p.name}</span>
+                </div>
+              ))}
             </div>
-            <h1 className={styles.title}>Sign in to accept</h1>
-            <p className={styles.subtitle}>{message}</p>
-            <button
-              className={styles.primaryBtn}
-              onClick={() => router.push("/login")}
-            >
-              Sign in
-            </button>
-          </>
-        )}
+          </div>
+        </aside>
 
-        {status === "ok" && (
-          <>
-            <div className={`${styles.iconWrap} ${styles.iconSuccess}`}>
-              <CheckCircle2 />
-            </div>
-            <h1 className={styles.title}>Invitation accepted</h1>
-            <p className={styles.subtitle}>{message}</p>
-          </>
-        )}
+        {/* ============ PANEL (right) ============ */}
+        <div className={styles.panel}>
+          <div className={styles.brand}>
+            <Image
+              src="/assets/logo.png"
+              alt="KXBYTE"
+              width={28}
+              height={28}
+              className={styles.logoMark}
+              priority
+            />
+            <span className={styles.brandName}>
+              KXBYTE <span className={styles.brandAccent}>SUITE</span>
+            </span>
+          </div>
 
-        {status === "error" && (
-          <>
-            <div className={`${styles.iconWrap} ${styles.iconError}`}>
-              <AlertCircle />
-            </div>
-            <h1 className={styles.title}>Couldn&apos;t accept</h1>
-            <p className={styles.subtitle}>{message}</p>
-            <button
-              className={styles.ghostBtn}
-              onClick={() => router.push("/onboarding/select-organization")}
-            >
-              &larr; Back to workspace
-            </button>
-          </>
-        )}
+          <div className={styles.stateWrap}>
+            {status === "working" && (
+              <>
+                <div className={styles.spinner} />
+                <p className={styles.subtitle}>Accepting your invitation&hellip;</p>
+              </>
+            )}
+
+            {status === "signin" && (
+              <>
+                <div className={styles.iconWrap}>
+                  <Mail />
+                </div>
+                <h1 className={styles.title}>Sign in to accept</h1>
+                <p className={styles.subtitle}>{message}</p>
+                <button
+                  className={styles.primaryBtn}
+                  onClick={() => router.push("/login")}
+                >
+                  Sign in
+                </button>
+              </>
+            )}
+
+            {status === "ok" && (
+              <>
+                <div className={`${styles.iconWrap} ${styles.iconSuccess}`}>
+                  <CheckCircle2 />
+                </div>
+                <h1 className={styles.title}>Invitation accepted</h1>
+                <p className={styles.subtitle}>{message}</p>
+              </>
+            )}
+
+            {status === "error" && (
+              <>
+                <div className={`${styles.iconWrap} ${styles.iconError}`}>
+                  <AlertCircle />
+                </div>
+                <h1 className={styles.title}>Couldn&apos;t accept</h1>
+                <p className={styles.subtitle}>{message}</p>
+                <button
+                  className={styles.ghostBtn}
+                  onClick={() => router.push("/onboarding/select-organization")}
+                >
+                  &larr; Back to workspace
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -97,6 +97,21 @@ function getCountry(code: string) {
 }
 
 // ============================================================
+// HERO PRODUCT TILES (duplicated for now — swap in real ones later)
+// ============================================================
+
+const PRODUCTS = [
+  { name: "KxTill", logo: "/assets/products/kxtillRetail.png" },
+  { name: "KxWork", logo: "/assets/products/kxwork.jpg" },
+  { name: "KxCRM", logo: "/assets/products/kxcrm.jpg" },
+];
+
+const APP_TILES = Array.from(
+  { length: 16 },
+  (_, i) => PRODUCTS[i % PRODUCTS.length]
+);
+
+// ============================================================
 // HELPERS
 // ============================================================
 
@@ -522,339 +537,369 @@ export default function SelectOrganizationPage() {
       <div className={styles.glowAmber} />
       <div className={styles.glowMoss} />
 
-      <div className={styles.glassCard}>
-        {/* ===== brand + user ===== */}
-        <div className={styles.cardTopRow}>
-          <div className={styles.brand}>
-            <Image
-              src="/assets/logo.png"
-              alt="KXBYTE"
-              width={28}
-              height={28}
-              className={styles.logoMark}
-              priority
-            />
-            <span className={styles.brandName}>KXBYTE</span>
-          </div>
-          <div className={styles.userChip}>
-            <div className={styles.avatar}>{initial}</div>
-            <span className={styles.userNameText}>{user?.firstName}</span>
-          </div>
-        </div>
+      {/* Big background photo with diagonal edge (desktop only) */}
+      <div className={styles.bgPhoto} />
 
-        {showCreateForm ? (
-          // ===== CREATE ORGANIZATION =====
-          <div className={styles.createWrap}>
-            <div className={styles.createIconWrap}>
-              <Rocket size={18} />
+      <div className={styles.card}>
+        {/* ============ HERO (left, desktop only) — Kx products ============ */}
+        <aside className={styles.hero}>
+          <div className={styles.heroInner}>
+            <div className={styles.appGrid}>
+              {APP_TILES.map((p, i) => (
+                <div key={i} className={styles.appTile}>
+                  <div className={styles.appIcon}>
+                    <Image
+                      src={p.logo}
+                      alt={p.name}
+                      width={46}
+                      height={46}
+                      className={styles.appLogo}
+                    />
+                  </div>
+                  <span className={styles.appName}>{p.name}</span>
+                </div>
+              ))}
             </div>
-            <h1 className={styles.title}>Launch an organization</h1>
-            <p className={styles.subtitle}>
-              {hasOrgs || hasInvites
-                ? "Set up a new organization to expand your business."
-                : "Create your first organization to get started with KXBYTE Suite."}
-            </p>
+          </div>
+        </aside>
 
-            <div className={styles.createCard}>
+        {/* ============ PANEL (right) ============ */}
+        <div className={styles.panel}>
+          {/* ===== brand + user ===== */}
+          <div className={styles.cardTopRow}>
+            <div className={styles.brand}>
+              <Image
+                src="/assets/logo.png"
+                alt="KXBYTE"
+                width={28}
+                height={28}
+                className={styles.logoMark}
+                priority
+              />
+              <span className={styles.brandName}>
+                KXBYTE <span className={styles.brandAccent}>SUITE</span>
+              </span>
+            </div>
+            <div className={styles.userChip}>
+              <div className={styles.avatar}>{initial}</div>
+              <span className={styles.userNameText}>{user?.firstName}</span>
+            </div>
+          </div>
+
+          {showCreateForm ? (
+            // ===== CREATE ORGANIZATION =====
+            <div className={styles.createWrap}>
+              <div className={styles.createIconWrap}>
+                <Rocket size={18} />
+              </div>
+              <h1 className={styles.title}>Launch an organization</h1>
+              <p className={styles.subtitle}>
+                {hasOrgs || hasInvites
+                  ? "Set up a new organization to expand your business."
+                  : "Create your first organization to get started with KXBYTE Suite."}
+              </p>
+
+              <div className={styles.createCard}>
+                {error && <div className={styles.error}>{error}</div>}
+
+                <form onSubmit={handleCreateSubmit} className={styles.form}>
+                  {/* Row 1: Country + Phone */}
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="country">Country</label>
+                      <select
+                        id="country"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleCreateChange}
+                        disabled={creating}
+                      >
+                        {COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.flag} {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label htmlFor="phoneLocal">Phone number</label>
+                      <div className={styles.phoneInput}>
+                        <span className={styles.phonePrefix}>
+                          {selectedCountry.flag} {selectedCountry.dial}
+                        </span>
+                        <input
+                          id="phoneLocal"
+                          name="phoneLocal"
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel-national"
+                          value={formData.phoneLocal}
+                          onChange={handleCreateChange}
+                          placeholder="712 345 678"
+                          required
+                          disabled={creating}
+                          maxLength={14}
+                        />
+                      </div>
+                      <span className={styles.fieldHint}>
+                        We&apos;ll only use this to reach you about your account.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Organization name (full width) */}
+                  <div className={styles.formGroup}>
+                    <label htmlFor="name">Organization name</label>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleCreateChange}
+                      placeholder="e.g. Kamau Supermarket"
+                      required
+                      disabled={creating}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={styles.submitBtn}
+                    disabled={creating}
+                  >
+                    {creating ? (
+                      <>
+                        <span className={styles.spinnerSmall} />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Rocket size={16} />
+                        Launch Organization
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {(hasOrgs || hasInvites) && (
+                  <button
+                    className={styles.backBtn}
+                    onClick={() => setShowCreateForm(false)}
+                    disabled={creating}
+                  >
+                    ← Back to your organizations
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            // ===== DASHBOARD =====
+            <>
+              <div className={styles.heroText}>
+                <h1 className={styles.title}>Select a workspace</h1>
+                <p className={styles.subtitle}>
+                  Pick an organization to continue, or start a new one.
+                </p>
+              </div>
+
               {error && <div className={styles.error}>{error}</div>}
 
-              <form onSubmit={handleCreateSubmit} className={styles.form}>
-                {/* Row 1: Country + Phone */}
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="country">Country</label>
-                    <select
-                      id="country"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleCreateChange}
-                      disabled={creating}
-                    >
-                      {COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.flag} {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label htmlFor="phoneLocal">Phone number</label>
-                    <div className={styles.phoneInput}>
-                      <span className={styles.phonePrefix}>
-                        {selectedCountry.flag} {selectedCountry.dial}
-                      </span>
-                      <input
-                        id="phoneLocal"
-                        name="phoneLocal"
-                        type="tel"
-                        inputMode="numeric"
-                        autoComplete="tel-national"
-                        value={formData.phoneLocal}
-                        onChange={handleCreateChange}
-                        placeholder="712 345 678"
-                        required
-                        disabled={creating}
-                        maxLength={14}
-                      />
-                    </div>
-                    <span className={styles.fieldHint}>
-                      We&apos;ll only use this to reach you about your account.
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 2: Organization name (full width) */}
-                <div className={styles.formGroup}>
-                  <label htmlFor="name">Organization name</label>
+              {/* search + quick add */}
+              <div className={styles.searchRow}>
+                <div className={styles.searchBar}>
+                  <Search size={15} className={styles.searchIcon} />
                   <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleCreateChange}
-                    placeholder="e.g. Kamau Supermarket"
-                    required
-                    disabled={creating}
+                    className={styles.searchInput}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search organizations..."
                   />
                 </div>
-
                 <button
-                  type="submit"
-                  className={styles.submitBtn}
-                  disabled={creating}
+                  className={styles.addIconBtn}
+                  onClick={() => setShowCreateForm(true)}
+                  title="New organization"
+                  type="button"
                 >
-                  {creating ? (
-                    <>
-                      <span className={styles.spinnerSmall} />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Rocket size={16} />
-                      Launch Organization
-                    </>
-                  )}
+                  <Plus size={18} />
                 </button>
-              </form>
-
-              {(hasOrgs || hasInvites) && (
-                <button
-                  className={styles.backBtn}
-                  onClick={() => setShowCreateForm(false)}
-                  disabled={creating}
-                >
-                  ← Back to your organizations
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          // ===== DASHBOARD =====
-          <>
-            <div className={styles.heroText}>
-              <h1 className={styles.title}>Select a workspace</h1>
-              <p className={styles.subtitle}>
-                Pick an organization to continue, or start a new one.
-              </p>
-            </div>
-
-            {error && <div className={styles.error}>{error}</div>}
-
-            {/* search + quick add */}
-            <div className={styles.searchRow}>
-              <div className={styles.searchBar}>
-                <Search size={15} className={styles.searchIcon} />
-                <input
-                  className={styles.searchInput}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search organizations..."
-                />
               </div>
-              <button
-                className={styles.addIconBtn}
-                onClick={() => setShowCreateForm(true)}
-                title="New organization"
-                type="button"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
 
-            <div className={styles.scrollArea}>
-              {/* Organizations — main column */}
-              <div className={styles.mainCol}>
-                <section className={styles.section}>
-                  <div className={styles.sectionLabel}>
-                    <Building2 size={12} />
-                    Your Organizations
-                  </div>
+              <div className={styles.scrollArea}>
+                {/* Organizations */}
+                <div className={styles.mainCol}>
+                  <section className={styles.section}>
+                    <div className={styles.sectionLabel}>
+                      <Building2 size={12} />
+                      Your Organizations
+                    </div>
 
-                  <div className={styles.orgList}>
-                    {filteredOrganizations.map((org) => {
-                      const role = getOrgRole(org);
-                      const isOwner = role === "Owner" || role === "OWNER";
+                    <div className={styles.orgList}>
+                      {filteredOrganizations.map((org) => {
+                        const role = getOrgRole(org);
+                        const isOwner = role === "Owner" || role === "OWNER";
 
-                      return (
-                        <button
-                          key={org.id}
-                          className={styles.orgCardNeo}
-                          onClick={() => handleSelect(org.id)}
-                          disabled={isLoading || redirecting}
-                        >
-                          <div className={styles.orgIcon}>
-                            {org.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className={styles.orgMeta}>
-                            <span className={styles.orgName}>{org.name}</span>
-                          </div>
-                          {isOwner ? (
-                            <span className={styles.badgeOwner}>
-                              <Crown size={11} />
-                              Owner
-                            </span>
-                          ) : (
-                            <span className={styles.badgeMember}>Member</span>
-                          )}
-                          <ChevronRight
-                            size={16}
-                            className={styles.chevron}
-                          />
-                        </button>
-                      );
-                    })}
+                        return (
+                          <button
+                            key={org.id}
+                            className={styles.orgCard}
+                            onClick={() => handleSelect(org.id)}
+                            disabled={isLoading || redirecting}
+                          >
+                            <div className={styles.orgIcon}>
+                              {org.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className={styles.orgMeta}>
+                              <span className={styles.orgName}>{org.name}</span>
+                            </div>
+                            {isOwner ? (
+                              <span className={styles.badgeOwner}>
+                                <Crown size={11} />
+                                Owner
+                              </span>
+                            ) : (
+                              <span className={styles.badgeMember}>Member</span>
+                            )}
+                            <ChevronRight
+                              size={16}
+                              className={styles.chevron}
+                            />
+                          </button>
+                        );
+                      })}
 
-                    {filteredOrganizations.length === 0 && (
-                      <div className={styles.emptyNote}>
-                        {query
-                          ? `No organizations match "${query}"`
-                          : "No organizations yet"}
-                      </div>
+                      {filteredOrganizations.length === 0 && (
+                        <div className={styles.emptyNote}>
+                          {query
+                            ? `No organizations match "${query}"`
+                            : "No organizations yet"}
+                        </div>
+                      )}
+
+                      <button
+                        className={styles.addOrgCard}
+                        onClick={() => setShowCreateForm(true)}
+                      >
+                        <Plus size={15} />
+                        <span>New organization</span>
+                      </button>
+                    </div>
+                  </section>
+                </div>
+
+                {/* Invites + archived */}
+                {(hasInvites || hasArchived) && (
+                  <div className={styles.sideCol}>
+                    {hasInvites && (
+                      <section className={styles.section}>
+                        <div className={styles.sectionLabel}>
+                          <Mail size={12} />
+                          Pending Invitations
+                        </div>
+                        <div className={styles.inviteList}>
+                          {pendingInvites.map((invite) => (
+                            <div key={invite.id} className={styles.inviteCard}>
+                              <div className={styles.inviteTop}>
+                                <div className={styles.inviteIcon}>
+                                  {invite.organization.name
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </div>
+                                <div className={styles.inviteInfo}>
+                                  <span className={styles.inviteName}>
+                                    {invite.organization.name}
+                                  </span>
+                                  <span className={styles.inviteBy}>
+                                    Invited by {invite.invitedBy.firstName}{" "}
+                                    {invite.invitedBy.lastName}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={styles.inviteActions}>
+                                <button
+                                  className={styles.acceptBtn}
+                                  onClick={() => handleAcceptInvite(invite.token)}
+                                >
+                                  <Check size={13} />
+                                  Accept
+                                </button>
+                                <button
+                                  className={styles.rejectBtn}
+                                  onClick={() => handleRejectInvite(invite.token)}
+                                >
+                                  <X size={13} />
+                                  Decline
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
                     )}
 
-                    <button
-                      className={styles.addOrgCard}
-                      onClick={() => setShowCreateForm(true)}
-                    >
-                      <Plus size={15} />
-                      <span>New organization</span>
-                    </button>
+                    {hasArchived && (
+                      <section className={styles.section}>
+                        <div className={styles.sectionLabel}>
+                          <RefreshCw size={12} />
+                          Archived
+                        </div>
+                        <div className={styles.inviteList}>
+                          {archivedOrgs.map((org) => (
+                            <div
+                              key={org.id}
+                              className={`${styles.inviteCard} ${styles.archivedCard}`}
+                            >
+                              <div className={styles.inviteTop}>
+                                <div className={styles.inviteIcon}>
+                                  {org.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className={styles.inviteInfo}>
+                                  <span className={styles.inviteName}>
+                                    {org.name}
+                                  </span>
+                                  <span className={styles.inviteBy}>
+                                    Restore to regain access
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={styles.inviteActions}>
+                                <button
+                                  className={styles.restoreBtn}
+                                  onClick={() =>
+                                    handleRestoreOrganization(org.id)
+                                  }
+                                  disabled={restoring === org.id}
+                                >
+                                  {restoring === org.id ? (
+                                    <span className={styles.spinnerSmall} />
+                                  ) : (
+                                    <RefreshCw size={13} />
+                                  )}
+                                  Restore
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
                   </div>
-                </section>
+                )}
               </div>
+            </>
+          )}
 
-              {/* Invites + archived — side column */}
-              {(hasInvites || hasArchived) && (
-                <div className={styles.sideCol}>
-                  {hasInvites && (
-                    <section className={styles.section}>
-                      <div className={styles.sectionLabel}>
-                        <Mail size={12} />
-                        Pending Invitations
-                      </div>
-                      <div className={styles.inviteList}>
-                        {pendingInvites.map((invite) => (
-                          <div key={invite.id} className={styles.inviteCard}>
-                            <div className={styles.inviteTop}>
-                              <div className={styles.inviteIcon}>
-                                {invite.organization.name
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </div>
-                              <div className={styles.inviteInfo}>
-                                <span className={styles.inviteName}>
-                                  {invite.organization.name}
-                                </span>
-                                <span className={styles.inviteBy}>
-                                  Invited by {invite.invitedBy.firstName}{" "}
-                                  {invite.invitedBy.lastName}
-                                </span>
-                              </div>
-                            </div>
-                            <div className={styles.inviteActions}>
-                              <button
-                                className={styles.acceptBtn}
-                                onClick={() => handleAcceptInvite(invite.token)}
-                              >
-                                <Check size={13} />
-                                Accept
-                              </button>
-                              <button
-                                className={styles.rejectBtn}
-                                onClick={() => handleRejectInvite(invite.token)}
-                              >
-                                <X size={13} />
-                                Decline
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {hasArchived && (
-                    <section className={styles.section}>
-                      <div className={styles.sectionLabel}>
-                        <RefreshCw size={12} />
-                        Archived
-                      </div>
-                      <div className={styles.inviteList}>
-                        {archivedOrgs.map((org) => (
-                          <div
-                            key={org.id}
-                            className={`${styles.inviteCard} ${styles.archivedCard}`}
-                          >
-                            <div className={styles.inviteTop}>
-                              <div className={styles.inviteIcon}>
-                                {org.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className={styles.inviteInfo}>
-                                <span className={styles.inviteName}>
-                                  {org.name}
-                                </span>
-                                <span className={styles.inviteBy}>
-                                  Restore to regain access
-                                </span>
-                              </div>
-                            </div>
-                            <div className={styles.inviteActions}>
-                              <button
-                                className={styles.restoreBtn}
-                                onClick={() =>
-                                  handleRestoreOrganization(org.id)
-                                }
-                                disabled={restoring === org.id}
-                              >
-                                {restoring === org.id ? (
-                                  <span className={styles.spinnerSmall} />
-                                ) : (
-                                  <RefreshCw size={13} />
-                                )}
-                                Restore
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* logout */}
-        <button
-          className={styles.logoutCorner}
-          onClick={handleLogout}
-          title="Log out"
-          type="button"
-        >
-          <LogOut size={15} />
-        </button>
+          {/* logout */}
+          <button
+            className={styles.logoutCorner}
+            onClick={handleLogout}
+            title="Log out"
+            type="button"
+          >
+            <LogOut size={15} />
+          </button>
+        </div>
       </div>
     </div>
   );

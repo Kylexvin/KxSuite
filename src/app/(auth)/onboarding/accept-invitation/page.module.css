@@ -1,44 +1,49 @@
 /* ============================================================
-   accept-invitation — minimal single-message card
+   accept-invitation — dark, same layout as /auth
+   Mobile: single dark card.
+   Desktop (900px+): diagonal photo behind, dark rounded card with
+   inset slanted Kx products hero (left) + status panel (right).
+   Fits 100dvh.
    ============================================================ */
 
 .page {
   --bg: #0e0f13;
-  --panel: #16171d;
-  --raised: #1b1c23;
-  --raised-hi: #24252e;
+  --frame: #16171d;
+  --panel: #1b1c23;
+  --raised: #20212a;
   --border: rgba(255, 255, 255, 0.07);
   --border-strong: rgba(255, 255, 255, 0.14);
   --text: #eceef2;
   --text-muted: #a3a5b0;
-  --text-faint: #62636e;
-  --accent: #ff6a2b;
-  --accent-glow: #ff8c42;
+  --text-faint: #6a6b76;
+  --accent: #e8542a;
+  --accent-dark: #c8441f;
+  --gold: #d9a84e;
   --danger: #ef5350;
   --success: #4caf82;
-  --gold: #d9a84e;
-  --moss: #4c7a5e;
+  --hero-bg: #1f1a16;
 
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow-x: hidden;
   padding: 32px 20px;
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
-
   background:
-    linear-gradient(180deg, rgba(14, 15, 19, 0.82), rgba(14, 15, 19, 0.92)),
-    url("/assets/palmbg.jpg") center / cover no-repeat fixed;
+    linear-gradient(180deg, rgba(14, 15, 19, 0.85), rgba(14, 15, 19, 0.94)),
+    url("/assets/palmbg.jpg") center / cover no-repeat;
   background-color: var(--bg);
 }
 
+/* ---------- ambient glows ---------- */
+
 .glowAmber,
 .glowMoss {
-  position: absolute;
+  position: fixed;
   border-radius: 50%;
-  filter: blur(90px);
+  filter: blur(120px);
   pointer-events: none;
   z-index: 0;
 }
@@ -46,41 +51,105 @@
 .glowAmber {
   width: 460px;
   height: 460px;
-  top: -140px;
-  right: -120px;
-  background: radial-gradient(circle, rgba(217, 168, 78, 0.18) 0%, rgba(255, 106, 43, 0.06) 55%, transparent 75%);
+  top: -160px;
+  right: 8%;
+  background: radial-gradient(
+    circle,
+    rgba(232, 84, 42, 0.2) 0%,
+    rgba(232, 84, 42, 0.05) 55%,
+    transparent 75%
+  );
 }
 
 .glowMoss {
   width: 420px;
   height: 420px;
-  bottom: -160px;
-  left: -140px;
-  background: radial-gradient(circle, rgba(76, 122, 94, 0.14) 0%, rgba(76, 122, 94, 0.04) 55%, transparent 75%);
+  bottom: -170px;
+  left: 6%;
+  background: radial-gradient(
+    circle,
+    rgba(120, 90, 60, 0.16) 0%,
+    rgba(120, 90, 60, 0.04) 55%,
+    transparent 75%
+  );
 }
 
-/* ---------- card ---------- */
+/* ---------- background photo (desktop only) ---------- */
+
+.bgPhoto {
+  display: none;
+}
+
+/* ================= CARD ================= */
 
 .card {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  border-radius: 28px;
+  background: var(--frame);
+  border: 1px solid var(--border-strong);
+  padding: 10px;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  overflow: hidden;
+}
+
+.hero {
+  display: none;
+}
+
+/* ================= PANEL ================= */
+
+.panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 20px 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.logoMark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.brandName {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.brandAccent {
+  color: var(--accent);
+}
+
+.stateWrap {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-  padding: 40px 32px 36px;
-  border-radius: 24px;
+  justify-content: center;
+  gap: 16px;
   text-align: center;
-  background: linear-gradient(180deg, rgba(27, 28, 35, 0.62), rgba(22, 23, 29, 0.5));
-  border: 1px solid var(--border-strong);
-  backdrop-filter: blur(28px) saturate(140%);
-  -webkit-backdrop-filter: blur(28px) saturate(140%);
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.55),
-    0 2px 0 rgba(255, 255, 255, 0.03) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.4) inset;
+  padding: 36px 8px 28px;
 }
 
 /* ---------- icon ---------- */
@@ -92,7 +161,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(150deg, rgba(217, 168, 78, 0.15), rgba(255, 106, 43, 0.15));
+  background: rgba(217, 168, 78, 0.14);
 }
 
 .iconWrap svg {
@@ -102,7 +171,7 @@
 }
 
 .iconSuccess {
-  background: linear-gradient(150deg, rgba(76, 175, 130, 0.22), rgba(76, 175, 130, 0.1));
+  background: rgba(76, 175, 130, 0.16);
 }
 
 .iconSuccess svg {
@@ -110,7 +179,7 @@
 }
 
 .iconError {
-  background: linear-gradient(150deg, rgba(239, 83, 80, 0.18), rgba(239, 83, 80, 0.08));
+  background: rgba(239, 83, 80, 0.14);
 }
 
 .iconError svg {
@@ -120,9 +189,10 @@
 /* ---------- text ---------- */
 
 .title {
-  font-size: 19px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
   color: var(--text);
   margin: 0;
 }
@@ -142,21 +212,24 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 28px;
-  border-radius: 13px;
+  padding: 12px 34px;
+  margin-top: 4px;
+  border-radius: 999px;
   border: none;
-  color: #17181e;
-  font-size: 13.5px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 700;
-  background: linear-gradient(150deg, var(--gold), var(--accent));
+  background: var(--accent);
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(255, 106, 43, 0.32);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 10px 24px rgba(232, 84, 42, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .primaryBtn:hover {
+  background: var(--accent-dark);
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(255, 106, 43, 0.42);
+  box-shadow: 0 12px 28px rgba(232, 84, 42, 0.45);
 }
 
 .primaryBtn:active {
@@ -168,6 +241,7 @@
   border: none;
   padding: 4px 8px;
   color: var(--text-faint);
+  font-family: inherit;
   font-size: 12.5px;
   cursor: pointer;
   transition: color 0.15s ease;
@@ -194,19 +268,219 @@
   }
 }
 
-/* ---------- responsive ---------- */
+/* ================= DESKTOP — INSPO LAYOUT (dark) ================= */
 
-@media (max-width: 420px) {
+@media (min-width: 900px) {
+  .page {
+    background: var(--bg);
+    height: 100dvh;
+    min-height: 0;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  .glowAmber,
+  .glowMoss {
+    display: none;
+  }
+
+  /* full-bleed photo with diagonal edge, sits behind the card */
+  .bgPhoto {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: url("/assets/palmbg.jpg") center / cover no-repeat;
+    clip-path: polygon(0 0, 62% 0, 55% 100%, 0 100%);
+  }
+
+  .bgPhoto::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(14, 15, 19, 0.5);
+  }
+
   .card {
-    padding: 32px 22px 28px;
-    border-radius: 20px;
+    grid-template-columns: 1fr 1fr;
+    max-width: 960px;
+    height: min(640px, calc(100dvh - 40px));
+    padding: 10px;
+    border-radius: 44px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  }
+
+  /* ---------- hero (kx products showcase) ---------- */
+
+  .hero {
+    display: block;
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 30px;
+    background-color: var(--hero-bg);
+    background-image:
+      linear-gradient(180deg, rgba(31, 26, 22, 0.35), rgba(31, 26, 22, 0.88)),
+      url("/assets/palmbg.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* slanted right edge */
+    clip-path: polygon(0 0, 100% 0, 91% 100%, 0 100%);
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at 30% 20%,
+      rgba(232, 84, 42, 0.28) 0%,
+      transparent 55%
+    );
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at 80% 90%,
+      rgba(120, 90, 60, 0.25) 0%,
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+
+  .heroInner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 28px 64px 28px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .appGrid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px 12px;
+  }
+
+  .appTile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 4px 9px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: floatY 7s ease-in-out infinite;
+  }
+
+  .appTile:nth-child(3n + 1) { animation-delay: 0s; }
+  .appTile:nth-child(3n + 2) { animation-delay: -2.3s; }
+  .appTile:nth-child(3n)     { animation-delay: -4.6s; }
+  .appTile:nth-child(5n)     { opacity: 0.7; }
+
+  .appIcon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .appLogo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .appName {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.88);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  /* ---------- panel ---------- */
+
+  .panel {
+    padding: 26px 30px 18px;
   }
 
   .title {
-    font-size: 17px;
+    font-size: 30px;
+  }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(-3px); }
+  50%      { transform: translateY(3px); }
+}
+
+/* short desktop screens */
+@media (min-width: 900px) and (max-height: 760px) {
+  .appTile {
+    padding: 8px 4px 6px;
   }
 
-  .subtitle {
-    font-size: 13px;
+  .appIcon {
+    width: 38px;
+    height: 38px;
   }
+}
+
+@media (min-width: 900px) and (max-height: 680px) {
+  .appTile:nth-child(n + 13) {
+    display: none;
+  }
+}
+
+@media (min-width: 900px) and (max-height: 600px) {
+  .appTile:nth-child(n + 9) {
+    display: none;
+  }
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 480px) {
+  .page {
+    padding: 14px 12px;
+    align-items: flex-start;
+  }
+
+  .card {
+    margin-top: 12px;
+    border-radius: 22px;
+    padding: 8px;
+  }
+
+  .panel {
+    padding: 20px 14px 16px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+}
+
+/* ================= REDUCED MOTION ================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .appTile { animation: none; }
+  .primaryBtn:hover { transform: none; }
 }
